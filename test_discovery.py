@@ -24,3 +24,16 @@ class Discovery(unittest.TestCase):
         callback.assert_called_once_with('devices')
         monitor.stop();monitor._udev_event(Mock(subsystem='hidraw',action='add'))
         self.assertEqual(callback.call_count,1)
+
+    def test_unplug_does_not_reuse_model_name_as_presence(self):
+        from discovery import MousePresence
+        state=MousePresence();state.update([('mouse','Logitech G502 HERO')])
+        self.assertIs(state.connected,True)
+        state.invalidate();self.assertIsNone(state.connected)
+        state.update([])
+        self.assertEqual(state.name,'Logitech G502 HERO');self.assertIs(state.connected,False)
+        state.update([('mouse-new','Logitech G502 HERO')]);self.assertIs(state.connected,True)
+    def test_backend_failure_does_not_claim_connection_or_unplug(self):
+        from discovery import MousePresence
+        state=MousePresence('G502',True);state.update([],error=True)
+        self.assertIsNone(state.connected)

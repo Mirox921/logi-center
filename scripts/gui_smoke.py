@@ -10,6 +10,7 @@ from mouse_editor import MouseEditor
 from microphone_ui import MicrophonePanel
 from backups import preview
 from test_backups import sample
+from discovery import MousePresence
 from i18n import set_language
 
 application=Center();application.set_application_id('local.mirox.LogiCenter.Smoke');application.preferences['language']='ru';set_language('ru')
@@ -24,6 +25,12 @@ def check():
     editors=[w for w in descendants(application.win) if isinstance(w,MouseEditor)]
     for editor in editors:
         if editor.buttons:editor.select(next(iter(editor.buttons)));editor.reset()
+    original_presence=application.mouse_presence
+    application.mouse_presence=MousePresence('Logitech G502 HERO',False);application.update_batteries()
+    assert application.battery_widgets['G305'][0].get_text()=='G502 HERO · Не в сети'
+    application.mouse_presence.invalidate();application.update_batteries()
+    assert 'Подключена по USB' not in application.battery_widgets['G305'][0].get_text()
+    application.mouse_presence=original_presence;application.update_batteries()
     application.stack.set_visible_child_name('audio')
     checks.append('widgets')
     language=Gtk.DropDown.new_from_strings(['Русский','English']);language.set_selected(1)

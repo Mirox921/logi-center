@@ -76,3 +76,7 @@ Update after each stage with changed files, checks, limits and next action. Do n
 ## Assignment label correction
 - Fixed typed assignment matching: `button 1` was incorrectly compared with `1`, causing standard clicks to select the custom macro entry. Both assignment interfaces now share assignment_label; recognized macros compare equivalent tap/press-release forms.
 - Files: mouse_models.py, mouse_editor.py, app.py, test_mouse_editor.py. 67 unit tests, compileall and diff check pass. Actual device assignments are unchanged.
+
+## Unplugged G502 header fix (before v0.3.0)
+- Split remembered model name from live connectivity using MousePresence. Hotplug/refresh invalidates connectivity immediately; empty ratbag inventory marks it offline, backend failure leaves it unknown. Stale load callbacks are invalidated on refresh.
+- app.py, discovery.py, test_discovery.py and scripts/gui_smoke.py updated; 69 unit tests pass, including unplug/reconnect and backend failure. Current disconnected hardware reports `No devices available.` from ratbag. Header regression is covered by independent GTK smoke.

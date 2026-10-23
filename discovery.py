@@ -1,7 +1,21 @@
 """Event-based device discovery with a cheap fallback and explicit lifetime."""
 from threading import Event,Lock,Thread
+from dataclasses import dataclass
 import subprocess,shutil
 from pathlib import Path
+
+@dataclass
+class MousePresence:
+    """Retain the selected model without treating its old name as connectivity."""
+    name:str=''
+    connected:bool|None=None
+    def invalidate(self):self.connected=None
+    def update(self,mice,error=False):
+        if error:self.connected=None;return None
+        selected=next((item for item in mice if item[1]==self.name),mice[0] if mice else None)
+        self.connected=selected is not None
+        if selected:self.name=selected[1]
+        return selected
 
 class Epoch:
     def __init__(self):self._lock=Lock();self._event=Event();self.generation=0

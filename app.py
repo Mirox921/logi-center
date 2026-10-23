@@ -12,7 +12,7 @@ from mouse_models import assignment_label
 from backups import snapshot, write_backup, read_backup, preview as backup_preview, restore as restore_backup
 from operations import perform, plan_for, Result, State
 from execution import Fault, FaultCode, CURRENT_CANCEL
-from discovery import Epoch,DeviceMonitor
+from discovery import Epoch,DeviceMonitor,MousePresence
 from i18n import tr as _, set_language
 from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings, read_mouse
 
@@ -25,6 +25,7 @@ class Center(Adw.Application):
         self.epoch=Epoch();self.closed=False;self.hotplug_timer=None;self.ui_generation=0
         self.scroll_positions={};self.mouse_request=0;self.refresh_revision=0
         self.current_mouse_name=''
+        self.mouse_presence=MousePresence()
         self.keyboard_connected=None
         self.keyboard_polling=False
         self.preferences=load_preferences()
@@ -275,9 +276,10 @@ class Center(Adw.Application):
         for model,(label,icon) in self.battery_widgets.items():
             battery=next((b for b in batteries if model.lower() in b['model'].lower()),None)
             text,image=battery_label(battery)
-            if model=='G305' and 'G502' in self.current_mouse_name:
-                label.set_text('G502 HERO · '+_('Подключена по USB'))
-                icon.set_from_icon_name('input-mouse-symbolic')
+            if model=='G305' and 'G502' in self.mouse_presence.name:
+                state=self.mouse_presence.connected
+                label.set_text('G502 HERO · '+(_('Подключена по USB') if state is True else _('Не в сети') if state is False else _('Связь не подтверждена')))
+                icon.set_from_icon_name('input-mouse-symbolic' if state is True else 'network-offline-symbolic')
                 label.set_tooltip_text(_('Проводной мыши батарея не нужна.'))
                 continue
             text=_(text)
@@ -295,6 +297,7 @@ class Center(Adw.Application):
             if not self.keyboard_polling:self.poll_keyboard()
             return False
         self.epoch.invalidate()
+        self.mouse_presence.invalidate();self.update_batteries()
         for box in self.pages.values():box.set_sensitive(False)
         if hasattr(self,'audio_session'):self.audio_session.stop()
         if self.hotplug_timer:GLib.source_remove(self.hotplug_timer)
@@ -323,6 +326,7 @@ class Center(Adw.Application):
         if self.closed:return
         self.audio_session.stop()
         self.refresh_revision+=1;revision=self.refresh_revision
+        self.mouse_request+=1;self.mouse_presence.invalidate()
         for page in self.pages:
             scroll=self.stack.get_child_by_name(page)
             if scroll:self.scroll_positions[page]=scroll.get_vadjustment().get_value()
@@ -348,11 +352,11 @@ class Center(Adw.Application):
         for key,value in data.items():
             if key.endswith('_error'):self.present_fault(value)
         mice=list(dict.fromkeys(mouse_list(data.get('mice',''))))
+        selected=self.mouse_presence.update(mice,error='mice_error' in data)
         g=self.group('mouse',_('Игровые мыши Logitech'),_('Настрой скорость движения указателя, плавность и действия кнопок.'))
         if mice:
             for device,name in mice:
                 row=self.row(g,name,_('Подключена'));self.button(row,_('Прочитать настройки'),lambda *unused,d=device,n=name:self.load_mouse(d,n))
-            selected=next((m for m in mice if m[1]==self.current_mouse_name),mice[0])
             self.load_mouse(selected[0],selected[1])
         else:self.row(g,_('Мышь недоступна'),_('Включи мышь и подключи USB-приёмник.'))
         row=self.row(g,_('Расширенный редактор'),_('Полный интерфейс Piper: профили и макросы.'));self.button(row,_('Открыть Piper'),lambda *unused:self.launch(['piper']))
@@ -498,6 +502,7 @@ class Center(Adw.Application):
         def loaded(data):
             if request!=self.mouse_request:return
             self.current_mouse_name=selected_name
+            self.mouse_presence.name=selected_name;self.mouse_presence.connected=True
             self.update_batteries()
             self.mouse_controls(device,data)
             GLib.timeout_add(80,self.restore_scroll)
