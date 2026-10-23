@@ -95,3 +95,31 @@ class KeyboardConnection(unittest.TestCase):
         from backend import keyboard_online
         import tempfile
         with tempfile.TemporaryDirectory() as root:self.assertIs(keyboard_online(root),False)
+
+class MouseProfiles(unittest.TestCase):
+    def test_active_profile_isolated_from_inactive_and_macro_preserved(self):
+        from backend import parse_mouse_info
+        info="""test - Logitech G502 HERO Gaming Mouse
+Profile 0:
+  Report Rate: 500Hz
+    0: 400dpi (active)
+  Button: 0 is mapped to 'button 1'
+Profile 3: (active)
+  Report Rate: 1000Hz
+    0: 3200dpi (active) (default)
+    1: 100dpi (disabled)
+  Button: 0 is mapped to 'button 1'
+  Button: 6 is mapped to macro '↓KEY_LEFTCTRL ↕KEY_C ↑KEY_LEFTCTRL'
+  LED: 0, depth: rgb, mode: on, color: ffdc00
+"""
+        data=parse_mouse_info(info)
+        self.assertEqual(data['active'],3)
+        active=data['profiles'][1]
+        self.assertEqual(active['resolutions'][0]['dpi'],3200)
+        self.assertTrue(active['resolutions'][1]['disabled'])
+        self.assertEqual(len(active['buttons']),2)
+        self.assertTrue(active['buttons'][1]['macro'])
+        self.assertEqual(active['leds'][0]['color'],'ffdc00')
+    def test_no_active_profile_does_not_guess(self):
+        from backend import parse_mouse_info
+        self.assertIsNone(parse_mouse_info('Profile 0:\n  Report Rate: 1000Hz\n')['active'])

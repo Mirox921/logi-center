@@ -1,6 +1,6 @@
 # Logi Center
 
-A small Linux desktop control panel for Logitech G305, G515 LIGHTSPEED TKL and wired G PRO X headsets. Built with Python, GTK 4 and libadwaita, with Russian and English interfaces.
+A small Linux desktop control panel for Logitech G305, G502 HERO, G515 LIGHTSPEED TKL and wired G PRO X headsets. Built with Python, GTK 4 and libadwaita, with Russian and English interfaces.
 
 [Читать по-русски](README.ru.md)
 
@@ -22,7 +22,7 @@ These are real application screenshots. The keyboard is offline, so its saved co
 
 | Device / area | Controls |
 | --- | --- |
-| G305 mouse | DPI, polling rate, button assignments and common keyboard shortcuts through libratbag |
+| G305 / G502 HERO mice | Active-profile DPI, polling rate and button assignments; G502 adds 5 onboard profiles, 11 buttons and 2 lighting zones |
 | G515 LIGHTSPEED TKL | Brightness, solid color, breathing, color cycle and lighting timers through Solaar |
 | Wireless battery | G305 and G515 battery indicators, refreshed every 30 seconds; coarse levels remain coarse rather than invented percentages |
 | G PRO X USB sound card | Output/microphone volume, mute and selection as the default audio device through PipeWire/PulseAudio |
@@ -95,6 +95,7 @@ Opening the app does not automatically replay sidetone or audio commands. A last
 
 - No original Blue VO!CE or DTS engine, G HUB community integration, firmware updates or automatic per-game profiles.
 - No integrated per-key RGB editor or audio effect-chain editor; use the external editors.
+- G502 HERO readout was checked on connected hardware (USB 046d:c08b): 5 profiles, 11 buttons and 2 LEDs. Changing profiles, mappings and lighting still needs physical verification. Saved profile colors may differ from the visible lighting.
 - G515 lighting writes and G PRO X sidetone need further physical testing across firmware versions.
 - Controls target the listed hardware; other Logitech devices are not automatically supported.
 - Battery connectivity is verified separately for G515; other battery readings depend on the kernel's reported state.

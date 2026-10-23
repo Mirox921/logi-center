@@ -5,12 +5,13 @@ import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
 from i18n import tr as _, set_language
-from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings
+from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings, read_mouse
 POOL=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
 class Center(Adw.Application):
     def __init__(self):
         super().__init__(application_id='local.mirox.LogiCenter')
+        self.current_mouse_name=''
         self.keyboard_connected=None
         self.keyboard_polling=False
         self.preferences=load_preferences()
@@ -30,7 +31,7 @@ class Center(Adw.Application):
         header.pack_start(languages);layout.append(header)
         self.stack=Adw.ViewStack();switcher=Adw.ViewSwitcherBar(stack=self.stack,reveal=True);layout.append(switcher)
         self.pages={}
-        for key,title,icon in [('mouse','G305','input-mouse-symbolic'),('keyboard','G515','input-keyboard-symbolic'),('audio','G Pro X','audio-headphones-symbolic')]:
+        for key,title,icon in [('mouse',_('Мышь'),'input-mouse-symbolic'),('keyboard','G515','input-keyboard-symbolic'),('audio','G Pro X','audio-headphones-symbolic')]:
             box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=20,margin_top=24,margin_bottom=24,margin_start=32,margin_end=32)
             clamp=Adw.Clamp(maximum_size=860);clamp.set_child(box)
             scroll=Gtk.ScrolledWindow(vexpand=True);scroll.set_child(clamp)
@@ -145,6 +146,11 @@ class Center(Adw.Application):
         for model,(label,icon) in self.battery_widgets.items():
             battery=next((b for b in batteries if model.lower() in b['model'].lower()),None)
             text,image=battery_label(battery)
+            if model=='G305' and 'G502' in self.current_mouse_name:
+                label.set_text('G502 HERO · '+_('Подключена по USB'))
+                icon.set_from_icon_name('input-mouse-symbolic')
+                label.set_tooltip_text(_('Проводной мыши батарея не нужна.'))
+                continue
             text=_(text)
             if model=='G515':
                 if self.keyboard_connected is False:text,image=_('Не в сети'),'battery-missing-symbolic'
@@ -172,11 +178,11 @@ class Center(Adw.Application):
     def populate(self,data):
         self.clear('mouse');self.clear('keyboard');self.clear('audio')
         mice=mouse_list(data.get('mice',''))
-        g=self.group('mouse','Logitech G305',_('Настрой скорость движения указателя, плавность и действия кнопок.'))
+        g=self.group('mouse',_('Игровые мыши Logitech'),_('Настрой скорость движения указателя, плавность и действия кнопок.'))
         if mice:
             for device,name in mice:
-                row=self.row(g,name,_('Подключена'));self.button(row,_('Прочитать настройки'),lambda *unused,d=device:self.job(lambda:run(['ratbagctl',d,'info']),lambda text,d=d:self.mouse_controls(d,text)))
-            self.job(lambda:run(['ratbagctl',mice[0][0],'info']),lambda text:self.mouse_controls(mice[0][0],text))
+                row=self.row(g,name,_('Подключена'));self.button(row,_('Прочитать настройки'),lambda *unused,d=device,n=name:self.load_mouse(d,n))
+            self.load_mouse(mice[0][0],mice[0][1])
         else:self.row(g,_('Мышь недоступна'),_('Включи мышь и подключи USB-приёмник.'))
         row=self.row(g,_('Расширенный редактор'),_('Полный интерфейс Piper: профили и макросы.'));self.button(row,_('Открыть Piper'),lambda *unused:self.launch(['piper']))
         kg=self.group('keyboard','Logitech G515 Lightspeed TKL',_('Выбери яркость, цвет и поведение подсветки.'))
@@ -296,35 +302,77 @@ class Center(Adw.Application):
                 identifier=h.get('id_vendor','')+':'+h.get('id_product','')
                 levels={_('Выключено'):'0',_('Очень тихо'):'16',_('Тихо'):'32',_('Средне'):'64',_('Громко'):'96',_('Максимально'):'128'}
                 self.choice(ag,_('Слышимость своего голоса'),list(levels),next((k for k,v in levels.items() if v==self.preferences.get('sidetone')),_('Выключено')),lambda value,i=identifier,m=levels:self.apply(['headsetcontrol','-d',i,'-s',m[value]]),_('Выбери желаемый уровень и нажми «Применить». Показан последний сохранённый выбор; текущее значение устройство не сообщает.'))
-    def mouse_controls(self,device,text):
+    def load_mouse(self,device,name=None):
+        selected_name=name or self.current_mouse_name
+        def loaded(data):
+            self.current_mouse_name=selected_name
+            self.update_batteries()
+            self.mouse_controls(device,data)
+        self.job(lambda:read_mouse(device),loaded)
+    def mouse_controls(self,device,data):
         if hasattr(self,'mouse_extra') and self.mouse_extra.get_parent():self.mouse_extra.get_parent().remove(self.mouse_extra)
-        g=self.group('mouse',_('Настройки мыши'));self.mouse_extra=g
-        self.row(g,_('Мышь подключена'),_('Настройки прочитаны. Изменения сохраняются по кнопке «Применить».'))
-        dpi=re.search(r'^\s*\d+: (\d+)dpi.*\(active\)',text,re.M)
-        self.choice(g,_('Чувствительность DPI'),[200,400,600,800,1000,1200,1600,2400,3200,6400,12000],dpi[1] if dpi else 800,lambda v:self.apply(['ratbagctl',device,'dpi','set',v]))
-        rate=re.search(r'Report Rate: (\d+)Hz',text)
-        self.choice(g,_('Частота опроса, Гц'),[125,250,500,1000],rate[1] if rate else 1000,lambda v:self.apply(['ratbagctl',device,'rate','set',v]))
-        names={'0':_('Левая кнопка'),'1':_('Правая кнопка'),'2':_('Нажатие колёсика'),
-               '3':_('Боковая кнопка «Назад»'),'4':_('Боковая кнопка «Вперёд»'),'5':_('Кнопка переключения чувствительности')}
-        actions={_('Левый щелчок'):['button','1'],_('Правый щелчок'):['button','2'],
-                 _('Нажатие колёсика'):['button','3'],_('Назад'):['button','4'],_('Вперёд'):['button','5'],
-                 _('Переключать чувствительность'):['special','resolution-cycle-up'],
-                 _('Копировать'):['macro','+KEY_LEFTCTRL','KEY_C','-KEY_LEFTCTRL'],
-                 _('Вставить'):['macro','+KEY_LEFTCTRL','KEY_V','-KEY_LEFTCTRL'],
-                 _('Вырезать'):['macro','+KEY_LEFTCTRL','KEY_X','-KEY_LEFTCTRL'],
-                 _('Отменить'):['macro','+KEY_LEFTCTRL','KEY_Z','-KEY_LEFTCTRL'],
-                 _('Выделить всё'):['macro','+KEY_LEFTCTRL','KEY_A','-KEY_LEFTCTRL'],
-                 **{(_(_('Клавиша F'))+str(i)):['key',f'KEY_F{i}'] for i in range(1,13)},
-                 _('Отключить кнопку'):['disabled']}
-        descriptions={'button 1':_('Левый щелчок'),'button 2':_('Правый щелчок'),'button 3':_('Нажатие колёсика'),
-                      'button 4':_('Назад'),'button 5':_('Вперёд'),'resolution-cycle-up':_('Переключать чувствительность')}
-        for index,action in re.findall(r"Button: (\d+) is mapped to '([^']+)'",text):
-            current=descriptions.get(action,'')
+        g=self.group('mouse',self.current_mouse_name or _('Настройки мыши'));self.mouse_extra=g
+        profiles=data['profiles']
+        active=next((p for p in profiles if p['index']==data['active']),None)
+        if active is None:
+            self.row(g,_('Активный профиль не определён'),_('Обнови настройки мыши перед изменениями.'));return
+        self.row(g,_('Мышь подключена'),_('Изменения применяются только к выбранному профилю.'))
+        if len(profiles)>1:
+            choices={_('Профиль ')+str(p['index']+1):str(p['index']) for p in profiles}
+            def switch_profile(value):
+                self.job(lambda:run(['ratbagctl',device,'profile','active','set',choices[value]]),lambda text:self.load_mouse(device))
+            self.choice(g,_('Встроенный профиль'),list(choices),_('Профиль ')+str(active['index']+1),switch_profile)
+        prefix=['ratbagctl',device,'profile',str(active['index'])]
+        resolutions=active['resolutions']
+        resolution=next((r for r in resolutions if r['active']),None)
+        if resolution:
+            values=sorted(set(data['dpis']+[resolution['dpi']]))
+            self.choice(g,_('Чувствительность DPI'),values,resolution['dpi'],lambda v:self.apply([*prefix,'resolution',str(resolution['index']),'dpi','set',v]))
+        if data['rates'] and active['rate']:
+            self.choice(g,_('Частота опроса, Гц'),data['rates'],active['rate'],lambda v:self.apply([*prefix,'rate','set',v]))
+        enabled={_('Уровень ')+str(r['index']+1)+' · '+str(r['dpi'])+' DPI':str(r['index']) for r in resolutions if not r['disabled']}
+        if len(enabled)>1 and resolution:
+            current=next((k for k,v in enabled.items() if v==str(resolution['index'])),next(iter(enabled)))
+            def switch_dpi(value):
+                self.job(lambda:run([*prefix,'resolution','active','set',enabled[value]]),lambda text:self.load_mouse(device))
+            self.choice(g,_('Активный уровень чувствительности'),list(enabled),current,switch_dpi)
+        names={0:_('Левая кнопка'),1:_('Правая кнопка'),2:_('Нажатие колёсика'),3:_('Боковая кнопка «Назад»'),4:_('Боковая кнопка «Вперёд»'),5:_('Кнопка переключения чувствительности')}
+        if 'G502' in self.current_mouse_name:
+            names.update({5:_('Кнопка снижения DPI при удержании'),6:_('Уменьшить DPI'),7:_('Увеличить DPI'),8:_('Кнопка переключения профиля'),9:_('Наклон колёсика вправо'),10:_('Наклон колёсика влево')})
+        actions={_('Левый щелчок'):['button','1'],_('Правый щелчок'):['button','2'],_('Нажатие колёсика'):['button','3'],_('Назад'):['button','4'],_('Вперёд'):['button','5'],
+                 _('Переключать чувствительность'):['special','resolution-cycle-up'],_('Уменьшить DPI'):['special','resolution-down'],_('Увеличить DPI'):['special','resolution-up'],
+                 _('Снижение DPI при удержании'):['special','resolution-alternate'],_('Следующий профиль'):['special','profile-cycle-up'],_('G-Shift'):['special','second-mode'],
+                 _('Наклон колёсика вправо'):['special','wheel-right'],_('Наклон колёсика влево'):['special','wheel-left'],
+                 _('Копировать'):['macro','+KEY_LEFTCTRL','KEY_C','-KEY_LEFTCTRL'],_('Вставить'):['macro','+KEY_LEFTCTRL','KEY_V','-KEY_LEFTCTRL'],_('Вырезать'):['macro','+KEY_LEFTCTRL','KEY_X','-KEY_LEFTCTRL'],
+                 _('Отменить'):['macro','+KEY_LEFTCTRL','KEY_Z','-KEY_LEFTCTRL'],_('Выделить всё'):['macro','+KEY_LEFTCTRL','KEY_A','-KEY_LEFTCTRL'],
+                 **{(_('Клавиша F')+str(i)):['key',f'KEY_F{i}'] for i in range(1,13)},_('Отключить кнопку'):['disabled']}
+        descriptions={' '.join(value):key for key,value in actions.items() if value[0] in ['button','special']}
+        descriptions.update({value[1]:key for key,value in actions.items() if value[0]=='special'})
+        for button in active['buttons']:
+            current=descriptions.get(button['action'],'') if not button['macro'] else ''
             options=list(actions) if current else [_('Не изменять')]+list(actions)
-            def set_action(value,i=index):
+            def set_action(value,i=button['index']):
                 if value==_('Не изменять'):return
-                self.apply(['ratbagctl',device,'button',i,'action','set',*actions[value]])
-            self.choice(g,names.get(index,_('Дополнительная кнопка')),options,current or _('Не изменять'),set_action,
-                        _('Сейчас: ')+(current or _('Собственное назначение')))
+                self.apply([*prefix,'button',str(i),'action','set',*actions[value]])
+            self.choice(g,names.get(button['index'],_('Дополнительная кнопка')+' '+str(button['index']+1)),options,current or _('Не изменять'),set_action,_('Сейчас: ')+(current or _('Собственное назначение')))
+        for led in active['leds']:
+            supported=data['led_modes'].get(led['index'],[])
+            if not supported:continue
+            r=self.row(g,_('Зона подсветки ')+str(led['index']+1),_('Показаны данные профиля; фактический цвет может отличаться.'))
+            labels={'on':_('Статичный цвет'),'breathing':_('Дыхание'),'cycle':_('Цикл цветов'),'off':_('Выключено')}
+            modes=Gtk.DropDown.new_from_strings([labels[m] for m in supported]);modes.set_valign(Gtk.Align.CENTER)
+            if led['mode'] in supported:modes.set_selected(supported.index(led['mode']))
+            r.add_suffix(modes)
+            dialog=Gtk.ColorDialog(title=_('Выбери цвет подсветки'));dialog.set_with_alpha(False)
+            color=Gtk.ColorDialogButton(dialog=dialog,valign=Gtk.Align.CENTER,tooltip_text=_('Выбрать любой цвет'))
+            rgba=Gdk.RGBA();rgba.parse('#'+(led['color'] or 'ffffff'));color.set_rgba(rgba);r.add_suffix(color)
+            def write_light(*unused,l=led,m=modes,c=color,available=supported):
+                rgba=c.get_rgba();rgb=''.join(f'{round(v*255):02x}' for v in [rgba.red,rgba.green,rgba.blue]);mode=available[m.get_selected()]
+                def write():
+                    command=[*prefix,'led',str(l['index']),'set']
+                    if mode in ['on','breathing']:run([*command,'color',rgb])
+                    return run([*command,'mode',mode])
+                self.job(write,lambda text:self.load_mouse(device))
+            self.button(r,_('Применить'),write_light)
 
 if __name__=='__main__':Center().run([sys.argv[0]])

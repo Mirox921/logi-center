@@ -159,3 +159,35 @@ def keyboard_saved_settings():
         if key=='rgb_sleep_timeout':value={'0':'Disabled','120':'2 Minutes','300':'5 Minutes','600':'10 Minutes','900':'15 Minutes','1800':'30 Minutes'}.get(value,value)
         result.append(dict(key=key,value=str(value),label=key,choices=choices.get(key)))
     return result
+
+def parse_mouse_info(text):
+    """Separate profiles so inactive DPI/buttons never leak into the active profile."""
+    profiles=[]
+    sections=list(re.finditer(r'^Profile (\d+):([^\n]*)\n',text,re.M))
+    for index,match in enumerate(sections):
+        body=text[match.end():sections[index+1].start() if index+1<len(sections) else len(text)]
+        rate=re.search(r'Report Rate: (\d+)Hz',body)
+        resolutions=[{'index':int(m[1]),'dpi':int(m[2]),'active':'(active)' in m[3],'disabled':'(disabled)' in m[3]} for m in re.finditer(r'^\s+(\d+): (\d+)dpi([^\n]*)',body,re.M)]
+        buttons=[{'index':int(m[1]),'action':m[3],'macro':bool(m[2])} for m in re.finditer(r"Button: (\d+) is mapped to (macro )?'([^']+)'",body)]
+        leds=[]
+        for m in re.finditer(r'LED: (\d+), depth: (\w+), mode: (\w+)([^\n]*)',body):
+            color=re.search(r'color: ([0-9a-fA-F]{6})',m[4]);duration=re.search(r'duration: (\d+)',m[4]);brightness=re.search(r'brightness: (\d+)',m[4])
+            leds.append({'index':int(m[1]),'mode':m[3],'color':color[1] if color else None,'duration':int(duration[1]) if duration else None,'brightness':int(brightness[1]) if brightness else None})
+        profiles.append({'index':int(match[1]),'active':'(active)' in match[2],'rate':int(rate[1]) if rate else None,'resolutions':resolutions,'buttons':buttons,'leds':leds})
+    return {'profiles':profiles,'active':next((p['index'] for p in profiles if p['active']),None)}
+
+def read_mouse(device):
+    text=run(['ratbagctl',device,'info'])
+    data=parse_mouse_info(text);data['text']=text
+    for key,command in [('dpis',['dpi','get-all']),('rates',['rate','get-all'])]:
+        try:data[key]=[int(x) for x in run(['ratbagctl',device,*command]).split() if x.isdigit()]
+        except RuntimeError:data[key]=[]
+    active=next((p for p in data['profiles'] if p['index']==data['active']),None)
+    data['led_modes']={}
+    if active:
+        for led in active['leds']:
+            try:
+                values=run(['ratbagctl',device,'profile',str(active['index']),'led',str(led['index']),'capabilities'])
+                data['led_modes'][led['index']]=[x for x in re.findall(r'\b(?:off|on|cycle|breathing)\b',values)]
+            except RuntimeError:data['led_modes'][led['index']]=[]
+    return data

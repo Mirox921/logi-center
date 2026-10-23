@@ -1,6 +1,15 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Мышь':'Mouse','Игровые мыши Logitech':'Logitech gaming mice','Подключена по USB':'Connected via USB','Проводной мыши батарея не нужна.':'A wired mouse does not need a battery.',
+'Активный профиль не определён':'Active profile not detected','Обнови настройки мыши перед изменениями.':'Refresh mouse settings before making changes.',
+'Изменения применяются только к выбранному профилю.':'Changes apply only to the selected profile.','Профиль ':'Profile ','Встроенный профиль':'Onboard profile',
+'Уровень ':'Stage ','Активный уровень чувствительности':'Active DPI stage','Кнопка снижения DPI при удержании':'DPI shift button',
+'Уменьшить DPI':'Decrease DPI','Увеличить DPI':'Increase DPI','Кнопка переключения профиля':'Profile switch button',
+'Наклон колёсика вправо':'Tilt wheel right','Наклон колёсика влево':'Tilt wheel left','Снижение DPI при удержании':'DPI shift while held',
+'Следующий профиль':'Next profile','G-Shift':'G-Shift','Зона подсветки ':'Lighting zone ',
+'Показаны данные профиля; фактический цвет может отличаться.':'Saved profile data is shown; the physical color may differ.',
+
 'Управление устройством':'Device actions',
 'Твои устройства · один центр управления':'Your devices · one control center','Обновить устройства':'Refresh devices',
 'Чтение устройств…':'Reading devices…','Выполняется…':'Working…','Готово':'Ready',
