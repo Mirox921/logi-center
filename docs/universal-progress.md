@@ -42,3 +42,7 @@ Final verification completed:
 - Independent final GUI smoke passes (full generic mouse fixture, macro drafts, offline header, language, JSON diagnostics/restore dialogs and cancelled recording preparation). Final simulation smoke passes with distinct app ID, shared editors and no real CLI/capture.
 - Final package: /tmp/logi-center-arch-0.4.0dev/logi-center-0.4.0dev-1-any.pkg.tar.zst; SHA-256 94d7d741c638891dd4f9a0782531673d471f9739b296820faddc5c98ed7885b4. All 22 runtime modules byte-match source; launcher/desktop/icon/offline docs present; no home/etc files. Built with --nodeps; no installation, namcap unavailable.
 - Per-user runtime updated and byte-compared; open pre-update window was not terminated to avoid losing old-version unsaved edits. No GitHub/AUR publication. Physical write/restore/reconnect/audio/session tests remain pending; see universal-upgrade.md readiness table.
+
+Device-name search added after the universal upgrade:
+- Devices tab has a case-insensitive search entry; whitespace is normalized, an empty-result message appears and backend diagnostics remain visible. Filtering only hides existing groups, preserving controls/drafts. Query survives inventory rebuild and language switch; stale search callbacks are ignored.
+- Updated device_ui.py/devices.py/i18n.py and search/GTK checks. 104 unit tests and live GTK smoke pass; no hardware writes/capture. Per-user runtime updated; existing open window is not forcibly closed. The earlier staged Arch package predates this UI addition.

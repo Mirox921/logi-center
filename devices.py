@@ -10,6 +10,11 @@ from typing import Protocol
 import hashlib,json,re,struct
 from execution import Fault,FaultCode
 
+def matches_name(name,query):
+    """Case-insensitive substring search; normalize incidental whitespace."""
+    normalize=lambda value:' '.join(value.casefold().split())
+    return normalize(query) in normalize(name)
+
 def now():return datetime.now(timezone.utc).isoformat()
 
 @dataclass

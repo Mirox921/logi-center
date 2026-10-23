@@ -41,6 +41,16 @@ def check():
     assert editor.action.get_selected()==0 and editor.drafts[0].tokens==['t100']
     restored=MouseEditor('Generic test mouse',fake_buttons,actions,{0:[1,4],1:[1,4]},applied,state=editor.state())
     assert restored.drafts[0].tokens==['t100'];applied.assert_not_called()
+    query='__no_such_device_for_smoke__'
+    application.inventory_search.set_text(query);application.inventory_search.emit('search-changed')
+    assert all(not group.get_visible() for name,group in application.inventory_groups)
+    assert application.inventory_empty.get_visible()==bool(application.inventory_groups)
+    from device_ui import populate_inventory
+    populate_inventory(application,application.device_manager.devices,application.device_manager.faults)
+    assert application.inventory_search.get_text()==query
+    assert all(not group.get_visible() for name,group in application.inventory_groups)
+    application.inventory_search.set_text('');application.inventory_search.emit('search-changed')
+    assert all(group.get_visible() for name,group in application.inventory_groups)
     original_presence=application.mouse_presence
     application.mouse_presence=MousePresence('Logitech G502 HERO',False);application.update_batteries()
     assert application.battery_widgets['mouse'][0].get_text()=='Logitech G502 HERO · Не в сети'

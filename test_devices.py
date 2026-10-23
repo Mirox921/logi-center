@@ -85,3 +85,10 @@ class Devices(unittest.TestCase):
                 (node/'capabilities/key').write_text(hex((1<<14)|(1<<30)|(1<<57))[2:])
                 event=root/'class'/('event'+str(index));event.mkdir(parents=True);(event/'device').symlink_to(node)
             self.assertEqual(len(InputAdapter(root/'class').discover()),2)
+
+    def test_name_search_is_case_insensitive_and_normalizes_whitespace(self):
+        from devices import matches_name
+        self.assertTrue(matches_name('Logitech  G502 HERO',' logitech g502 '))
+        self.assertTrue(matches_name('Клавиатура','КЛАВ'))
+        self.assertTrue(matches_name('Any device','   '))
+        self.assertFalse(matches_name('Logitech G305','G502'))

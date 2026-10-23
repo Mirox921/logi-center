@@ -1,6 +1,7 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Поиск устройств по названию':'Search devices by name','Устройства с таким названием не найдены':'No devices match this name',
 'СИМУЛЯЦИЯ':'SIMULATION',
 'Неоднозначный идентификатор backend':'Ambiguous backend identifier',
 'Макросы':'Macros','Стандартный ввод':'Standard input','Заряд аккумулятора':'Battery','Без звука':'Muted',

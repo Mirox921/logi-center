@@ -4,6 +4,7 @@ import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk,Adw,GLib
 from i18n import tr as _
+from devices import matches_name
 
 NAMES={'dpi':'Чувствительность DPI','polling_rate':'Частота опроса, Гц','profiles':'Встроенный профиль','buttons':'Кнопки','macros':'Макросы','lighting':'Подсветка','standard_input':'Стандартный ввод','sidetone':'Слышимость своего голоса','battery_status':'Заряд аккумулятора','volume':'Громкость','mute':'Без звука'}
 
@@ -15,11 +16,27 @@ def capability_text(cap):
 
 def populate_inventory(center,devices,faults=()):
     center.clear('devices')
+    search=Gtk.SearchEntry(placeholder_text=_('Поиск устройств по названию'),hexpand=True)
+    search.set_text(getattr(center,'inventory_query',''))
+    center.pages['devices'].append(search)
+    center.inventory_search=search
+    device_groups=[]
+    empty=Gtk.Label(label=_('Устройства с таким названием не найдены'),wrap=True,visible=False,margin_top=16)
+    empty.add_css_class('dim-label')
+    def filter_devices(*unused):
+        if center.inventory_search is not search:return
+        center.inventory_query=search.get_text()
+        found=False
+        for name,group in device_groups:
+            visible=matches_name(name,center.inventory_query);group.set_visible(visible);found=found or visible
+        empty.set_visible(bool(devices) and not found)
+    search.connect('search-changed',filter_devices)
     if not devices:
         center.group('devices',_('Устройства не обнаружены'),_('Проверь подключение и открой диагностику компонентов.'))
     for device in devices:
         title=(_('СИМУЛЯЦИЯ · ') if device.simulated else '')+device.name
         group=center.group('devices',title,device.kind+' · '+', '.join(device.backends)+' · '+(_('Подключена') if device.connected is True else _('Не в сети') if device.connected is False else _('Связь не подтверждена')))
+        device_groups.append((device.name,group))
         if device.backend=='solaar-local' and not device.simulated:
             from backend import saved_solaar_devices
             from solaar_adapter import probe,choice_plan
@@ -52,6 +69,9 @@ def populate_inventory(center,devices,faults=()):
             if cap.writable and cap.plan is not None and not device.simulated:
                 add_control(center,row,device,cap)
         for fault in device.faults:center.row(group,_('Ошибка чтения'),str(fault))
+    center.pages['devices'].append(empty)
+    center.inventory_groups=device_groups;center.inventory_empty=empty
+    filter_devices()
     for fault in faults:center.row(center.group('devices',_('Диагностика backend')),fault.component,str(fault))
 
 def add_control(center,row,device,cap):
