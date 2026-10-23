@@ -1,0 +1,6 @@
+# Optional; NOT installed automatically. Active local session only.
+# Two-stage matching avoids mixing USB-device and USB-interface ATTRS parents.
+ACTION=="add|change", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="3837", ATTRS{idProduct}=="1001", ENV{LOGI_CENTER_K7}="1"
+ACTION=="add|change", SUBSYSTEM=="hidraw", ENV{LOGI_CENTER_K7}=="1", ATTRS{bInterfaceNumber}=="02", TAG+="uaccess"
+ACTION=="add|change", SUBSYSTEM=="hidraw", ATTRS{idVendor}=="41e4", ATTRS{idProduct}=="2116", ENV{LOGI_CENTER_ACE68II}="1"
+ACTION=="add|change", SUBSYSTEM=="hidraw", ENV{LOGI_CENTER_ACE68II}=="1", ATTRS{bInterfaceNumber}=="01", TAG+="uaccess"

@@ -11,6 +11,9 @@ def dispatch(backend,action,target=None,field=None,value=None):
         try:release=version(package)
         except PackageNotFoundError:release='version metadata unavailable'
         return {'version':release,'devices':len(records)}
+    if backend=='mchose-ace68':
+        from ace68_adapter import hardware
+        return hardware(action,target,field,value)
     if backend=='mchose':
         from mchose_adapter import hardware
         return hardware(action,target,field,value)

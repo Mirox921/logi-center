@@ -29,10 +29,36 @@ class MchoseTests(unittest.TestCase):
         self.assertEqual(device.faults[0].code,FaultCode.PERMISSION);self.assertFalse(device.capabilities)
     def test_only_read_commands_retry(self):
         transport=Transport('fake');transport.fd=1
-        with patch('mchose_adapter.fcntl.ioctl',return_value=0) as ioctl,patch('mchose_adapter.time.sleep'):
+        with patch('mchose_adapter.fcntl.ioctl',return_value=0) as ioctl,patch('mchose_adapter.time.sleep'),patch.object(transport,'_drain'),patch.object(transport,'_wait_ready'):
             with self.assertRaises(Fault):transport.exchange(0x12,0x67)
         self.assertEqual(ioctl.call_count,6)
         self.assertTrue(all(call.args[2][1]==0x98 for call in ioctl.call_args_list[::2]))
+    def test_notification_precedes_feature_read(self):
+        transport=Transport('fake');transport.fd=1;events=[]
+        def ioctl(fd,code,frame,mutate):
+            if code&255==6:events.append('set');return 0
+            events.append('get');frame[1]=0x06^255;frame[2]=123^255;return 3
+        with patch.object(transport,'_drain'),patch.object(transport,'_wait_ready',side_effect=lambda cmd:events.append(('ready',cmd))),patch('mchose_adapter.fcntl.ioctl',side_effect=ioctl),patch('mchose_adapter.time.sleep'):
+            self.assertEqual(transport.exchange(0x11,0x06),bytes([123]))
+        self.assertEqual(events,['set',('ready',6),'get'])
+    def test_ready_notification_filters_other_commands(self):
+        transport=Transport('fake');transport.fd=1
+        with patch('mchose_adapter.select.select',return_value=([1],[],[])),patch('mchose_adapter.os.read',side_effect=[bytes([0x13,0xE5^255,7^255]),bytes([0x13,0xE5^255,6^255])]) as read:
+            transport._wait_ready(6)
+        self.assertEqual(read.call_count,2)
+    def test_receiver_logical_identity_is_narrowly_allowed(self):
+        from mchose_adapter import hardware
+        observed=config();observed['identity']['pid']=0x4150
+        class T:
+            def __init__(self,node):pass
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read(self):return observed
+        item={'node':'fake','physical':'fake','vid':'3837','pid':'1001'}
+        with patch('mchose_adapter.candidates',return_value=[item]):
+            self.assertEqual(hardware('read','fake',transport=T)['identity']['pid'],0x4150)
+            observed['identity']['pid']=0x9999
+            with self.assertRaises(ValueError):hardware('read','fake',transport=T)
     def test_invalid_value_never_writes(self):
         from mchose_adapter import hardware
         fake=NS(__enter__=lambda x:x)

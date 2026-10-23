@@ -72,6 +72,9 @@ class DeviceManager:
             except Exception as error:
                 from diagnostics import fault_for
                 self.faults.append(fault_for(error,adapter.name))
+        for adapter in self.adapters:
+            associate=getattr(adapter,'associate',None)
+            if associate:associate(records)
         self.link_physical(records)
         self.devices=self.merge(records);return self.devices
     @staticmethod
@@ -107,10 +110,10 @@ class DeviceManager:
             current.capabilities.extend(c for c in item.capabilities if (c.name,c.backend) not in known)
             current.faults.extend(item.faults)
         for device in merged.values():
-            rgb=[c for c in device.capabilities if c.backend=='openrgb' and c.name in ['lighting','lighting_mode','brightness'] and c.writable]
+            rgb=[c for c in device.capabilities if c.backend=='openrgb' and c.name in ['lighting','lighting_mode','brightness','lighting_speed','lighting_palette'] and c.writable]
             if rgb:
                 for cap in device.capabilities:
-                    if cap.backend!='openrgb' and cap.name in ['lighting','lighting_mode','brightness'] and cap.writable:
+                    if cap.backend!='openrgb' and cap.name in ['lighting','lighting_mode','brightness','lighting_speed','lighting_palette'] and cap.writable:
                         cap.writable=False;cap.limitation+=' RGB owner: OpenRGB; competing editor disabled.'
         return list(merged.values())
     def record_operation(self,args,result):
@@ -120,6 +123,7 @@ class DeviceManager:
         else:
             target=args[1] if backend=='ratbagctl' and len(args)>1 else args[2] if backend in ['pactl','solaar'] and len(args)>2 else args[args.index('-d')+1] if backend=='headsetcontrol' and '-d' in args else None
         if target is None:return
+        if args[0]=='logi-sdk' and backend=='mchose-ace68' and setting.startswith('profile/'):setting=setting.split('/')[-1]
         if args[0]!='logi-sdk':setting='dpi' if 'dpi' in args else 'polling_rate' if 'rate' in args else 'lighting' if 'led' in args else 'buttons' if 'button' in args else 'profiles' if 'profile' in args else 'sidetone' if backend=='headsetcontrol' else args[3] if backend=='solaar' else args[1].rsplit('-',1)[-1]
         for device in self.devices:
             if target not in device.targets.get(backend,[]):continue
@@ -127,7 +131,9 @@ class DeviceManager:
             for cap in device.capabilities:
                 if cap.backend!=backend or cap.name.rsplit(':',1)[-1]!=setting:continue
                 cap.last_operation={'state':result.state.value,'source':result.source,'at':now()}
-                if result.actual is not None:cap.value=result.actual;cap.source=result.source;cap.observed_at=now()
+                if result.actual is not None:
+                    cap.value={**cap.value,**result.actual} if isinstance(cap.value,dict) and isinstance(result.actual,dict) else result.actual
+                    cap.source=result.source;cap.observed_at=now()
                 if result.state.value=='confirmed':
                     evidence='command_confirmed' if result.source=='device' else 'audio_server_command_confirmed'
                     if evidence not in cap.evidence:cap.evidence.append(evidence)
@@ -138,6 +144,11 @@ class DeviceManager:
             backend,target,setting=args[1],args[3],args[4]
             matches=[d for d in self.devices if target in d.targets.get(backend,[])]
             if len(matches)!=1:raise Fault(FaultCode.DISCONNECTED,'device-manager','Write target is absent or ambiguous')
+            if backend=='mchose-ace68' and setting.startswith('profile/'):
+                parts=setting.split('/')
+                actual=next((c.value for c in matches[0].capabilities if c.name=='profiles' and c.backend==backend),None)
+                if len(parts)!=3 or parts[1]!=str(actual):raise Fault(FaultCode.CONFIG,'device-manager','Profile changed; review the pending operation')
+                setting=parts[2]
             self.route(matches[0].id,setting,backend)
         if args[0]=='ratbagctl' and len(args)>2 and 'led' in args and 'set' in args:
             for device in self.devices:
