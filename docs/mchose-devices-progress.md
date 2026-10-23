@@ -68,3 +68,5 @@ New: `ace68_adapter.py`, `ace68_protocol.py`, `test_ace68.py`, `packaging/udev/7
 Changed: `app.py`, `devices.py`, `device_ui.py`, `keyboard_ui.py`, `mchose_adapter.py`, `sdk_worker.py`, `capability_backup.py`, `diagnostics.py`, `i18n.py`, `install.py`, `test_backend_expansion.py`, `scripts/gui_smoke.py`, `scripts/diagnose.py`, `scripts/prepare-arch.py`, `packaging/arch/PKGBUILD`, `AGENTS.md`, both READMEs and the three existing progress/support documents linked above.
 
 Public-release blockers: unavailable advanced-key editing, incomplete all-profile/macro backup, power-cycle persistence not checked, and wider revision/model testing. The implemented subset on these two units is physically exercised as documented; the application is still a prerelease, not complete universal hardware support.
+
+Packaging note: the final makepkg run exited successfully but emitted `libfakeroot internal error: payload not recognized!` during tidying. Archive inspection found all owners/groups 0:0, correct launcher permissions, 31 modules and the rule only under documentation. No package was installed. A clean Arch build environment should reproduce packaging before publication.
