@@ -36,3 +36,9 @@ Final safety review:
 - 102 tests now pass, including collisions, receiver slots, draft submission state and language-independent choices. Full real GTK and simulation checks passed; final post-review smoke/rebuild follows. Public report generation on current hardware: no discovery faults; no private identities/values exported.
 
 Final source: 103 tests pass. Added embedded-serial report redaction and retained offline documentation/images in the Arch source/package. Runtime/code is frozen for the final package, manifest and GTK checks.
+
+Final verification completed:
+- 103 tests OK in source and final makepkg check(); compileall, diff check, shell syntax and desktop validation pass.
+- Independent final GUI smoke passes (full generic mouse fixture, macro drafts, offline header, language, JSON diagnostics/restore dialogs and cancelled recording preparation). Final simulation smoke passes with distinct app ID, shared editors and no real CLI/capture.
+- Final package: /tmp/logi-center-arch-0.4.0dev/logi-center-0.4.0dev-1-any.pkg.tar.zst; SHA-256 94d7d741c638891dd4f9a0782531673d471f9739b296820faddc5c98ed7885b4. All 22 runtime modules byte-match source; launcher/desktop/icon/offline docs present; no home/etc files. Built with --nodeps; no installation, namcap unavailable.
+- Per-user runtime updated and byte-compared; open pre-update window was not terminated to avoid losing old-version unsaved edits. No GitHub/AUR publication. Physical write/restore/reconnect/audio/session tests remain pending; see universal-upgrade.md readiness table.
