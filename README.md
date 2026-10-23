@@ -8,13 +8,17 @@ Logi Center brings common controls into one window using existing Linux tools. I
 
 ## Preview
 
+![Connected G502 HERO profiles and mouse controls](docs/screenshots/g502-profiles.png)
+
+[G502 HERO lighting zones and extra buttons](docs/screenshots/g502-lighting.png)
+
 ![Audio effects, preset import and headset controls](docs/screenshots/audio.png)
 
 ![Saved keyboard lighting controls with the keyboard offline](docs/screenshots/keyboard.png)
 
 [Headset volume and microphone controls](docs/screenshots/audio-devices.png)
 
-These are real application screenshots. The keyboard is offline, so its saved controls are shown disabled. No connected mouse or keyboard readings are simulated.
+These are real application screenshots. The keyboard is offline, so its saved controls are shown disabled. G502 HERO is connected in the mouse screenshots. No device readings are simulated.
 
 [Download the first preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.1.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
 
@@ -51,6 +55,8 @@ sudo pacman -S --needed python python-gobject python-cairo python-yaml gtk4 liba
 If some EasyEffects plugins are missing, install their dependencies as described in the [EasyEffects documentation](https://github.com/wwmm/easyeffects).
 
 ## Install and run
+
+G502 HERO support is available on the current `main` branch. The older v0.1.0 release archive predates this addition; use the clone instructions below for the updated controls.
 
 Clone the repository and run the user installer:
 
