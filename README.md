@@ -6,6 +6,18 @@ A small Linux desktop control panel for Logitech G305, G515 LIGHTSPEED TKL and w
 
 Logi Center brings common controls into one window using existing Linux tools. It is an independent community project, not an official Logitech app or a complete G HUB replacement. It does not install a custom kernel driver.
 
+## Preview
+
+![Audio effects, preset import and headset controls](docs/screenshots/audio.png)
+
+![Saved keyboard lighting controls with the keyboard offline](docs/screenshots/keyboard.png)
+
+[Headset volume and microphone controls](docs/screenshots/audio-devices.png)
+
+These are real application screenshots. The keyboard is offline, so its saved controls are shown disabled. No connected mouse or keyboard readings are simulated.
+
+[Download the first preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.1.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
+
 ## Features
 
 | Device / area | Controls |
@@ -86,6 +98,10 @@ Opening the app does not automatically replay sidetone or audio commands. A last
 - G515 lighting writes and G PRO X sidetone need further physical testing across firmware versions.
 - Controls target the listed hardware; other Logitech devices are not automatically supported.
 - Battery connectivity is verified separately for G515; other battery readings depend on the kernel's reported state.
+
+## Feedback
+
+Hardware reports are welcome. Include your distribution, backend versions, device model and connection type, plus what you expected and what happened. Remove device serial numbers and personal paths from logs. For announcement text, see [community post drafts](docs/COMMUNITY_POSTS.md).
 
 ## Development and checks
 

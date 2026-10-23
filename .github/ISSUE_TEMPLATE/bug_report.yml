@@ -1,0 +1,35 @@
+name: Bug report / Ошибка
+description: Report a problem with Logi Center / Сообщить о проблеме
+body:
+  - type: markdown
+    attributes:
+      value: "Please remove device serial numbers and personal information from logs. / Удалите серийные номера устройств и личные данные из журналов."
+  - type: input
+    id: system
+    attributes:
+      label: Distribution and desktop / Дистрибутив и рабочий стол
+      placeholder: Arch Linux, Hyprland, Wayland
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and connection / Устройство и подключение
+      placeholder: G515 LIGHTSPEED TKL, USB receiver
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Steps, expected and actual behavior / Шаги, ожидаемый и фактический результат
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: Logi Center and backend versions / Версии приложения и компонентов
+      description: Include relevant Solaar, libratbag, HeadsetControl or EasyEffects versions.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Redacted logs or screenshots / Журналы без личных данных или скриншоты

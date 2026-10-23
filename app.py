@@ -273,6 +273,7 @@ class Center(Adw.Application):
                 r=self.row(ag,title+': '+description,_('Уровень громкости, %'))
                 spin=Gtk.SpinButton.new_with_range(0,100,1);spin.set_value(min(100,volume(d)));spin.set_valign(Gtk.Align.CENTER);r.add_suffix(spin)
                 self.button(r,_('Громкость'),lambda *unused,s=spin,n=name,c=cmd:self.apply(['pactl','set-'+c+'-volume',n,str(s.get_value_as_int())+'%']))
+                r=self.row(ag,_('Управление устройством'))
                 self.button(r,_('По умолчанию'),lambda *unused,n=name,c=cmd:self.apply(['pactl','set-default-'+c,n]))
                 self.button(r,_('Вкл. микр.') if d.get('mute') and cmd=='source' else (_('Включить') if d.get('mute') else _('Заглушить')),lambda *unused,n=name,c=cmd,m=d.get('mute'):self.apply(['pactl','set-'+c+'-mute',n,'0' if m else '1']))
         if not found:self.row(ag,_('USB-карта G Pro X пока не обнаружена'),_('Общие аудиоустройства доступны выше. Подключи карту и обнови список.'))

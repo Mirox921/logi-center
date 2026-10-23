@@ -1,6 +1,7 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Управление устройством':'Device actions',
 'Твои устройства · один центр управления':'Your devices · one control center','Обновить устройства':'Refresh devices',
 'Чтение устройств…':'Reading devices…','Выполняется…':'Working…','Готово':'Ready',
 'Не удалось выполнить действие. Проверь подключение устройства.':'Could not complete the action. Check the device connection.',
