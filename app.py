@@ -6,20 +6,26 @@ gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
 from backups import snapshot, write_backup, read_backup, preview as backup_preview, restore as restore_backup
 from operations import perform, plan_for, Result, State
-from execution import Fault, FaultCode
+from execution import Fault, FaultCode, CURRENT_CANCEL
+from discovery import Epoch,DeviceMonitor
 from i18n import tr as _, set_language
 from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings, read_mouse
-POOL=concurrent.futures.ThreadPoolExecutor(max_workers=1)
 
 class Center(Adw.Application):
     def __init__(self):
         super().__init__(application_id='local.mirox.LogiCenter')
+        self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        self.epoch=Epoch();self.closed=False;self.hotplug_timer=None;self.ui_generation=0
+        self.scroll_positions={};self.mouse_request=0;self.refresh_revision=0
         self.current_mouse_name=''
         self.keyboard_connected=None
         self.keyboard_polling=False
         self.preferences=load_preferences()
         set_language(self.preferences.get('language','ru'))
         self.connect('activate',self.activate)
+        self.connect('shutdown',self.shutdown_resources)
+        self.monitor=DeviceMonitor(lambda reason:GLib.idle_add(self.hardware_event,reason))
+        self.monitor_started=False
     def activate(self,*unused):
         if hasattr(self,'win'):self.win.present();return
         Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.PREFER_DARK)
@@ -57,8 +63,10 @@ class Center(Adw.Application):
         layout.append(self.operation_result)
         self.status=Gtk.Label(label=_('Чтение устройств…'),margin_bottom=12,wrap=True);layout.append(self.status)
         self.refresh();self.win.present()
+        if not self.monitor_started:self.monitor.start();self.monitor_started=True
         if '--smoke' in sys.argv:GLib.timeout_add_seconds(12,lambda:(self.quit(),False)[1])
     def change_language(self,dropdown,param):
+        self.ui_generation+=1
         language=['ru','en'][dropdown.get_selected()]
         if language==self.preferences.get('language','ru'):return
         self.preferences['language']=language;save_preferences(self.preferences);set_language(language)
@@ -71,11 +79,17 @@ class Center(Adw.Application):
         old_window.destroy()
     def job(self,fn,done=None):
         self.status.set_label(_('Выполняется…'))
-        future=POOL.submit(fn)
+        token=self.epoch.token();ui_generation=self.ui_generation
+        def worker():
+            CURRENT_CANCEL.set(token)
+            if token.is_set():raise Fault(FaultCode.CANCELLED,'application','Operation cancelled')
+            return fn()
+        future=self.pool.submit(worker)
         def finish(f):
             try: value=f.result();error=None
             except Exception as exc:value=None;error=str(exc)
             def deliver():
+                if self.closed or token.is_set() or ui_generation!=self.ui_generation:return False
                 if error:
                     print(error,file=sys.stderr)
                     self.status.set_label(_('Не удалось выполнить действие. Проверь подключение устройства.'))
@@ -213,12 +227,16 @@ class Center(Adw.Application):
     def poll_keyboard(self):
         if self.keyboard_polling:return True
         self.keyboard_polling=True
-        future=POOL.submit(keyboard_online)
+        token=self.epoch.token()
+        future=self.pool.submit(keyboard_online)
         def finish(f):
             try:connected=f.result()
             except Exception:connected=None
             def deliver():
-                self.keyboard_connected=connected;self.keyboard_polling=False
+                self.keyboard_polling=False
+                if self.closed or token.is_set():return False
+                self.keyboard_connected=connected
+                if hasattr(self,'keyboard_group'):self.keyboard_group.set_sensitive(connected is True)
                 self.update_batteries()
                 return False
             GLib.idle_add(deliver)
@@ -242,7 +260,43 @@ class Center(Adw.Application):
             icon.set_from_icon_name(image)
             label.set_tooltip_text(_('Обновляется каждые 30 секунд. ')+(_('Мышь сообщает уровень заряда без точного процента.') if battery and battery['percent'] is None else _('Показание устройства.')))
         return True
+    def hardware_event(self,reason):
+        if self.closed:return False
+        if reason=='battery':
+            self.update_batteries()
+            if not self.keyboard_polling:self.poll_keyboard()
+            return False
+        self.epoch.invalidate()
+        for box in self.pages.values():box.set_sensitive(False)
+        if hasattr(self,'audio_session'):self.audio_session.stop()
+        if self.hotplug_timer:GLib.source_remove(self.hotplug_timer)
+        def update():
+            self.hotplug_timer=None
+            self.refresh()
+            return False
+        self.hotplug_timer=GLib.timeout_add(400,update)
+        return False
+    def shutdown_resources(self,*unused):
+        self.closed=True;self.epoch.invalidate()
+        if hasattr(self,'battery_timer'):GLib.source_remove(self.battery_timer)
+        if self.hotplug_timer:GLib.source_remove(self.hotplug_timer)
+        if hasattr(self,'audio_session'):self.audio_session.close()
+        # Monitor shutdown runs outside GTK; its observer may be waiting for netlink.
+        self.pool.shutdown(wait=False,cancel_futures=True)
+        __import__('threading').Thread(target=self.monitor.stop,daemon=True).start()
+    def restore_scroll(self):
+        if self.closed:return False
+        for page,value in self.scroll_positions.items():
+            scroll=self.stack.get_child_by_name(page)
+            if scroll:scroll.get_vadjustment().set_value(value)
+        return False
     def refresh(self):
+        if self.closed:return
+        self.refresh_revision+=1;revision=self.refresh_revision
+        for page in self.pages:
+            scroll=self.stack.get_child_by_name(page)
+            if scroll:self.scroll_positions[page]=scroll.get_vadjustment().get_value()
+
         self.update_batteries()
         for box in self.pages.values():
             while box.get_first_child():box.remove(box.get_first_child())
@@ -254,23 +308,26 @@ class Center(Adw.Application):
                 except Exception as e:data[key+'_error']=str(e)
             data['keyboard_online']=keyboard_online()
             return data
-        self.job(collect,self.populate)
+        self.job(collect,lambda data:self.populate(data) if revision==self.refresh_revision else None)
     def clear(self,key):
         b=self.pages[key]
         while b.get_first_child():b.remove(b.get_first_child())
     def populate(self,data):
         self.clear('mouse');self.clear('keyboard');self.clear('audio')
-        mice=mouse_list(data.get('mice',''))
+        for box in self.pages.values():box.set_sensitive(True)
+        mice=list(dict.fromkeys(mouse_list(data.get('mice',''))))
         g=self.group('mouse',_('Игровые мыши Logitech'),_('Настрой скорость движения указателя, плавность и действия кнопок.'))
         if mice:
             for device,name in mice:
                 row=self.row(g,name,_('Подключена'));self.button(row,_('Прочитать настройки'),lambda *unused,d=device,n=name:self.load_mouse(d,n))
-            self.load_mouse(mice[0][0],mice[0][1])
+            selected=next((m for m in mice if m[1]==self.current_mouse_name),mice[0])
+            self.load_mouse(selected[0],selected[1])
         else:self.row(g,_('Мышь недоступна'),_('Включи мышь и подключи USB-приёмник.'))
         row=self.row(g,_('Расширенный редактор'),_('Полный интерфейс Piper: профили и макросы.'));self.button(row,_('Открыть Piper'),lambda *unused:self.launch(['piper']))
         kg=self.group('keyboard','Logitech G515 Lightspeed TKL',_('Выбери яркость, цвет и поведение подсветки.'))
         self.keyboard_connected=data.get('keyboard_online')
         self.update_batteries()
+        self.keyboard_group=kg
         settings=keyboard_saved_settings()
         if self.keyboard_connected is not True:
             self.row(kg,_('Клавиатура не в сети') if self.keyboard_connected is False else _('Не удалось проверить связь'),_('Сохранённые настройки доступны для просмотра. Включи клавиатуру и обнови список.'))
@@ -376,6 +433,7 @@ class Center(Adw.Application):
         else:self.row(effects,_('Пресетов пока нет'),_('Создай эквалайзер или обработку микрофона в редакторе EasyEffects.'))
         r=self.row(effects,_('Эквалайзер и обработка микрофона'));self.button(r,_('Редактор эффектов'),lambda *unused:self.launch(['easyeffects']))
         r=self.row(effects,_('Звуковые эффекты'),_('Эквалайзер и фильтры для наушников и микрофона. Без эффектов звук продолжает работать.'));self.button(r,_('С эффектами'),lambda *unused:self.apply(['easyeffects','-b','2']));self.button(r,_('Без эффектов'),lambda *unused:self.apply(['easyeffects','-b','1']))
+        GLib.timeout_add(80,self.restore_scroll)
         try:headsets=json.loads(data.get('headset','{}')).get('devices',[])
         except ValueError:headsets=[]
         for h in headsets:
@@ -385,11 +443,14 @@ class Center(Adw.Application):
                 levels={_('Выключено'):'0',_('Очень тихо'):'16',_('Тихо'):'32',_('Средне'):'64',_('Громко'):'96',_('Максимально'):'128'}
                 self.choice(ag,_('Слышимость своего голоса'),list(levels),next((k for k,v in levels.items() if v==self.preferences.get('sidetone')),_('Выключено')),lambda value,i=identifier,m=levels:self.apply(['headsetcontrol','-d',i,'-s',m[value]]),_('Выбери желаемый уровень и нажми «Применить». Показан последний сохранённый выбор; текущее значение устройство не сообщает.'))
     def load_mouse(self,device,name=None):
+        self.mouse_request+=1;request=self.mouse_request
         selected_name=name or self.current_mouse_name
         def loaded(data):
+            if request!=self.mouse_request:return
             self.current_mouse_name=selected_name
             self.update_batteries()
             self.mouse_controls(device,data)
+            GLib.timeout_add(80,self.restore_scroll)
         self.job(lambda:read_mouse(device),loaded)
     def mouse_controls(self,device,data):
         if hasattr(self,'mouse_extra') and self.mouse_extra.get_parent():self.mouse_extra.get_parent().remove(self.mouse_extra)

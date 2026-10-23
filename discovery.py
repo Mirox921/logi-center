@@ -1,0 +1,58 @@
+"""Event-based device discovery with a cheap fallback and explicit lifetime."""
+from threading import Event,Lock,Thread
+import subprocess,shutil
+from pathlib import Path
+
+class Epoch:
+    def __init__(self):self._lock=Lock();self._event=Event();self.generation=0
+    def token(self):
+        with self._lock:return self._event
+    def invalidate(self):
+        with self._lock:
+            self._event.set();self._event=Event();self.generation+=1
+            return self.generation
+
+class DeviceMonitor:
+    def __init__(self,callback):
+        self.callback=callback;self.stop_event=Event();self.observer=None;self.process=None;self.threads=[];self.mode='udev'
+    def start(self):
+        try:
+            import pyudev
+            monitor=pyudev.Monitor.from_netlink(pyudev.Context())
+            self.observer=pyudev.MonitorObserver(monitor,callback=self._udev_event,name='logi-udev');self.observer.start()
+        except (ImportError,OSError):
+            self.mode='sysfs-fallback';self._thread(self._fallback)
+        if shutil.which('pactl'):self._thread(self._audio)
+    def _udev_event(self,device):
+        if self.stop_event.is_set():return
+        if device.subsystem in ['usb','hidraw','sound'] and device.action in ['add','remove','bind','unbind']:self.callback('devices')
+        elif device.subsystem=='power_supply' and device.action=='change':self.callback('battery')
+    def _thread(self,fn):
+        thread=Thread(target=fn,daemon=True);self.threads.append(thread);thread.start()
+    def _fallback(self):
+        previous=None
+        while not self.stop_event.wait(5):
+            current=tuple(sorted(str(p.resolve()) for folder in ['/sys/class/hidraw','/sys/class/sound'] for p in Path(folder).glob('*')))
+            if previous is not None and current!=previous:self.callback('devices')
+            previous=current
+    def _audio(self):
+        # Restart a dropped subscription at a bounded rate while the app remains open.
+        while not self.stop_event.is_set():
+            try:
+                self.process=subprocess.Popen(['pactl','subscribe'],stdout=subprocess.PIPE,stderr=subprocess.DEVNULL,text=True,env=__import__('os').environ|{'LC_ALL':'C.UTF-8'})
+                for line in self.process.stdout:
+                    if self.stop_event.is_set():break
+                    if any("Event '"+verb+"'" in line for verb in ['new','remove']) and any('on '+kind+' ' in line for kind in ['sink','source','card']):self.callback('devices')
+                self.process.stdout.close();self.process.wait(timeout=1)
+            except (OSError,subprocess.TimeoutExpired):pass
+            if self.process and self.process.poll() is None:self.process.kill();self.process.wait()
+            self.process=None
+            if self.stop_event.wait(5):break
+    def stop(self):
+        self.stop_event.set()
+        if self.observer:self.observer.stop()
+        if self.process and self.process.poll() is None:
+            self.process.terminate()
+            try:self.process.wait(timeout=.5)
+            except subprocess.TimeoutExpired:self.process.kill();self.process.wait()
+        for thread in self.threads:thread.join(timeout=1)

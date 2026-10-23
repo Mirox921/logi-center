@@ -39,3 +39,10 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - 33 tests pass, including corrupt input, incompatible model, unsafe action, partial restore, selection and changed-since-preview abort. Hardware restore not performed.
 - Limits: not a full firmware image; independent audio channel restoration is skipped rather than flattened. Device-specific unsupported writes remain diagnosed by backend results.
 - Next: event-based discovery, stale-task guards, cancellation and resource lifecycle.
+
+## Stage 3 implemented
+- discovery.py adds udev add/remove monitoring and a PulseAudio subscription (restart bounded at 5 seconds); cheap sysfs fallback only when udev unavailable.
+- Debounced refresh preserves tab/scroll/selected mouse, deduplicates devices, blocks stale controls, invalidates old tokens and terminates cancellable command processes. Late results are ignored. Radio keyboard polling stays bounded at 30 seconds and reenables controls on reconnect.
+- Executor and subscriptions have explicit shutdown. Old mouse selection/refresh callbacks use revision checks.
+- 37 tests pass; inspected the installed pyudev callback signature and corrected to one Device argument. Mock rapid disconnect/reconnect and cancellation checked. Physical unplug/replug not exercised.
+- Next: model-aware visual mouse editor and real key/macro capture.

@@ -2,6 +2,8 @@
 from dataclasses import dataclass
 from enum import Enum
 import os,re,signal,subprocess,time
+from contextvars import ContextVar
+CURRENT_CANCEL=ContextVar("logi_operation_cancel",default=None)
 
 class FaultCode(str,Enum):
     MISSING='missing_component';UNAVAILABLE='component_unavailable';PERMISSION='permission_denied'
@@ -42,6 +44,7 @@ def _stop(process):
         process.communicate()
 
 def command(args,timeout=20,cancel=None):
+    if cancel is None:cancel=CURRENT_CANCEL.get()
     component=os.path.basename(args[0]);env=dict(os.environ,LC_ALL='C.UTF-8')
     if cancel is not None and cancel.is_set():raise Fault(FaultCode.CANCELLED,component,'Operation cancelled')
     try:process=subprocess.Popen(args,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env,start_new_session=True)
