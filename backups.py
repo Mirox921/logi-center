@@ -2,7 +2,7 @@
 from dataclasses import dataclass,field
 from datetime import datetime,timezone
 from pathlib import Path
-import hashlib,json,re,uuid
+import hashlib,json,re,uuid,os
 from execution import Fault,FaultCode
 from operations import plan_for,perform,State,Result,read_action
 
@@ -49,7 +49,7 @@ def write_backup(document,path):
     path=Path(path);path.parent.mkdir(parents=True,exist_ok=True)
     temp=path.with_name('.'+path.name+'.'+uuid.uuid4().hex+'.tmp')
     try:
-        with temp.open('x',encoding='utf-8') as out:json.dump(document,out,ensure_ascii=False,indent=2)
+        with os.fdopen(os.open(temp,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w',encoding='utf-8') as out:json.dump(document,out,ensure_ascii=False,indent=2)
         temp.chmod(0o600);temp.replace(path)
     finally:temp.unlink(missing_ok=True)
 
@@ -62,7 +62,7 @@ def integer(value,low,high):
     if type(value) is not int or not low<=value<=high:raise ValueError('Invalid numeric backup value')
 
 def action(action):
-    if not isinstance(action,list) or not action or len(action)>513:raise ValueError('Invalid button action')
+    if not isinstance(action,list) or not action or len(action)>513 or not all(isinstance(token,str) for token in action):raise ValueError('Invalid button action')
     if action[0]=='disabled' and len(action)==1:return
     if action[0]=='button' and len(action)==2 and str(action[1]).isdigit():integer(int(action[1]),1,32);return
     if action[0]=='special' and len(action)==2 and action[1] in ['resolution-cycle-up','resolution-cycle-down','resolution-up','resolution-down','resolution-alternate','profile-cycle-up','profile-cycle-down','wheel-left','wheel-right','second-mode']:return
@@ -83,7 +83,7 @@ def action(action):
 
 def validate(doc):
     try:
-        if not isinstance(doc,dict) or doc['format']!=FORMAT or doc['version']!=VERSION:raise ValueError('Unsupported backup format/version')
+        if not isinstance(doc,dict) or doc['format']!=FORMAT or (type(doc['version']) is not int or doc['version']!=VERSION):raise ValueError('Unsupported backup format/version')
         if doc.get('sha256')!=digest(doc):raise ValueError('Backup integrity check failed')
         kind=doc['device']['kind'];settings=doc['settings']
         if kind not in ['mouse','keyboard','audio'] or not isinstance(settings,dict):raise ValueError('Invalid device backup')
@@ -201,7 +201,7 @@ class RestoreReport:
     stopped:bool
 
 
-def restore(preview,selected,target,runner=None,cancel=None,safety_root=None):
+def restore(preview,selected,target,runner=None,cancel=None,safety_root=None,on_result=None):
     from backend import run
     runner=runner or run;kind=preview.backup['device']['kind']
     # Re-read immediately before mutation; derive plans again, never execute file-provided commands.
@@ -214,5 +214,6 @@ def restore(preview,selected,target,runner=None,cancel=None,safety_root=None):
     for change in fresh.changes:
         if change.category not in selected:continue
         result=perform(plan_for(change.args),runner,cancel=cancel);results.append((change.label,result))
+        if on_result:on_result(result)
         if not result.accepted:stopped=True;break
     return RestoreReport(results,str(path),fresh.skipped,stopped)

@@ -1,6 +1,23 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Кнопки':'Buttons','Подсветка':'Lighting','Профиль':'Profile','Звук':'Audio',
+'Диагностика':'Diagnostics','Диагностика компонентов':'Component diagnostics','Скопировать отчёт без личных данных':'Copy redacted report','Закрыть':'Close',
+'Не установлен компонент':'Component not installed','Установи пакет из репозитория своего дистрибутива.':'Install the package from your distribution repository.',
+'Компонент установлен, но не работает':'Component installed but unavailable','Проверь версию и зависимости компонента; попробуй запустить его отдельно.':'Check the component version/dependencies and try running it separately.',
+'Нет доступа к устройству или программе':'Access denied to device or component','Переподключи устройство и проверь правила доступа из пакета backend. Не используй chmod 777.':'Reconnect the device and check packaged backend access rules. Do not use chmod 777.',
+'Функция не поддерживается':'Feature unsupported','Проверь возможности модели и версию backend.':'Check the device capabilities and backend version.',
+'Подключи или включи устройство. Список обновится автоматически.':'Connect or turn on the device. The list updates automatically.',
+'Истекло время ожидания':'Operation timed out','Проверь связь с устройством и повтори действие.':'Check the device connection and retry.',
+'Состояние устройства изменилось или приложение закрывается.':'The device state changed or the application is closing.',
+'Ошибка связи с устройством или сервисом':'Device or service communication error','Проверь, запущен ли нужный сервис, и подключено ли устройство.':'Check the service is running and the device is connected.',
+'Некорректная конфигурация':'Invalid configuration','Проверь формат файла и совместимость с устройством.':'Check the file format and device compatibility.',
+'Внутренняя ошибка приложения':'Internal application error','Сохрани диагностический отчёт и сообщи об ошибке.':'Save the diagnostic report and report the issue.',
+'Программа найдена; аппаратные функции проверяются при использовании.':'Executable found; hardware functions are checked when used.',
+'Поддерживаемая мышь не найдена.':'No supported mouse found.','Доступ к интерфейсу устройства есть.':'Device interface is accessible.','доступных источников; запись не запускалась.':'available sources; recording was not started.',
+'Устройство не поддерживает функцию':'Device does not support this feature','Выбери доступную функцию для этой модели.':'Choose a supported feature for this model.',
+'Backend не поддерживает операцию':'Backend does not support this operation','Проверь установленную версию backend и его возможности.':'Check the installed backend version and capabilities.',
+
 'Наушники и динамики':'Headphones and speakers','Общий обход обработки влияет и на микрофон, и на наушники.':'Global bypass affects both microphone and headphone processing.',
 'Пресеты микрофона':'Microphone presets','Пресеты наушников':'Headphone presets','Настройки входа и выхода сохраняются раздельно.':'Input and output settings are saved separately.',
 'Импортируй файл для нужного направления или открой редактор эффектов.':'Import a preset for this direction or open the effects editor.','Проверка микрофона':'Microphone test',

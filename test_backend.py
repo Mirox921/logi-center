@@ -12,7 +12,6 @@ class Adapters(unittest.TestCase):
         self.assertEqual(result[1]['label'],'Sleep Timeout')
     def test_volume(self):
         self.assertEqual(volume({'volume':{'front-left':{'value_percent':'75%'}}}),75)
-if __name__=='__main__':unittest.main()
 
 class Batteries(unittest.TestCase):
     def test_coarse_level_is_not_percent(self):
@@ -123,3 +122,10 @@ Profile 3: (active)
     def test_no_active_profile_does_not_guess(self):
         from backend import parse_mouse_info
         self.assertIsNone(parse_mouse_info('Profile 0:\n  Report Rate: 1000Hz\n')['active'])
+    def test_key_and_disabled_buttons_are_not_lost(self):
+        from backend import parse_mouse_info
+        result=parse_mouse_info("Profile 0: (active)\n  Report Rate: 1000Hz\n  Button: 0 is mapped to key 'KEY_F9'\n  Button: 1 is mapped to none\n")
+        buttons=result['profiles'][0]['buttons']
+        self.assertEqual([b['action'] for b in buttons],['KEY_F9','disabled'])
+
+if __name__=='__main__':unittest.main()

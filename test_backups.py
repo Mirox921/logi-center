@@ -22,6 +22,7 @@ class Backups(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'backup.json';data=sample();write_backup(data,path)
             self.assertEqual(read_backup(path),data)
+            self.assertEqual(path.stat().st_mode & 0o777,0o600)
     def test_partial_restore_has_safety_copy_and_stops(self):
         current=sample();wanted=sample(1600,500);plan=preview(wanted,current,'mouse')
         runner=Mock(side_effect=['','500',Fault(FaultCode.DISCONNECTED,'mouse','gone')])
@@ -39,3 +40,15 @@ class Backups(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root,patch('backups.snapshot',return_value=current):
             report=restore(plan,{'buttons'},'mouse',runner,safety_root=root)
             self.assertEqual(report.results,[]);runner.assert_not_called()
+
+    def test_unbalanced_macro_rejected(self):
+        data=sample();data['settings']['profiles'][0]['buttons'][0]['action']=['macro','+KEY_A']
+        with self.assertRaisesRegex(ValueError,'held down'):validate(seal('mouse',data['device']['model'],data['settings'],'backend_cache'))
+    def test_non_string_action_rejected_before_command(self):
+        data=sample();data['settings']['profiles'][0]['buttons'][0]['action']=['button',1]
+        with self.assertRaises(ValueError):validate(seal('mouse',data['device']['model'],data['settings'],'backend_cache'))
+    def test_unsupported_version(self):
+        data=sample();data['version']=True
+        from backups import digest
+        data['sha256']=digest(data)
+        with self.assertRaisesRegex(ValueError,'version'):validate(data)

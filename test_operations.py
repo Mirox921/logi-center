@@ -35,3 +35,21 @@ class Verification(unittest.TestCase):
         import sys
         with self.assertRaises(Fault) as context:command([sys.executable,'-c','import time;time.sleep(5)'],timeout=.1)
         self.assertEqual(context.exception.code,FaultCode.TIMEOUT)
+    def test_key_and_disabled_readback_formats(self):
+        from operations import read_action
+        self.assertEqual(read_action("Button: 2 is mapped to key 'KEY_F9'"),['key','KEY_F9'])
+        self.assertEqual(read_action('Button: 2 is mapped to none'),['disabled'])
+    def test_macro_tap_and_press_release_are_equivalent(self):
+        from operations import same
+        self.assertTrue(same(['macro','KEY_C'],['macro','+KEY_C','-KEY_C']))
+
+    def test_bypass_boolean_readback(self):
+        runner=Mock(side_effect=['','false'])
+        result=perform(plan_for(['easyeffects','-b','2']),runner)
+        self.assertEqual(result.state,State.SENT)
+        self.assertEqual(result.actual,False)
+    def test_unrecognized_readback_is_not_confirmed(self):
+        runner=Mock(side_effect=['','unexpected'])
+        result=perform(plan_for(['easyeffects','-b','2']),runner)
+        self.assertEqual(result.state,State.SENT)
+        self.assertIsNotNone(result.fault)

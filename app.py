@@ -4,6 +4,7 @@ from pathlib import Path
 import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
+from diagnostics import SafeLog,collect as collect_diagnostics,fault_for,describe as describe_fault
 from audio_pipeline import AudioSession,preset_lists,load_preset
 from microphone_ui import MicrophonePanel
 from mouse_editor import MouseEditor
@@ -18,6 +19,7 @@ class Center(Adw.Application):
     def __init__(self):
         super().__init__(application_id='local.mirox.LogiCenter')
         self.audio_session=AudioSession()
+        self.log=SafeLog()
         self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.epoch=Epoch();self.closed=False;self.hotplug_timer=None;self.ui_generation=0
         self.scroll_positions={};self.mouse_request=0;self.refresh_revision=0
@@ -38,6 +40,8 @@ class Center(Adw.Application):
         layout=Gtk.Box(orientation=Gtk.Orientation.VERTICAL);self.toast.set_child(layout)
         header=Adw.HeaderBar();header.set_title_widget(Adw.WindowTitle(title='Logi Center',subtitle=_('Твои устройства · один центр управления')))
         refresh=Gtk.Button(icon_name='view-refresh-symbolic',tooltip_text=_('Обновить устройства'));refresh.connect('clicked',lambda *unused:self.refresh());header.pack_end(refresh)
+        diagnostic=Gtk.Button(icon_name='dialog-information-symbolic',tooltip_text=_('Диагностика'))
+        diagnostic.connect('clicked',lambda *unused:self.job(collect_diagnostics,self.show_diagnostics));header.pack_end(diagnostic)
         languages=Gtk.DropDown.new_from_strings(['Русский','English']);languages.set_tooltip_text('Язык / Language')
         languages.set_selected(1 if self.preferences.get('language','ru')=='en' else 0)
         languages.connect('notify::selected',self.change_language)
@@ -91,13 +95,11 @@ class Center(Adw.Application):
         future=self.pool.submit(worker)
         def finish(f):
             try: value=f.result();error=None
-            except Exception as exc:value=None;error=str(exc)
+            except Exception as exc:value=None;error=exc
             def deliver():
                 if self.closed or token.is_set() or ui_generation!=self.ui_generation:return False
                 if error:
-                    print(error,file=sys.stderr)
-                    self.status.set_label(_('Не удалось выполнить действие. Проверь подключение устройства.'))
-                    self.toast.add_toast(Adw.Toast(title=_('Настройка не применена. Проверь подключение и попробуй ещё раз.')))
+                    self.present_fault(error)
                     if failed:failed(error)
                 else:
                     self.status.set_label(_('Готово'))
@@ -105,18 +107,36 @@ class Center(Adw.Application):
                 return False
             GLib.idle_add(deliver)
         future.add_done_callback(finish)
-    def show_operation(self,result):
+    def present_fault(self,error):
+        fault=fault_for(error);self.log.fault(fault)
+        message=describe_fault(fault)
+        self.status.set_text(message);self.operation_result.set_text(message)
+        self.toast.add_toast(Adw.Toast(title=message.split('\n')[0]))
+    def show_diagnostics(self,report):
+        dialog=Adw.Dialog(title=_('Диагностика компонентов'),content_width=760,content_height=560)
+        content=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12,margin_start=20,margin_end=20,margin_top=20,margin_bottom=20)
+        text='\n\n'.join(item['component']+' · '+item['state']+'\n'+item['description'] for item in report)
+        view=Gtk.TextView(editable=False,wrap_mode=Gtk.WrapMode.WORD_CHAR);view.get_buffer().set_text(text)
+        scroll=Gtk.ScrolledWindow(vexpand=True);scroll.set_child(view);content.append(scroll)
+        copy=Gtk.Button(label=_('Скопировать отчёт без личных данных'));copy.connect('clicked',lambda *unused:Gdk.Display.get_default().get_clipboard().set(text));content.append(copy)
+        close=Gtk.Button(label=_('Закрыть'));close.connect('clicked',lambda *unused:dialog.close());content.append(close)
+        dialog.set_child(content);dialog.present(self.win)
+    def operation_text(self,result):
         states={State.CONFIRMED:_('Подтверждено устройством'),State.SENT:_('Команда отправлена, подтверждение недоступно'),State.MISMATCH:_('Значение не совпадает'),State.ERROR:_('Ошибка применения'),State.DISCONNECTED:_('Устройство отключено'),State.CANCELLED:_('Операция отменена')}
         text=result.component+' · '+states[result.state]
         if result.source=='backend_cache':text+=' · '+_('Ответ из кэша backend, не аппаратное подтверждение')
         if result.state==State.MISMATCH:
             text+='\n'+_('Запрошено: ')+str(result.requested)[:120]+' · '+_('Получено: ')+str(result.actual)[:120]
-        if result.fault:text+='\n'+str(result.fault)
+        if result.fault:text+='\n'+describe_fault(result.fault)
+        return text
+    def show_operation(self,result):
+        text=self.operation_text(result)
         self.operation_result.set_text(text)
-        self.toast.add_toast(Adw.Toast(title=states[result.state]))
+        self.toast.add_toast(Adw.Toast(title=text.split(' · ',1)[-1].split('\n')[0]))
     def apply(self,args,after=None):
         def write():
             result=perform(plan_for(args))
+            self.log.operation(result)
             if result.accepted:
                 if args[0]=='headsetcontrol' and '-s' in args:self.preferences['sidetone']=args[-1]
                 if args[0]=='easyeffects' and '-l' in args:self.preferences['preset']=args[-1]
@@ -130,7 +150,7 @@ class Center(Adw.Application):
         def write():
             results=[]
             for command in commands:
-                result=perform(plan_for(command));results.append(result)
+                result=perform(plan_for(command));self.log.operation(result);results.append(result)
                 if not result.accepted:break
             return results
         def completed(results):
@@ -170,7 +190,7 @@ class Center(Adw.Application):
         content.append(Gtk.Label(label=_('Перед изменениями будет сохранена защитная копия. При ошибке восстановление остановится; автоматический откат не гарантируется.'),wrap=True))
         choices={}
         for category in sorted({c.category for c in preview.changes}):
-            check=Gtk.CheckButton(label=category,active=True);choices[category]=check;content.append(check)
+            check=Gtk.CheckButton(label={'buttons':_('Кнопки'),'dpi':_('Чувствительность DPI'),'lighting':_('Подсветка'),'profile':_('Профиль'),'audio':_('Звук')}.get(category,category),active=True);choices[category]=check;content.append(check)
         text='\n'.join(c.label for c in preview.changes)
         if preview.skipped:text+='\n'+_('Пропущено: ')+'\n'.join(preview.skipped)
         if not text:text=_('Изменений нет')
@@ -185,12 +205,12 @@ class Center(Adw.Application):
             dialog.close()
             def completed(report):
                 lines=[_('Защитная копия: ')+report.safety_copy]
-                for label,result in report.results:lines.append(label+': '+result.state.value)
+                for label,result in report.results:lines.append(label+'\n'+self.operation_text(result))
                 lines.extend(report.skipped)
                 if report.stopped:lines.append(_('Восстановление остановлено после ошибки. Проверь частично применённые настройки.'))
                 self.operation_result.set_text('\n'.join(lines))
                 self.refresh()
-            self.job(lambda:restore_backup(preview,selected,target),completed)
+            self.job(lambda:restore_backup(preview,selected,target,on_result=self.log.operation),completed)
         apply.connect('clicked',start);dialog.set_child(content);dialog.present(self.win)
     def group(self,page,title,description=None):
         g=Adw.PreferencesGroup(title=title,description=description);self.pages[page].append(g);return g
@@ -290,6 +310,7 @@ class Center(Adw.Application):
         if hasattr(self,'audio_session'):self.audio_session.close()
         # Monitor shutdown runs outside GTK; its observer may be waiting for netlink.
         self.pool.shutdown(wait=False,cancel_futures=True)
+        self.log.close()
         __import__('threading').Thread(target=self.monitor.stop,daemon=True).start()
     def restore_scroll(self):
         if self.closed:return False
@@ -313,7 +334,7 @@ class Center(Adw.Application):
             data={}
             for key,args in [('mice',['ratbagctl','list']),('headset',['headsetcontrol','-o','json']),('sinks',['pactl','-f','json','list','sinks']),('sources',['pactl','-f','json','list','sources'])]:
                 try:data[key]=run(args,40)
-                except Exception as e:data[key+'_error']=str(e)
+                except Exception as e:data[key+'_error']=e
             data['keyboard_online']=keyboard_online()
             return data
         self.job(collect,lambda data:self.populate(data) if revision==self.refresh_revision else None)
@@ -323,6 +344,8 @@ class Center(Adw.Application):
     def populate(self,data):
         self.clear('mouse');self.clear('keyboard');self.clear('audio')
         for box in self.pages.values():box.set_sensitive(True)
+        for key,value in data.items():
+            if key.endswith('_error'):self.present_fault(value)
         mice=list(dict.fromkeys(mouse_list(data.get('mice',''))))
         g=self.group('mouse',_('Игровые мыши Logitech'),_('Настрой скорость движения указателя, плавность и действия кнопок.'))
         if mice:
@@ -448,13 +471,15 @@ class Center(Adw.Application):
                         self.show_operation(result)
                         if result.accepted:
                             self.preferences.setdefault('presets',{})[k]=name;save_preferences(self.preferences)
-                    self.job(lambda:load_preset(k,name),completed)
+                    def load():
+                        result=load_preset(k,name);self.log.operation(result);return result
+                    self.job(load,completed)
                 self.choice(group,_('Пресет'),presets,self.preferences.get('presets',{}).get(kind,presets[0]),select)
             else:self.row(group,_('Пресетов пока нет'),_('Импортируй файл для нужного направления или открой редактор эффектов.'))
         test_group=self.group('audio',_('Проверка микрофона'))
         try:source_devices=json.loads(data.get('sources','[]'))
         except ValueError:source_devices=[]
-        test_group.add(MicrophonePanel(source_devices,self.audio_session,self.job))
+        test_group.add(MicrophonePanel(source_devices,self.audio_session,self.job,self.present_fault))
         r=self.row(effects,_('Эквалайзер и обработка микрофона'));self.button(r,_('Редактор эффектов'),lambda *unused:self.launch(['easyeffects']))
         r=self.row(effects,_('Звуковые эффекты'),_('Общий обход обработки влияет и на микрофон, и на наушники.'));self.button(r,_('С эффектами'),lambda *unused:self.apply(['easyeffects','-b','2']));self.button(r,_('Без эффектов'),lambda *unused:self.apply(['easyeffects','-b','1']))
         GLib.timeout_add(80,self.restore_scroll)

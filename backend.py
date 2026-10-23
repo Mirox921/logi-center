@@ -166,7 +166,9 @@ def parse_mouse_info(text):
         body=text[match.end():sections[index+1].start() if index+1<len(sections) else len(text)]
         rate=re.search(r'Report Rate: (\d+)Hz',body)
         resolutions=[{'index':int(m[1]),'dpi':int(m[2]),'active':'(active)' in m[3],'disabled':'(disabled)' in m[3],'default':'(default)' in m[3]} for m in re.finditer(r'^\s+(\d+): (\d+)dpi([^\n]*)',body,re.M)]
-        buttons=[{'index':int(m[1]),'action':m[3],'macro':bool(m[2])} for m in re.finditer(r"Button: (\d+) is mapped to (macro )?'([^']+)'",body)]
+        buttons=[]
+        for m in re.finditer(r"Button: (\d+) is mapped to (?:(macro|key) )?(?:'([^']+)'|(none))",body):
+            buttons.append({'index':int(m[1]),'action':m[3] or 'disabled','macro':m[2]=='macro','type':m[2] or ('disabled' if m[4] else 'mapping')})
         leds=[]
         for m in re.finditer(r'LED: (\d+), depth: (\w+), mode: (\w+)([^\n]*)',body):
             color=re.search(r'color: ([0-9a-fA-F]{6})',m[4]);duration=re.search(r'duration: (\d+)',m[4]);brightness=re.search(r'brightness: (\d+)',m[4])
@@ -183,7 +185,7 @@ def read_mouse(device,runner=None):
         except Exception:data[key]=[]
     active=next((p for p in data['profiles'] if p['index']==data['active']),None)
     data['button_types']={}
-    if active:
+    if active and runner is run:
         try:
             from ratbag_dbus import button_types
             match=re.search(r'Model:\s*(\S+)',text)

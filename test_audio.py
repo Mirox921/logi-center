@@ -40,3 +40,12 @@ class Audio(unittest.TestCase):
             path=Path(root)/'sample.wav';wav_write(path,[array('f',[0.,.5,-.5]).tobytes()])
             with wave.open(str(path)) as clip:
                 self.assertEqual((clip.getnchannels(),clip.getsampwidth(),clip.getframerate(),clip.getnframes()),(1,2,16000,3))
+
+    def test_playback_reports_backend_failure(self):
+        process=Mock();process.communicate.return_value=(b'',b'Access denied');process.returncode=1
+        session=AudioSession(Mock(return_value=process));error=Event()
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'clip.wav';path.write_bytes(b'');session.clips={'original':path}
+            session.play('original',lambda fault:error.set())
+            self.assertTrue(error.wait(2))
+        session.close()

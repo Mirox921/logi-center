@@ -7,7 +7,7 @@ CURRENT_CANCEL=ContextVar("logi_operation_cancel",default=None)
 
 class FaultCode(str,Enum):
     MISSING='missing_component';UNAVAILABLE='component_unavailable';PERMISSION='permission_denied'
-    UNSUPPORTED='unsupported';DISCONNECTED='disconnected';TIMEOUT='timeout';CANCELLED='cancelled'
+    UNSUPPORTED='unsupported';DEVICE_UNSUPPORTED='device_unsupported';BACKEND_UNSUPPORTED='backend_unsupported';DISCONNECTED='disconnected';TIMEOUT='timeout';CANCELLED='cancelled'
     CONNECTION='connection_error';CONFIG='invalid_configuration';INTERNAL='internal_error'
 
 @dataclass
@@ -20,6 +20,7 @@ class Fault(Exception):
 def redact(text):
     text=re.sub(r'/home/[^/\s]+', '~',str(text))
     text=re.sub(r'(?i)((?:serial|token|password|secret)[\w ]*\s*[:=]\s*)[^\s,]+',r'\1[redacted]',text)
+    text=re.sub(r'alsa_(?:input|output)\.[A-Za-z0-9_.:-]+','[audio-device]',text)
     text=re.sub(r'\b(?:gh[pousr]_[A-Za-z0-9_]+|sk-[A-Za-z0-9_-]+)\b','[redacted]',text)
     return text[-1600:]
 
@@ -27,7 +28,9 @@ def classify(component,text):
     value=text.lower()
     if any(x in value for x in ['permission denied','operation not permitted','access denied']):code=FaultCode.PERMISSION
     elif any(x in value for x in ['no online device','no such device','device disconnected','device not found','invalid device','device is offline']):code=FaultCode.DISCONNECTED
-    elif any(x in value for x in ['not supported','unsupported','not implemented','out of available range']):code=FaultCode.UNSUPPORTED
+    elif any(x in value for x in ['not implemented','unrecognized arguments','unknown command']):code=FaultCode.BACKEND_UNSUPPORTED
+    elif any(x in value for x in ['feature not supported','capability','out of available range']):code=FaultCode.DEVICE_UNSUPPORTED
+    elif any(x in value for x in ['not supported','unsupported']):code=FaultCode.UNSUPPORTED
     elif any(x in value for x in ['connection refused','failed to connect','dbus','connection failure']):code=FaultCode.CONNECTION
     elif any(x in value for x in ['invalid','configuration','parse error']):code=FaultCode.CONFIG
     else:code=FaultCode.UNAVAILABLE

@@ -59,3 +59,11 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - Headphones/microphone controls and presets are separate. Inspected upstream EasyEffects CLI: `-l name` loads both directions if names collide. Direction-specific managed aliases prevent that; last selections are saved independently. Readback remains marked backend cache, not proven audible DSP.
 - 49 tests pass: opt-in invariant, missing microphone/backend, actual route check, preset name collision isolation, temporary cleanup, peak processing and synthetic PCM WAV encoding. No user microphone capture was started; real signal/meter/playback still need user-triggered hardware validation.
 - Next: diagnosis window, useful fault-specific recovery, bounded redacted logs, final integration smoke and documentation.
+
+## Stage 6 implemented; integration reviewed
+- diagnostics.py adds component/device/backend-specific faults and recovery hints, read-only diagnostics dialog and rotating private redacted logs. Requested/actual macro values never enter logs. scripts/diagnose.py emits a safe report; scripts/check.py runs syntax + tests; scripts/gui_smoke.py exercises widgets without writes/capture.
+- Fixed ratbag key/disabled parsing, quote handling, macro tap comparison, LED case normalization, readback failures and EasyEffects boolean bypass parsing. Injected runners no longer query real D-Bus capabilities. Restore reports now include readable statuses and fault/mismatch details.
+- Fixed microphone preparation cancellation race and surfaced asynchronous playback failures. Mock test added for playback failure; GUI smoke covers cancellation before recording.
+- 64 unit tests pass; compileall passes. Connected G502 read-only snapshot: 5 profiles, JSON write/read/validate and identical preview passed. Audio server snapshot validates. GUI editor/language smoke passed; expanded dialog/cancel smoke passed.
+- No physical write/restore, USB unplug, G515/G305 reconnect or real microphone capture performed. Final constraints and file map: docs/reliability-upgrade.md. No system permission/config changes or external publication.
+- Final: all runtime modules installed for current user and compared byte-for-byte with source. Documentation lists per-stage scope and pending physical checks. Local changes retained in logical commits; no release/push performed.

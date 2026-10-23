@@ -146,13 +146,18 @@ class AudioSession:
                 on_complete(set(clips))
             except Exception as error:temp.cleanup();on_error(error)
         Thread(target=worker,daemon=True).start()
-    def play(self,label):
+    def play(self,label,on_error=None):
         path=self.clips.get(label)
         if not path or not path.exists():raise Fault(FaultCode.CONFIG,'paplay','No test recording is available')
+        generation=self.generation
         process=self._launch(['paplay',str(path)])
         def reap():
-            try:process.communicate(timeout=15)
-            except subprocess.TimeoutExpired:process.kill();process.communicate()
+            try:
+                out,err=process.communicate(timeout=15)
+                if process.returncode and on_error and generation==self.generation:on_error(classify('paplay',err.decode(errors='replace')))
+            except subprocess.TimeoutExpired:
+                process.kill();process.communicate()
+                if on_error and generation==self.generation:on_error(Fault(FaultCode.TIMEOUT,'paplay','Playback timed out'))
             finally:
                 with self.lock:
                     if process in self.processes:self.processes.remove(process)

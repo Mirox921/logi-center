@@ -52,10 +52,12 @@ def action_value(parts):
 
 def read_action(text):
     if 'macro' in text.lower() or any(x in text for x in ['↓','↑','↕']):return ['macro',*macro_tokens(text)]
-    text=text.strip().strip("'")
-    match=re.search(r"mapped to '(.*)'",text)
+    text=text.strip()
+    match=re.search(r"mapped to (?:key )?'(.*)'",text)
     if match:text=match[1]
+    else:text=text.strip("'")
     if text.startswith('button '):return ['button',str(first_number(text))]
+    if text.endswith('mapped to none'):return ['disabled']
     if text.startswith('KEY_'):return ['key',text]
     if text.lower() in ['none','disabled']:return ['disabled']
     return ['special',text]
@@ -65,7 +67,10 @@ def plan_for(args):
     plan=Plan(args,target=args[1] if len(args)>1 else '')
     if component=='ratbagctl' and 'set' in args:
         pos=args.index('set');before=args[:pos];after=args[pos+1:]
-        if not after:return plan
+        if not after:
+            if before[-1] in ['enabled','disabled']:
+                plan.expected=True;plan.reader=lambda runner:Observation(runner([*before,'get']).strip().lower()=='true','backend_cache')
+            return plan
         if before[-2:]==['profile','active'] or before[-2:]==['resolution','active'] or before[-1] in ['rate','dpi','brightness','duration']:
             plan.expected=first_number(after[0])
             plan.reader=lambda runner:Observation(first_number(runner([*before,'get'])),'backend_cache')
@@ -74,7 +79,7 @@ def plan_for(args):
             plan.reader=lambda runner:Observation(read_action(runner([*before,'get'])),'backend_cache')
         elif 'led' in before:
             field=after[0];raw=after[1] if len(after)>1 else None
-            plan.expected=raw
+            plan.expected=raw.lower() if isinstance(raw,str) and field in ['color','mode'] else raw
             base=before+['get']
             def led_read(runner):
                 text=runner(base)
@@ -100,7 +105,12 @@ def plan_for(args):
                 return Observation(value,'audio_server')
             plan.reader=audio_read
     elif component=='easyeffects' and '-b' in args:
-        plan.expected=args[-1];plan.reader=lambda runner:Observation(runner(['easyeffects','-b','3']).strip(),'backend_cache')
+        plan.expected=args[-1]=='1'
+        def bypass_read(runner):
+            value=runner(['easyeffects','-b','3']).strip().lower()
+            if value not in ['true','false','1','2','enabled','disabled']:raise ValueError('Unrecognized bypass readback')
+            return Observation(value in ['true','1','enabled'],'backend_cache')
+        plan.reader=bypass_read
     elif component=='solaar' and len(args)>=5:
         plan.expected=args[-1]
         # Explicitly supported live read only; RGB effects and timers are not readable.
@@ -119,6 +129,12 @@ def same(expected,actual,tolerance=0):
         return bool(actual) and all(abs(float(v)-expected)<=tolerance for v in actual)
     if isinstance(expected,(int,float)) and not isinstance(expected,bool) and isinstance(actual,(int,float)):
         return abs(expected-actual)<=tolerance
+    if isinstance(expected,list) and isinstance(actual,list) and expected[:1]==actual[:1]==['macro']:
+        def expanded(value):
+            result=[]
+            for token in value[1:]:result.extend(['+'+token,'-'+token] if token.startswith('KEY_') else [token])
+            return result
+        return expanded(expected)==expanded(actual)
     return expected==actual
 
 def perform(plan,runner=None,cancel=None):
@@ -139,7 +155,7 @@ def perform(plan,runner=None,cancel=None):
     except Fault as fault:
         state=State.DISCONNECTED if fault.code==FaultCode.DISCONNECTED else State.CANCELLED if fault.code==FaultCode.CANCELLED else State.SENT
         return Result(state,component,plan.expected,fault=fault)
-    except (ValueError,KeyError,TypeError,StopIteration):return Result(State.SENT,component,plan.expected)
+    except Exception as error:return Result(State.SENT,component,plan.expected,fault=Fault(FaultCode.INTERNAL,component,'Readback unavailable: '+type(error).__name__))
     if not same(plan.expected,observation.value,plan.tolerance):state=State.MISMATCH
     else:state=State.CONFIRMED if observation.source in ['device','audio_server'] else State.SENT
     return Result(state,component,plan.expected,observation.value,observation.source)

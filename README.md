@@ -36,13 +36,24 @@ These are real application screenshots. The keyboard is offline, so its saved co
 
 Piper, Solaar and EasyEffects editors can be opened for advanced settings. These editors are separate windows. Button mappings and lighting are applied only when you click **Apply**. Imported presets are saved under a new name when a matching name already exists.
 
+## Reliability upgrade (working tree)
+
+- Writes distinguish confirmed, sent without confirmation, mismatch, error, disconnected and cancelled. G502 libratbag values are explicitly **backend cache**, including RGB: matching cache is not proof of the visible color.
+- Device backup/restore uses versioned JSON, checksum/model validation, category selection, change preview and a private pre-restore safety copy. Restoration stops on the first failed/mismatched operation and reports partial results. Backups contain supported backend fields, **not a full hardware image**; keyboard data comes from saved Solaar settings.
+- USB/HID/audio connection events refresh controls automatically and cancel stale work. Optional `pyudev` enables udev events; otherwise a five-second sysfs fallback is used.
+- A model-aware mouse diagram supports assignment drafts, keyboard recording and macro editing when ratbag reports that capability. Existing assignment controls remain available.
+- Microphone and headphone presets are separate. Explicit buttons start the microphone meter or an eight-second temporary test recording. Processed playback is offered only when the actual EasyEffects capture route is found. Clips are deleted on refresh, disconnect, explicit deletion or exit.
+- The header diagnostics button reports components, device access and faults with recovery advice. Bounded logs omit assignment/macro values and redact identifiers.
+
+The release screenshots and v0.2.0 archive above predate these changes. See [validation and remaining limits](docs/reliability-upgrade.md).
+
 ## Requirements
 
 Tested on Arch Linux with a Wayland desktop. Other distributions are not yet verified.
 
 - Python 3, PyGObject, Pycairo, GTK 4 (4.10 or newer), libadwaita and PyYAML
 - `libratbag` / `ratbagctl`, `piper`, `solaar`, `headsetcontrol`, `easyeffects`
-- PipeWire with its PulseAudio compatibility service, `pactl`, `xdg-open`
+- PipeWire with its PulseAudio compatibility service, `pactl`, `parec`, `paplay`, `xdg-open`; optional Python `pyudev`
 - Device access using the udev rules supplied by the backend packages
 
 On Arch Linux:
@@ -90,7 +101,7 @@ Input presets process microphone audio; output presets process headphone/speaker
 
 ## Saved settings
 
-- Mouse values are read from the device; audio levels are read from the sound server.
+- Mouse values are reported by libratbag and may be daemon cache; audio levels are read from the sound server.
 - Keyboard preferences are read from `~/.config/solaar/config.yaml`.
 - Language, last selected audio preset, lighting selection and sidetone selection are saved to `~/.config/logi-center/preferences.json` after successful actions.
 - Import destinations: `~/.config/easyeffects/input` and `~/.config/easyeffects/output`.
@@ -114,7 +125,9 @@ Hardware reports are welcome. Include your distribution, backend versions, devic
 
 ```sh
 python -m unittest -v
-python -m py_compile app.py backend.py i18n.py solaar_write.py install.py
+python scripts/check.py
+python scripts/diagnose.py
+python scripts/gui_smoke.py
 python app.py --smoke
 ```
 
