@@ -20,7 +20,7 @@ Logi Center brings common controls into one window using existing Linux tools. I
 
 These are real application screenshots. The keyboard is offline, so its saved controls are shown disabled. G502 HERO is connected in the mouse screenshots. No device readings are simulated.
 
-[Download the first preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.1.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
+[Download the current preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.2.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
 
 ## Features
 
@@ -56,7 +56,7 @@ If some EasyEffects plugins are missing, install their dependencies as described
 
 ## Install and run
 
-G502 HERO support is available on the current `main` branch. The older v0.1.0 release archive predates this addition; use the clone instructions below for the updated controls.
+G502 HERO support is included in v0.2.0. Download the current release archive and run `python install.py`, or use the clone instructions below.
 
 Clone the repository and run the user installer:
 
