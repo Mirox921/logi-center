@@ -16,3 +16,8 @@ class Translations(unittest.TestCase):
         set_language('en');self.assertEqual(tr('Применить'),'Apply')
         self.assertEqual(tr('99% · заряжается'),'99% · charging')
         set_language('ru');self.assertEqual(tr('Применить'),'Применить')
+
+    def test_draft_choice_keys_are_language_independent(self):
+        from i18n import canonical_text
+        self.assertEqual(canonical_text('Профиль 2'),canonical_text('Profile 2'))
+        self.assertEqual(canonical_text('Левый щелчок'),canonical_text('Left click'))

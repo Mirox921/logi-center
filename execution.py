@@ -27,7 +27,7 @@ def redact(text):
 def classify(component,text):
     value=text.lower()
     if any(x in value for x in ['permission denied','operation not permitted','access denied']):code=FaultCode.PERMISSION
-    elif any(x in value for x in ['no online device','no such device','device disconnected','device not found','invalid device','device is offline']):code=FaultCode.DISCONNECTED
+    elif any(x in value for x in ['no online device','no such device','device disconnected','device not found','invalid device','device is offline','unable to find device']):code=FaultCode.DISCONNECTED
     elif any(x in value for x in ['not implemented','unrecognized arguments','unknown command']):code=FaultCode.BACKEND_UNSUPPORTED
     elif any(x in value for x in ['feature not supported','capability','out of available range']):code=FaultCode.DEVICE_UNSUPPORTED
     elif any(x in value for x in ['not supported','unsupported']):code=FaultCode.UNSUPPORTED

@@ -22,7 +22,7 @@ class DraftStore:
         try:
             if self.path.stat().st_size<=2*1024*1024:
                 data=json.loads(self.path.read_text())
-                if data.get('version')==1 and isinstance(data.get('drafts'),dict):self.values=data['drafts']
+                if type(data.get('version')) is int and data.get('version')==1 and isinstance(data.get('drafts'),dict):self.values=data['drafts']
         except (OSError,ValueError,AttributeError):pass
     def save(self):atomic_json(self.path,{'version':1,'drafts':self.values})
     def edit(self,key,base,desired):

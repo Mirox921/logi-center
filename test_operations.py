@@ -53,3 +53,11 @@ class Verification(unittest.TestCase):
         result=perform(plan_for(['easyeffects','-b','2']),runner)
         self.assertEqual(result.state,State.SENT)
         self.assertIsNotNone(result.fault)
+
+    def test_access_and_unsupported_write_results_are_distinct(self):
+        for code,state in [(FaultCode.PERMISSION,State.PERMISSION),(FaultCode.BACKEND_UNSUPPORTED,State.UNSUPPORTED)]:
+            result=perform(Plan(['writer']),Mock(side_effect=Fault(code,'writer','test')))
+            self.assertEqual(result.state,state)
+    def test_local_observation_never_becomes_device_confirmation(self):
+        result=perform(Plan(['writer'],1,lambda run:Observation(1,'local_saved_settings')),Mock())
+        self.assertEqual(result.state,State.LOCAL)

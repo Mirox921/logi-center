@@ -88,7 +88,7 @@ class DeviceManager:
             current=merged[key]
             if current.kind=='input':current.kind=item.kind
             if current.backend=='linux-input' and item.backend!='linux-input':
-                current.name=item.name;current.backend=item.backend;current.target=item.target
+                current.name=item.name;current.kind=item.kind;current.backend=item.backend;current.target=item.target
             current.backends=list(dict.fromkeys([*current.backends,*item.backends]))
             for backend,targets in item.targets.items():current.targets[backend]=list(dict.fromkeys([*current.targets.get(backend,[]),*targets]))
             known={(c.name,c.backend) for c in current.capabilities}
@@ -147,11 +147,11 @@ class InputAdapter:
             keyboard=all(bits&(1<<key) for key in [14,30,57]);mouse=bool(bits&(1<<272))
             if not keyboard and not mouse:continue
             physical,vid,pid=usb_identity(node)
-            # Receiver children must stay separate; use input physical path without
-            # interface suffix to merge keyboard/media nodes, never USB receiver alone.
+            # Receiver slots/interface paths stay intact; stripping /inputN:slot
+            # would incorrectly merge two devices behind one receiver.
             try:input_phys=(node/'phys').read_text().strip()
             except OSError:input_phys=''
-            if physical and input_phys:physical+='|'+input_phys.rsplit('/input',1)[0]
+            if physical and input_phys:physical+='|'+input_phys
             ident=physical or str(node.resolve())
             cap=Capability('standard_input',self.name,True,True,False,False,'keyboard' if keyboard else 'mouse','kernel',limitation='Kernel input detection does not imply RGB or remapping support.',evidence=['software_detected','read_observed'])
             records.append(Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection='usb' if vid else 'unknown',capabilities=[cap]))
@@ -165,7 +165,11 @@ class RatbagAdapter:
     def discover(self):
         from backend import mouse_list,read_mouse
         records=[]
-        for target,name in mouse_list(self.run(['ratbagctl','list'])):
+        inventory=mouse_list(self.run(['ratbagctl','list']))
+        for index,(target,name) in enumerate(inventory):
+            if sum(item[0]==target for item in inventory)>1:
+                records.append(Device('ratbag:ambiguous:'+target+':'+str(index),name,'mouse',self.name,target,connected=None,faults=[Fault(FaultCode.CONFIG,self.name,'Backend selector collision; writes disabled')]))
+                continue
             if not self.detailed:
                 records.append(Device('ratbag:'+target,name,'mouse',self.name,target));continue
             try:
@@ -227,7 +231,7 @@ class PulseAdapter:
                 from operations import plan_for
                 for cap in caps:
                     setting=cap.name.rsplit(':',1)[-1]
-                    cap.label=node.get('description','Audio endpoint')+' · '+kind+' · '+setting
+                    cap.label=node.get('description','Audio endpoint')
                     cap.plan=lambda value,k=kind,n=name,f=setting:plan_for(['pactl','set-'+('sink' if k=='output' else 'source')+'-'+f,n,str(int(value))+'%' if f=='volume' else '1' if value else '0'])
                 records.append(Device('pulse:'+prefix,node.get('description',name),'audio',self.name,name,physical,vid,pid,'usb' if vid else 'audio',capabilities=caps))
         return records

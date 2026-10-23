@@ -24,9 +24,10 @@ from backend import run, mouse_list, solaar_settings, audio_devices, volume, wir
 
 class Center(Adw.Application):
     def __init__(self):
-        super().__init__(application_id='local.mirox.LogiCenter')
-        self.simulation='--simulate' in sys.argv
-        self.device_manager=DeviceManager();self.page_fingerprints={}
+        simulation='--simulate' in sys.argv
+        super().__init__(application_id='local.mirox.LogiCenter.Simulation' if simulation else 'local.mirox.LogiCenter')
+        self.simulation=simulation
+        self.device_manager=DeviceManager();self.page_fingerprints={};self.ambiguous_mouse_targets=set()
         if self.simulation:
             from simulation import SimulationAdapter
             self.simulation_adapter=SimulationAdapter()
@@ -49,7 +50,7 @@ class Center(Adw.Application):
     def activate(self,*unused):
         if hasattr(self,'win'):self.win.present();return
         Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.PREFER_DARK)
-        self.win=Adw.ApplicationWindow(application=self,title='Logi Center',default_width=1000,default_height=780)
+        self.win=Adw.ApplicationWindow(application=self,title='Logi Center'+(' · '+_('СИМУЛЯЦИЯ') if self.simulation else ''),default_width=1000,default_height=780)
         self.toast=Adw.ToastOverlay();self.win.set_content(self.toast)
         layout=Gtk.Box(orientation=Gtk.Orientation.VERTICAL);self.toast.set_child(layout)
         header=Adw.HeaderBar();header.set_title_widget(Adw.WindowTitle(title='Logi Center',subtitle=_('Твои устройства · один центр управления')))
@@ -410,7 +411,16 @@ class Center(Adw.Application):
         b=self.pages[key]
         while b.get_first_child():b.remove(b.get_first_child())
     def populate(self,data,force=True):
-        manager=data.get('manager',DeviceManager());self.device_manager=manager
+        manager=data.get('manager',DeviceManager())
+        # Preserve detailed observations when discovery intentionally did not query them.
+        for device in manager.devices:
+            if device.backend=='ratbagctl' and not device.capabilities and not device.faults:
+                old=next((d for d in self.device_manager.devices if device.target in d.targets.get('ratbagctl',[]) and device.name==d.name and not d.faults),None)
+                if old:
+                    device.capabilities=[c for c in old.capabilities if c.backend=='ratbagctl'];device.vid=old.vid;device.pid=old.pid
+        self.device_manager=manager
+        inventory=mouse_list(data.get('mice',''))
+        self.ambiguous_mouse_targets={target for target,name in inventory if sum(item[0]==target for item in inventory)>1}
         def signature(devices):
             return repr([(d.id,d.physical,d.name,d.connected,[(c.name,c.backend,c.supported,c.writable,c.verifiable,c.value,c.source,c.choices,c.minimum,c.maximum) for c in d.capabilities]) for d in devices])
         fingerprints={
@@ -453,8 +463,10 @@ class Center(Adw.Application):
         g=self.group('mouse',_('Мыши через libratbag'),_('Настрой скорость движения указателя, плавность и действия кнопок.'))
         if mice:
             for device,name in mice:
-                row=self.row(g,name,_('Подключена'));self.button(row,_('Прочитать настройки'),lambda *unused,d=device,n=name:self.load_mouse(d,n))
-            self.load_mouse(selected[0],selected[1])
+                row=self.row(g,name,_('Неоднозначный идентификатор backend') if device in self.ambiguous_mouse_targets else _('Подключена'))
+                button=self.button(row,_('Прочитать настройки'),lambda *unused,d=device,n=name:self.load_mouse(d,n));button.set_sensitive(device not in self.ambiguous_mouse_targets)
+            selected=next((item for item in mice if item[0] not in self.ambiguous_mouse_targets and item==selected),next((item for item in mice if item[0] not in self.ambiguous_mouse_targets),None))
+            if selected:self.load_mouse(selected[0],selected[1])
         else:self.row(g,_('Мышь недоступна'),_('Включи мышь и подключи USB-приёмник.'))
         row=self.row(g,_('Расширенный редактор'),_('Полный интерфейс Piper: профили и макросы.'));self.button(row,_('Открыть Piper'),lambda *unused:self.launch(['piper']))
     def populate_audio(self,data):
@@ -605,6 +617,8 @@ class Center(Adw.Application):
         kg.set_sensitive(self.keyboard_connected is True)
         row=self.row(kg,_('Все настройки клавиатуры'),_('Другие доступные настройки можно проверить в Solaar.'));self.button(row,_('Открыть Solaar'),lambda *unused:self.launch(['solaar','--window=show']))
     def load_mouse(self,device,name=None):
+        if device in self.ambiguous_mouse_targets:
+            self.present_fault(Fault(FaultCode.CONFIG,'ratbagctl','Ambiguous backend selector'));return
         self.mouse_request+=1;request=self.mouse_request
         selected_name=name or self.current_mouse_name
         def loaded(data):

@@ -12,6 +12,7 @@ from backups import preview
 from test_backups import sample
 from discovery import MousePresence
 from drafts import DraftStore
+from backend import parse_mouse_info
 from i18n import set_language
 
 application=Center();application.set_application_id('local.mirox.LogiCenter.Smoke');application.preferences['language']='ru';set_language('ru')
@@ -27,6 +28,10 @@ def check():
     editors=[w for w in descendants(application.win) if isinstance(w,MouseEditor)]
     for editor in editors:
         if editor.buttons:editor.select(next(iter(editor.buttons)));editor.reset()
+    fixture=parse_mouse_info("Model: usb:1234:5678:0\nProfile 0: (active)\n  Report Rate: 1000Hz\n    0: 800dpi (active) (default)\n  Button: 0 is mapped to 'button 1'\n  Button: 1 is mapped to 'button 2'\n  LED: 0, depth: rgb, mode: on, color: 445566\n")
+    fixture.update(dpis=[800,1600],rates=[500,1000],button_types={0:[0,1,3,4],1:[0,1]},led_modes={0:['on','off']})
+    previous_name=application.current_mouse_name;application.current_mouse_name='Generic fixture mouse'
+    application.mouse_controls('fixture-mouse',fixture);application.current_mouse_name=previous_name
     # Exercise editable draft state even with all real mice unplugged.
     fake_buttons=[{'index':0,'action':'button 1','macro':False},{'index':1,'action':'button 2','macro':False}]
     actions={'Left':['button','1'],'Right':['button','2']};applied=Mock();changes=[]

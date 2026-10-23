@@ -1,6 +1,9 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'СИМУЛЯЦИЯ':'SIMULATION',
+'Неоднозначный идентификатор backend':'Ambiguous backend identifier',
+'Макросы':'Macros','Стандартный ввод':'Standard input','Заряд аккумулятора':'Battery','Без звука':'Muted',
 'Другие доступные настройки можно проверить в Solaar.':'Other available settings can be checked in Solaar.',
 'Данные аудиоустройства неполные; управление недоступно.':'Audio device data is incomplete; controls are unavailable.',
 'Текущее значение: ':'Current value: ',

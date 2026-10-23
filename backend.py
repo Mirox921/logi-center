@@ -3,6 +3,11 @@ import json, os, re, subprocess, sys
 
 def run(args, timeout=20, cancel=None):
     from execution import command,Fault,FaultCode
+    if len(args)>2 and args[0]=='ratbagctl' and 'set' in args:
+        inventory=mouse_list(command(['ratbagctl','list'],timeout=min(timeout,5),cancel=cancel))
+        matches=[item for item in inventory if item[0]==args[1]]
+        if not matches:raise Fault(FaultCode.DISCONNECTED,'ratbagctl','Exact backend device selector is no longer present')
+        if len(matches)!=1:raise Fault(FaultCode.CONFIG,'ratbagctl','Backend device selector is ambiguous; writing is disabled')
     if len(args)>3 and args[:2]==['solaar','config']:
         if args[2]=='G515' and keyboard_online() is not True:raise Fault(FaultCode.DISCONNECTED,'solaar','Keyboard is not responding')
         from pathlib import Path

@@ -5,7 +5,7 @@ gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk,Adw,GLib
 from i18n import tr as _
 
-NAMES={'dpi':'DPI','polling_rate':'Polling rate','profiles':'Hardware profiles','buttons':'Buttons','macros':'Macros','lighting':'Lighting','standard_input':'Standard input','sidetone':'Sidetone','battery_status':'Battery'}
+NAMES={'dpi':'Чувствительность DPI','polling_rate':'Частота опроса, Гц','profiles':'Встроенный профиль','buttons':'Кнопки','macros':'Макросы','lighting':'Подсветка','standard_input':'Стандартный ввод','sidetone':'Слышимость своего голоса','battery_status':'Заряд аккумулятора','volume':'Громкость','mute':'Без звука'}
 
 def capability_text(cap):
     support=_('Обнаружено') if cap.supported is True else _('Не поддерживается устройством') if cap.supported is False else _('Поддержка не проверена')
@@ -35,9 +35,11 @@ def populate_inventory(center,devices,faults=()):
                 center.button(row,_('Проверить'),inspect)
         if not device.capabilities:center.row(group,_('Возможности не прочитаны'),_('Наличие устройства не означает поддержку настройки через backend.'))
         for cap in device.capabilities:
-            name=NAMES.get(cap.name,cap.name.rsplit(':',1)[-1] if ':' in cap.name else cap.name.replace('_',' '))
+            setting=cap.name.rsplit(':',1)[-1]
+            name=_(NAMES.get(setting,setting.replace('_',' ')))
+            if cap.label:name=cap.label+' · '+name
             value_text='\n'+_('Текущее значение: ')+str(cap.value) if cap.readable and type(cap.value) in [int,float,bool] else ''
-            row=center.row(group,cap.label or name,capability_text(cap)+value_text);row.set_subtitle_lines(0)
+            row=center.row(group,name,capability_text(cap)+value_text);row.set_subtitle_lines(0)
             # Only implemented operations receive a control. Unsupported capabilities
             # remain diagnostic; they never become an enabled placebo editor.
             if device.simulated and cap.writable:

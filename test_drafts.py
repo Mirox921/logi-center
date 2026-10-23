@@ -16,3 +16,11 @@ class Drafts(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'d';path.write_text('{')
             self.assertEqual(DraftStore(path).get('a',1),(1,False))
+
+    def test_unverified_submission_keeps_desired_until_explicit_resolution(self):
+        with tempfile.TemporaryDirectory() as root:
+            store=DraftStore(Path(root)/'draft');store.edit('dpi',800,1600)
+            store.submitted('dpi','sent_unverified')
+            self.assertEqual(store.get('dpi',800),(1600,False))
+            self.assertEqual(store.values['dpi']['submission_state'],'sent_unverified')
+            store.submitted('dpi','confirmed');self.assertEqual(store.get('dpi',800),(800,False))

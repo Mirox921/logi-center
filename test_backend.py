@@ -128,4 +128,21 @@ Profile 3: (active)
         buttons=result['profiles'][0]['buttons']
         self.assertEqual([b['action'] for b in buttons],['KEY_F9','disabled'])
 
+
+class WriteIdentity(unittest.TestCase):
+    def test_ambiguous_ratbag_selector_blocks_write(self):
+        from unittest.mock import patch
+        from backend import run
+        from execution import Fault,FaultCode
+        with patch('execution.command',return_value='same: Mouse one\nsame: Mouse two') as command:
+            with self.assertRaises(Fault) as error:run(['ratbagctl','same','profile','active','set','1'])
+        self.assertEqual(error.exception.code,FaultCode.CONFIG);self.assertEqual(command.call_count,1)
+    def test_disconnected_selector_cannot_fall_back_to_model_name(self):
+        from unittest.mock import patch
+        from backend import run
+        from execution import Fault,FaultCode
+        with patch('execution.command',return_value=''):
+            with self.assertRaises(Fault) as error:run(['ratbagctl','old','profile','active','set','1'])
+        self.assertEqual(error.exception.code,FaultCode.DISCONNECTED)
+
 if __name__=='__main__':unittest.main()

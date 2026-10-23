@@ -10,7 +10,7 @@ from drafts import DraftStore
 from reports import build_report
 from operations import State
 with tempfile.TemporaryDirectory() as root,patch('backend.run',side_effect=AssertionError('Real CLI call from simulation')) as hardware,patch('app.save_preferences'):
-    app=Center();app.set_application_id('local.mirox.LogiCenter.SimulationCheck');app.draft_store=DraftStore(Path(root)/'drafts.json')
+    app=Center();assert app.get_application_id().endswith('.Simulation');app.set_application_id('local.mirox.LogiCenter.SimulationCheck');app.draft_store=DraftStore(Path(root)/'drafts.json')
     checks=[]
     def inspect():
         assert len(app.device_manager.devices)==8

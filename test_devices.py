@@ -66,3 +66,22 @@ class Devices(unittest.TestCase):
         from devices import parse_key_mask
         self.assertEqual(parse_key_mask('10000 0 0 0 0',64),1<<272)
         self.assertEqual(parse_key_mask('1 0',32),1<<32)
+
+    def test_ratbag_selector_collision_never_merges_or_enables_writes(self):
+        from devices import RatbagAdapter
+        devices=RatbagAdapter(Mock(return_value='same: Mouse one\nsame: Mouse two')).discover()
+        self.assertEqual(len(devices),2);self.assertNotEqual(devices[0].id,devices[1].id)
+        self.assertTrue(all(d.faults and not d.capabilities for d in devices))
+
+    def test_receiver_child_slots_stay_distinct(self):
+        import tempfile
+        from pathlib import Path
+        from devices import InputAdapter
+        with tempfile.TemporaryDirectory() as root:
+            root=Path(root);usb=root/'usb';usb.mkdir();(usb/'idVendor').write_text('046d');(usb/'idProduct').write_text('c52b')
+            for index in [1,2]:
+                node=usb/('slot'+str(index));(node/'capabilities').mkdir(parents=True)
+                (node/'name').write_text('Identical keyboard');(node/'phys').write_text('usb-1/input2:'+str(index))
+                (node/'capabilities/key').write_text(hex((1<<14)|(1<<30)|(1<<57))[2:])
+                event=root/'class'/('event'+str(index));event.mkdir(parents=True);(event/'device').symlink_to(node)
+            self.assertEqual(len(InputAdapter(root/'class').discover()),2)
