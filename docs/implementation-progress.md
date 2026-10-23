@@ -4,15 +4,15 @@
 - Baseline: v0.2.0, commit 64f232d; working tree clean. 16 baseline tests.
 - Runtime: app.py (GTK + inline actions), backend.py (CLI + parsing), i18n.py, solaar_write.py. Installer is a fixed runtime file list. No cancellation or operation result model.
 - Available: GTK/libadwaita, pyudev, pactl, parec/paplay and pw-record/pw-play. G502 HERO + G PRO X USB connected; G305/G515 absent. Reading can be tested; no physical writes/recording without deliberate action.
-- Skill review: system installer/creator and existing Omarchy available; official catalog being checked. Project workflow recorded in AGENTS.md and .agents/skills/logi-hardware-validation.
+- Skill review: system installer/creator and existing Omarchy available; official catalog reviewed; no relevant additional package installed. Project workflow recorded in AGENTS.md and .agents/skills/logi-hardware-validation.
 
 ## Plan / status
-1. Verification: pending. Parameter-specific result states; cache vs device provenance; timeout/disconnect handling.
-2. Backup/restore: pending. Versioned checksummed export, compatibility validation, selected preview, pre-restore backup, partial results.
-3. Discovery: pending. Debounced udev / PulseAudio events, generation guards and lifecycle cleanup.
-4. Mouse editor: pending. Model layouts, key capture and actual macro view/edit, preserve old controls.
-5. Audio: pending. Split presets, opt-in live meter and temporary original/processed samples.
-6. Diagnostics: pending. Typed faults, capability checks, redacted bounded logs + UI.
+1. Verification: implemented with documented limits; physical validation pending. Parameter-specific result states; cache vs device provenance; timeout/disconnect handling.
+2. Backup/restore: implemented with documented limits; physical validation pending. Versioned checksummed export, compatibility validation, selected preview, pre-restore backup, partial results.
+3. Discovery: implemented with documented limits; physical validation pending. Debounced udev / PulseAudio events, generation guards and lifecycle cleanup.
+4. Mouse editor: implemented with documented limits; physical validation pending. Model layouts, key capture and actual macro view/edit, preserve old controls.
+5. Audio: implemented with documented limits; physical validation pending. Split presets, opt-in live meter and temporary original/processed samples.
+6. Diagnostics: implemented and tested. Typed faults, capability checks, redacted bounded logs + UI.
 
 ## Audit findings
 - Generic success on exit code; direct raw RGB writes; no readback policy.
