@@ -1,6 +1,17 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Наушники и динамики':'Headphones and speakers','Общий обход обработки влияет и на микрофон, и на наушники.':'Global bypass affects both microphone and headphone processing.',
+'Пресеты микрофона':'Microphone presets','Пресеты наушников':'Headphone presets','Настройки входа и выхода сохраняются раздельно.':'Input and output settings are saved separately.',
+'Импортируй файл для нужного направления или открой редактор эффектов.':'Import a preset for this direction or open the effects editor.','Проверка микрофона':'Microphone test',
+'Микрофон не найден':'No microphone found','Микрофон не прослушивается. Нажми кнопку для начала.':'The microphone is not being captured. Click a button to start.',
+'Показать уровень микрофона':'Show microphone level','Записать образец — до 8 секунд':'Record a sample — up to 8 seconds','Завершить запись':'Finish recording',
+'Прослушать исходный':'Play original','Прослушать обработанный':'Play processed','Удалить образцы и остановить тест':'Delete samples and stop test',
+'Запись временная: удаляется при обновлении, отключении устройства или закрытии приложения. Обработанный образец доступен только при подтверждённом маршруте EasyEffects от выбранного микрофона.':'Recordings are temporary and deleted on refresh, disconnect or exit. A processed sample is available only with a confirmed EasyEffects route from the selected microphone.',
+'Подключи микрофон и проверь диагностику компонентов.':'Connect a microphone and check component diagnostics.','Тест остановлен, временные образцы удалены.':'Test stopped; temporary samples deleted.',
+'Идёт запись исходного и обработанного сигнала…':'Recording original and processed signals…','Идёт запись только исходного сигнала: маршрут обработки не подтверждён.':'Recording original only: the processing route is not confirmed.',
+'Образец готов. Можно прослушать доступные сигналы.':'Sample ready. You can play the available signals.',
+
 'Визуальный редактор кнопок':'Visual button editor','Схема мыши: выбери кнопку. Изменения остаются черновиком до применения.':'Mouse schematic: select a button. Changes remain a draft until applied.',
 'Собственный макрос':'Custom macro','Записать клавиши':'Record keys','Добавить паузу':'Add delay','Очистить':'Clear','Отменить черновик':'Discard draft',
 'Кнопка ':'Button ','Редактирование макросов не подтверждено backend для этой кнопки.':'The backend has not confirmed macro editing for this button.',

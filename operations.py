@@ -100,7 +100,7 @@ def plan_for(args):
                 return Observation(value,'audio_server')
             plan.reader=audio_read
     elif component=='easyeffects' and '-b' in args:
-        plan.expected=args[-1];plan.reader=lambda runner:Observation(runner(['easyeffects','-b','3']).strip(),'audio_server')
+        plan.expected=args[-1];plan.reader=lambda runner:Observation(runner(['easyeffects','-b','3']).strip(),'backend_cache')
     elif component=='solaar' and len(args)>=5:
         plan.expected=args[-1]
         # Explicitly supported live read only; RGB effects and timers are not readable.

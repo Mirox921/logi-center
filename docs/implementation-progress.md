@@ -52,3 +52,10 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - Macro validation rejects unbalanced keys and warns on desktop shortcuts. Existing assignment dropdowns remain. ratbag_dbus.py reads ActionTypes; unknown macro capability disables new macro writes rather than assuming support.
 - 41 tests pass (layout, recording autorepeat, unbalanced keys, key mapping and conflict checks included). No button write performed on physical hardware. Full Wayland shortcut interception depends on compositor; UI explains the limit.
 - Next: separate microphone/headphone presets, explicit audio meter and private temporary recording paths.
+
+## Stage 5 implemented
+- audio_pipeline.py + microphone_ui.py add explicitly started live meter, max-8-second original recording, playback and immediate/delete-on-exit temporary sample cleanup. No capture occurs during construction/refresh/smoke tests.
+- A processed sample is captured only when a real EasyEffects source exists AND its capture stream is linked to the selected raw source. Otherwise the UI explicitly records original only. No fabricated before/after comparison.
+- Headphones/microphone controls and presets are separate. Inspected upstream EasyEffects CLI: `-l name` loads both directions if names collide. Direction-specific managed aliases prevent that; last selections are saved independently. Readback remains marked backend cache, not proven audible DSP.
+- 49 tests pass: opt-in invariant, missing microphone/backend, actual route check, preset name collision isolation, temporary cleanup, peak processing and synthetic PCM WAV encoding. No user microphone capture was started; real signal/meter/playback still need user-triggered hardware validation.
+- Next: diagnosis window, useful fault-specific recovery, bounded redacted logs, final integration smoke and documentation.

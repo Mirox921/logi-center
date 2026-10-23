@@ -4,6 +4,8 @@ from pathlib import Path
 import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
+from audio_pipeline import AudioSession,preset_lists,load_preset
+from microphone_ui import MicrophonePanel
 from mouse_editor import MouseEditor
 from backups import snapshot, write_backup, read_backup, preview as backup_preview, restore as restore_backup
 from operations import perform, plan_for, Result, State
@@ -15,6 +17,7 @@ from backend import run, mouse_list, solaar_settings, audio_devices, volume, wir
 class Center(Adw.Application):
     def __init__(self):
         super().__init__(application_id='local.mirox.LogiCenter')
+        self.audio_session=AudioSession()
         self.pool=concurrent.futures.ThreadPoolExecutor(max_workers=1)
         self.epoch=Epoch();self.closed=False;self.hotplug_timer=None;self.ui_generation=0
         self.scroll_positions={};self.mouse_request=0;self.refresh_revision=0
@@ -78,7 +81,7 @@ class Center(Adw.Application):
         self.activate()
         self.stack.set_visible_child_name(page)
         old_window.destroy()
-    def job(self,fn,done=None):
+    def job(self,fn,done=None,failed=None):
         self.status.set_label(_('Выполняется…'))
         token=self.epoch.token();ui_generation=self.ui_generation
         def worker():
@@ -95,6 +98,7 @@ class Center(Adw.Application):
                     print(error,file=sys.stderr)
                     self.status.set_label(_('Не удалось выполнить действие. Проверь подключение устройства.'))
                     self.toast.add_toast(Adw.Toast(title=_('Настройка не применена. Проверь подключение и попробуй ещё раз.')))
+                    if failed:failed(error)
                 else:
                     self.status.set_label(_('Готово'))
                     if done:done(value)
@@ -220,7 +224,9 @@ class Center(Adw.Application):
                 if error:
                     self.toast.add_toast(Adw.Toast(title=_('Не удалось импортировать: ')+_(error)[:180]));return
                 name,kinds=value
-                self.preferences['preset']=name;save_preferences(self.preferences)
+                self.preferences['preset']=name
+                for kind in kinds:self.preferences.setdefault('presets',{})[kind]=name
+                save_preferences(self.preferences)
                 self.refresh()
                 self.toast.add_toast(Adw.Toast(title=_('Эффект добавлен: ')+name+_('. Выбери его и нажми «Применить».')))
             self.job(install,completed)
@@ -293,6 +299,7 @@ class Center(Adw.Application):
         return False
     def refresh(self):
         if self.closed:return
+        self.audio_session.stop()
         self.refresh_revision+=1;revision=self.refresh_revision
         for page in self.pages:
             scroll=self.stack.get_child_by_name(page)
@@ -404,7 +411,10 @@ class Center(Adw.Application):
         ag=self.group('audio',_('Звук и микрофон'),_('Выбери USB-карту G Pro X. Уровни применяются только по кнопке; выше 100% усиление не задаётся.'))
         self.backup_controls(ag,'audio','all')
         found=False
+        audio_sections={}
         for kind,title,cmd in [('sinks',_('Выход'),'sink'),('sources',_('Микрофон'),'source')]:
+            audio_group=self.group('audio',_('Наушники и динамики') if kind=='sinks' else _('Микрофон'))
+            audio_sections[kind]=audio_group
             try:devices=json.loads(data.get(kind,'[]'))
             except ValueError:devices=[]
             for d in devices:
@@ -416,10 +426,10 @@ class Center(Adw.Application):
                 elif 'HDMI' in description:description=_('Монитор или телевизор (HDMI)')
                 elif 'Speaker' in description:description=_('Динамики ноутбука')
                 elif 'Mic' in description:description=_('Встроенный микрофон')
-                r=self.row(ag,title+': '+description,_('Уровень громкости, %'))
+                r=self.row(audio_group,title+': '+description,_('Уровень громкости, %'))
                 spin=Gtk.SpinButton.new_with_range(0,100,1);spin.set_value(min(100,volume(d)));spin.set_valign(Gtk.Align.CENTER);r.add_suffix(spin)
                 self.button(r,_('Громкость'),lambda *unused,s=spin,n=name,c=cmd:self.apply(['pactl','set-'+c+'-volume',n,str(s.get_value_as_int())+'%']))
-                r=self.row(ag,_('Управление устройством'))
+                r=self.row(audio_group,_('Управление устройством'))
                 self.button(r,_('По умолчанию'),lambda *unused,n=name,c=cmd:self.apply(['pactl','set-default-'+c,n]))
                 self.button(r,_('Вкл. микр.') if d.get('mute') and cmd=='source' else (_('Включить') if d.get('mute') else _('Заглушить')),lambda *unused,n=name,c=cmd,m=d.get('mute'):self.apply(['pactl','set-'+c+'-mute',n,'0' if m else '1']))
         if not found:self.row(ag,_('USB-карта G Pro X пока не обнаружена'),_('Общие аудиоустройства доступны выше. Подключи карту и обнови список.'))
@@ -428,21 +438,34 @@ class Center(Adw.Application):
         self.button(r,_('Найти готовые эффекты'),lambda *unused:self.launch(['xdg-open','https://github.com/wwmm/easyeffects/wiki/Community-Presets']))
         r=self.row(effects,_('Добавить скачанный эффект'),_('Выбери файл .json для микрофона или наушников. Затем выбери его в списке ниже.'))
         self.button(r,_('Импортировать эффект'),self.choose_preset)
-        preset_dir=Path.home()/'.config/easyeffects'
-        presets=sorted({p.stem for folder in ['input','output'] for p in (preset_dir/folder).glob('*.json')})
-        if presets:self.choice(effects,_('Пресет'),presets,self.preferences.get('preset',presets[0]),lambda name:self.apply(['easyeffects','-l',name]))
-        else:self.row(effects,_('Пресетов пока нет'),_('Создай эквалайзер или обработку микрофона в редакторе EasyEffects.'))
+        available=preset_lists()
+        for kind,title in [('input',_('Пресеты микрофона')),('output',_('Пресеты наушников'))]:
+            group=self.group('audio',title,_('Настройки входа и выхода сохраняются раздельно.'))
+            presets=available[kind]
+            if presets:
+                def select(name,k=kind):
+                    def completed(result):
+                        self.show_operation(result)
+                        if result.accepted:
+                            self.preferences.setdefault('presets',{})[k]=name;save_preferences(self.preferences)
+                    self.job(lambda:load_preset(k,name),completed)
+                self.choice(group,_('Пресет'),presets,self.preferences.get('presets',{}).get(kind,presets[0]),select)
+            else:self.row(group,_('Пресетов пока нет'),_('Импортируй файл для нужного направления или открой редактор эффектов.'))
+        test_group=self.group('audio',_('Проверка микрофона'))
+        try:source_devices=json.loads(data.get('sources','[]'))
+        except ValueError:source_devices=[]
+        test_group.add(MicrophonePanel(source_devices,self.audio_session,self.job))
         r=self.row(effects,_('Эквалайзер и обработка микрофона'));self.button(r,_('Редактор эффектов'),lambda *unused:self.launch(['easyeffects']))
-        r=self.row(effects,_('Звуковые эффекты'),_('Эквалайзер и фильтры для наушников и микрофона. Без эффектов звук продолжает работать.'));self.button(r,_('С эффектами'),lambda *unused:self.apply(['easyeffects','-b','2']));self.button(r,_('Без эффектов'),lambda *unused:self.apply(['easyeffects','-b','1']))
+        r=self.row(effects,_('Звуковые эффекты'),_('Общий обход обработки влияет и на микрофон, и на наушники.'));self.button(r,_('С эффектами'),lambda *unused:self.apply(['easyeffects','-b','2']));self.button(r,_('Без эффектов'),lambda *unused:self.apply(['easyeffects','-b','1']))
         GLib.timeout_add(80,self.restore_scroll)
         try:headsets=json.loads(data.get('headset','{}')).get('devices',[])
         except ValueError:headsets=[]
         for h in headsets:
-            r=self.row(ag,h.get('device',_('Гарнитура')),_('USB-карта подключена · можно настроить слышимость своего голоса') if h.get('product')=='PRO X' else ', '.join(h.get('capabilities_str',[])))
+            r=self.row(audio_sections['sources'],h.get('device',_('Гарнитура')),_('USB-карта подключена · можно настроить слышимость своего голоса') if h.get('product')=='PRO X' else ', '.join(h.get('capabilities_str',[])))
             if 'CAP_SIDETONE' in h.get('capabilities',[]):
                 identifier=h.get('id_vendor','')+':'+h.get('id_product','')
                 levels={_('Выключено'):'0',_('Очень тихо'):'16',_('Тихо'):'32',_('Средне'):'64',_('Громко'):'96',_('Максимально'):'128'}
-                self.choice(ag,_('Слышимость своего голоса'),list(levels),next((k for k,v in levels.items() if v==self.preferences.get('sidetone')),_('Выключено')),lambda value,i=identifier,m=levels:self.apply(['headsetcontrol','-d',i,'-s',m[value]]),_('Выбери желаемый уровень и нажми «Применить». Показан последний сохранённый выбор; текущее значение устройство не сообщает.'))
+                self.choice(audio_sections['sources'],_('Слышимость своего голоса'),list(levels),next((k for k,v in levels.items() if v==self.preferences.get('sidetone')),_('Выключено')),lambda value,i=identifier,m=levels:self.apply(['headsetcontrol','-d',i,'-s',m[value]]),_('Выбери желаемый уровень и нажми «Применить». Показан последний сохранённый выбор; текущее значение устройство не сообщает.'))
     def load_mouse(self,device,name=None):
         self.mouse_request+=1;request=self.mouse_request
         selected_name=name or self.current_mouse_name
