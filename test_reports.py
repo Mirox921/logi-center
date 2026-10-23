@@ -11,3 +11,8 @@ class Reports(unittest.TestCase):
         from simulation import SimulationAdapter
         manager=DeviceManager([SimulationAdapter()]);manager.discover();report=build_report(manager)
         self.assertTrue(all(d['simulated'] for d in report['devices']))
+
+    def test_serials_embedded_in_names_are_redacted(self):
+        from reports import public_name
+        result=public_name('Mouse SN:XYZ12345 model XYZ987654321')
+        self.assertNotIn('XYZ12345',result);self.assertNotIn('XYZ987654321',result)

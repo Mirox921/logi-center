@@ -34,3 +34,5 @@ Final safety review:
 - Receiver child /inputN:slot identity is preserved; two keyboards behind one receiver stay distinct. Current app observations are reused only with the same backend target and model, without forging new timestamps.
 - Simulation has a separate application ID and window title, preventing redirection into an already running real-device instance.
 - 102 tests now pass, including collisions, receiver slots, draft submission state and language-independent choices. Full real GTK and simulation checks passed; final post-review smoke/rebuild follows. Public report generation on current hardware: no discovery faults; no private identities/values exported.
+
+Final source: 103 tests pass. Added embedded-serial report redaction and retained offline documentation/images in the Arch source/package. Runtime/code is frozen for the final package, manifest and GTK checks.

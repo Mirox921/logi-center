@@ -41,4 +41,6 @@ package() {
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 README.ru.md "$pkgdir/usr/share/doc/$pkgname/README.ru.md"
+  cp -a docs "$pkgdir/usr/share/doc/$pkgname/"
+  install -Dm644 packaging/arch/README.md "$pkgdir/usr/share/doc/$pkgname/packaging/arch/README.md"
 }

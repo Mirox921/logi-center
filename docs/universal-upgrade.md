@@ -13,7 +13,7 @@ This development cycle extends v0.3.0 in place. It does not claim support for ev
 | 5. Editors | Existing mouse editors extended with persistent state/type checks and neutral unknown-model rendering. Generic keyboard reference diagram offers manual ANSI/ISO/TKL/full-size views; it does not pretend to detect physical layout or provide unsupported per-key programming. Audio testing remains opt-in, with real route checks and temporary files; leaving the audio tab stops capture/playback. |
 | 6. Backups | Existing version-1 mouse/audio/G515 backups remain compatible. Added old/new/action comparison and individual setting selection, retaining integrity/model checks, pre-restore snapshots and partial-stop results. Arbitrary keyboard maps, all headset hardware settings and full firmware images remain unavailable. |
 | 7. Diagnostics | Capability details, sources/timestamps/evidence and operation state. Preview/copy/export allowlisted JSON; no automatic sending. Missing/unavailable backend, permissions and other typed faults retained. Public exports exclude values/macros/drafts/serials/physical paths/endpoint IDs; review before sharing. |
-| 8. Tests | 102 hardware-free tests plus real-session GTK smoke and isolated simulation checks. No new physical setting-write, restore, actual unplug/reconnect or microphone capture test is claimed. |
+| 8. Tests | 103 hardware-free tests plus real-session GTK smoke and isolated simulation checks. No new physical setting-write, restore, actual unplug/reconnect or microphone capture test is claimed. |
 | 9. Arch | PKGBUILD, required/optional dependencies, desktop entry and original SVG icon. Local source builder generates a checksum; package built with makepkg without installing it. Dependency checks were deliberately skipped in this build; namcap unavailable. |
 | 10. Skills/context | Official catalog reviewed; no directly useful additional GTK/HID skill was installed. Existing project skill updated/validated, AGENTS retained and universal-progress added. |
 | 11. UI polish | Neutral Devices/Keyboards/Audio tabs, real audio names, dynamic kernel battery indicators across manufacturers, capability-driven editors, unavailable controls and draft conflicts. Very large device sets and varied desktop scaling still need wider testing. |
@@ -43,7 +43,7 @@ Run `python app.py --simulate`. Simulated devices are labelled and never mixed w
 
 ## Verification and performance
 
-- `python -m unittest -q`: **102 tests pass**; syntax compilation and `git diff --check` pass.
+- `python -m unittest -q`: **103 tests pass**; syntax compilation and `git diff --check` pass.
 - New tests cover identity/selector collisions, two identical devices, missing capabilities/partial JSON, word-aligned input masks, draft restart/conflict/submission state, individual backup selection, permission/unsupported/local results, explicit Solaar choice probes and dangerous-setting rejection, public report redaction, simulation disconnects and failed backends.
 - `python scripts/gui_smoke.py`: independent live GTK instance; fixture-based full generic mouse page/RGB controls, macro draft selection/restoration, dynamic offline header, language switch, diagnostic and restore dialogs, and cancelled recording preparation. No device setting write/capture.
 - `python scripts/simulation_smoke.py`: eight simulation scenarios, shared editors, report evidence, zero real CLI calls/capture.

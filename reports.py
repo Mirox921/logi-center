@@ -5,6 +5,8 @@ from execution import redact
 
 def public_name(text):
     text=redact(text)
+    text=re.sub(r"(?i)\b(?:s/n|sn|serial(?: number)?)\s*[:=#-]\s*[\w-]+","[serial]",text)
+    text=re.sub(r"\b(?=[A-Za-z0-9_-]{8,}\b)(?=[A-Za-z0-9_-]*\d)[A-Za-z0-9_-]+\b","[identifier]",text)
     text=re.sub(r'\b(?:[0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}\b','[address]',text)
     text=re.sub(r'\b[0-9A-Fa-f]{8,}\b','[identifier]',text)
     text=re.sub(r'\S+@\S+','[address]',text)

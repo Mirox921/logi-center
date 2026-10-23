@@ -11,6 +11,8 @@ tree=ast.parse((root/'install.py').read_text())
 modules=next(node.iter.elts for node in tree.body if isinstance(node,ast.For) and isinstance(node.target,ast.Name) and node.target.id=='filename')
 files=[Path(ast.literal_eval(item)) for item in modules]
 files += [p.relative_to(root) for p in root.glob('test_*.py')]
+files += [p.relative_to(root) for p in (root/'docs').rglob('*') if p.is_file() and p.suffix in ['.md','.png']]
+files += [Path('packaging/arch/README.md')]
 files += [Path(name) for name in ['install.py','LICENSE','README.md','README.ru.md','packaging/logi-center.desktop','packaging/icons/logi-center.svg']]
 with tarfile.open(archive,'w:gz') as output:
     for name in sorted(set(files)):output.add(root/name,arcname='logi-center-'+version+'/'+str(name),recursive=False)
