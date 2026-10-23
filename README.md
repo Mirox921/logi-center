@@ -20,7 +20,7 @@ Logi Center brings common controls into one window using existing Linux tools. I
 
 These are real application screenshots. The keyboard is offline, so its saved controls are shown disabled. G502 HERO is connected in the mouse screenshots. No device readings are simulated.
 
-[Download the current preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.2.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
+[Download the current preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.3.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
 
 ## Features
 
@@ -36,7 +36,7 @@ These are real application screenshots. The keyboard is offline, so its saved co
 
 Piper, Solaar and EasyEffects editors can be opened for advanced settings. These editors are separate windows. Button mappings and lighting are applied only when you click **Apply**. Imported presets are saved under a new name when a matching name already exists.
 
-## Reliability upgrade (working tree)
+## Reliability upgrade (v0.3.0 preview)
 
 - Writes distinguish confirmed, sent without confirmation, mismatch, error, disconnected and cancelled. G502 libratbag values are explicitly **backend cache**, including RGB: matching cache is not proof of the visible color.
 - Device backup/restore uses versioned JSON, checksum/model validation, category selection, change preview and a private pre-restore safety copy. Restoration stops on the first failed/mismatched operation and reports partial results. Backups contain supported backend fields, **not a full hardware image**; keyboard data comes from saved Solaar settings.
@@ -45,7 +45,11 @@ Piper, Solaar and EasyEffects editors can be opened for advanced settings. These
 - Microphone and headphone presets are separate. Explicit buttons start the microphone meter or an eight-second temporary test recording. Processed playback is offered only when the actual EasyEffects capture route is found. Clips are deleted on refresh, disconnect, explicit deletion or exit.
 - The header diagnostics button reports components, device access and faults with recovery advice. Bounded logs omit assignment/macro values and redact identifiers.
 
-The release screenshots and v0.2.0 archive above predate these changes. See [validation and remaining limits](docs/reliability-upgrade.md).
+The screenshots above predate these changes. See the [v0.3.0 release notes](docs/RELEASE-v0.3.0.md) and [validation and remaining limits](docs/reliability-upgrade.md).
+
+![New G502 and G305 editor illustrations](docs/illustrations/mouse-layouts.png)
+
+Renderer previews with example selection; not live RGB readings.
 
 ## Requirements
 
@@ -67,7 +71,7 @@ If some EasyEffects plugins are missing, install their dependencies as described
 
 ## Install and run
 
-G502 HERO support is included in v0.2.0. Download the current release archive and run `python install.py`, or use the clone instructions below.
+The current v0.3.0 preview includes G502 HERO support and the reliability upgrade. Download the current release archive and run `python install.py`, or use the clone instructions below.
 
 Clone the repository and run the user installer:
 
