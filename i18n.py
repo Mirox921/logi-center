@@ -1,6 +1,10 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Подтверждено устройством':'Confirmed by device/service','Команда отправлена, подтверждение недоступно':'Command sent; confirmation unavailable',
+'Значение не совпадает':'Value mismatch','Ошибка применения':'Apply failed','Устройство отключено':'Device disconnected','Операция отменена':'Operation cancelled',
+'Ответ из кэша backend, не аппаратное подтверждение':'Backend cache readback, not hardware confirmation','Запрошено: ':'Requested: ','Получено: ':'Reported: ',
+
 'Мышь':'Mouse','Игровые мыши Logitech':'Logitech gaming mice','Подключена по USB':'Connected via USB','Проводной мыши батарея не нужна.':'A wired mouse does not need a battery.',
 'Активный профиль не определён':'Active profile not detected','Обнови настройки мыши перед изменениями.':'Refresh mouse settings before making changes.',
 'Изменения применяются только к выбранному профилю.':'Changes apply only to the selected profile.','Профиль ':'Profile ','Встроенный профиль':'Onboard profile',

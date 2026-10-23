@@ -1,15 +1,13 @@
 """Adapters use argument vectors, bounded execution and explicit user writes."""
 import json, os, re, subprocess, sys
 
-def run(args, timeout=20):
+def run(args, timeout=20, cancel=None):
+    from execution import command,Fault,FaultCode
     if len(args)>2 and args[:3]==['solaar','config','G515']:
-        if keyboard_online() is not True:raise RuntimeError('Клавиатура не отвечает. Включи её и обнови список устройств.')
+        if keyboard_online() is not True:raise Fault(FaultCode.DISCONNECTED,'solaar','Keyboard is not responding')
         from pathlib import Path
         args=[sys.executable,str(Path(__file__).with_name('solaar_write.py')),*args[1:]]
-    env=dict(os.environ, LC_ALL='C.UTF-8')
-    p=subprocess.run(args,text=True,capture_output=True,timeout=timeout,env=env)
-    if p.returncode: raise RuntimeError((p.stderr or p.stdout or 'Команда не выполнена').strip())
-    return p.stdout.strip()
+    return command(args,timeout=timeout,cancel=cancel)
 
 def mouse_list(text):
     return [(m[1],m[2].strip()) for m in re.finditer(r'^([^\s:]+):\s+(.+)$',text,re.M)]
@@ -181,7 +179,7 @@ def read_mouse(device):
     data=parse_mouse_info(text);data['text']=text
     for key,command in [('dpis',['dpi','get-all']),('rates',['rate','get-all'])]:
         try:data[key]=[int(x) for x in run(['ratbagctl',device,*command]).split() if x.isdigit()]
-        except RuntimeError:data[key]=[]
+        except Exception:data[key]=[]
     active=next((p for p in data['profiles'] if p['index']==data['active']),None)
     data['led_modes']={}
     if active:
@@ -189,5 +187,5 @@ def read_mouse(device):
             try:
                 values=run(['ratbagctl',device,'profile',str(active['index']),'led',str(led['index']),'capabilities'])
                 data['led_modes'][led['index']]=[x for x in re.findall(r'\b(?:off|on|cycle|breathing)\b',values)]
-            except RuntimeError:data['led_modes'][led['index']]=[]
+            except Exception:data['led_modes'][led['index']]=[]
     return data

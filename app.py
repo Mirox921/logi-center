@@ -4,6 +4,8 @@ from pathlib import Path
 import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
+from operations import perform, plan_for, Result, State
+from execution import Fault, FaultCode
 from i18n import tr as _, set_language
 from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings, read_mouse
 POOL=concurrent.futures.ThreadPoolExecutor(max_workers=1)
@@ -50,6 +52,8 @@ class Center(Adw.Application):
         layout.append(self.stack)
         if '--keyboard' in sys.argv:self.stack.set_visible_child_name('keyboard')
         if '--audio' in sys.argv:self.stack.set_visible_child_name('audio')
+        self.operation_result=Gtk.Label(wrap=True,selectable=True,margin_start=20,margin_end=20)
+        layout.append(self.operation_result)
         self.status=Gtk.Label(label=_('Чтение устройств…'),margin_bottom=12,wrap=True);layout.append(self.status)
         self.refresh();self.win.present()
         if '--smoke' in sys.argv:GLib.timeout_add_seconds(12,lambda:(self.quit(),False)[1])
@@ -81,15 +85,38 @@ class Center(Adw.Application):
                 return False
             GLib.idle_add(deliver)
         future.add_done_callback(finish)
-    def apply(self,args):
+    def show_operation(self,result):
+        states={State.CONFIRMED:_('Подтверждено устройством'),State.SENT:_('Команда отправлена, подтверждение недоступно'),State.MISMATCH:_('Значение не совпадает'),State.ERROR:_('Ошибка применения'),State.DISCONNECTED:_('Устройство отключено'),State.CANCELLED:_('Операция отменена')}
+        text=result.component+' · '+states[result.state]
+        if result.source=='backend_cache':text+=' · '+_('Ответ из кэша backend, не аппаратное подтверждение')
+        if result.state==State.MISMATCH:
+            text+='\n'+_('Запрошено: ')+str(result.requested)[:120]+' · '+_('Получено: ')+str(result.actual)[:120]
+        if result.fault:text+='\n'+str(result.fault)
+        self.operation_result.set_text(text)
+        self.toast.add_toast(Adw.Toast(title=states[result.state]))
+    def apply(self,args,after=None):
         def write():
-            result=run(args)
-            if args[0]=='headsetcontrol' and '-s' in args:self.preferences['sidetone']=args[-1]
-            if args[0]=='easyeffects' and '-l' in args:self.preferences['preset']=args[-1]
-            save_preferences(self.preferences)
+            result=perform(plan_for(args))
+            if result.accepted:
+                if args[0]=='headsetcontrol' and '-s' in args:self.preferences['sidetone']=args[-1]
+                if args[0]=='easyeffects' and '-l' in args:self.preferences['preset']=args[-1]
+                save_preferences(self.preferences)
             return result
-        self.job(write,lambda text:self.toast.add_toast(Adw.Toast(title=_('Настройка применена'))))
-
+        def completed(result):
+            self.show_operation(result)
+            if after and result.accepted:after(result)
+        self.job(write,completed)
+    def apply_batch(self,commands,after=None):
+        def write():
+            results=[]
+            for command in commands:
+                result=perform(plan_for(command));results.append(result)
+                if not result.accepted:break
+            return results
+        def completed(results):
+            for result in results:self.show_operation(result)
+            if after and len(results)==len(commands) and all(r.accepted for r in results):after(results)
+        self.job(write,completed)
     def group(self,page,title,description=None):
         g=Adw.PreferencesGroup(title=title,description=description);self.pages[page].append(g);return g
     def row(self,g,title,subtitle=''):
@@ -252,13 +279,10 @@ class Center(Adw.Application):
                 hexcolor=''.join(f'{round(c*255):02x}' for c in [rgba.red,rgba.green,rgba.blue])
                 effect=[1,10,21,0][modes.get_selected()]
                 value='!LEDEffectSetting {ID: '+str(effect)+', color: 0x'+hexcolor+', period: 3000, intensity: 100}'
-                def write():
-                    run(['solaar','config','G515','rgb_control','true'])
-                    result=run(['solaar','config','G515','rgb_zone_1',value])
+                def saved(results):
                     self.preferences.update(light_effect=effect,light_color='0x'+hexcolor)
                     save_preferences(self.preferences)
-                    return result
-                self.job(write,lambda text:self.toast.add_toast(Adw.Toast(title=_('Подсветка применена'))))
+                self.apply_batch([['solaar','config','G515','rgb_control','true'],['solaar','config','G515','rgb_zone_1',value]],after=saved)
             self.button(r,_('Применить'),light)
         kg.set_sensitive(self.keyboard_connected is True)
         row=self.row(kg,_('Все настройки клавиатуры'),_('Цвета по клавишам и сложные параметры пока редактируются в Solaar.'));self.button(row,_('Открыть Solaar'),lambda *unused:self.launch(['solaar','--window=show']))
@@ -320,7 +344,7 @@ class Center(Adw.Application):
         if len(profiles)>1:
             choices={_('Профиль ')+str(p['index']+1):str(p['index']) for p in profiles}
             def switch_profile(value):
-                self.job(lambda:run(['ratbagctl',device,'profile','active','set',choices[value]]),lambda text:self.load_mouse(device))
+                self.apply(['ratbagctl',device,'profile','active','set',choices[value]],after=lambda result:self.load_mouse(device))
             self.choice(g,_('Встроенный профиль'),list(choices),_('Профиль ')+str(active['index']+1),switch_profile)
         prefix=['ratbagctl',device,'profile',str(active['index'])]
         resolutions=active['resolutions']
@@ -334,7 +358,7 @@ class Center(Adw.Application):
         if len(enabled)>1 and resolution:
             current=next((k for k,v in enabled.items() if v==str(resolution['index'])),next(iter(enabled)))
             def switch_dpi(value):
-                self.job(lambda:run([*prefix,'resolution','active','set',enabled[value]]),lambda text:self.load_mouse(device))
+                self.apply([*prefix,'resolution','active','set',enabled[value]],after=lambda result:self.load_mouse(device))
             self.choice(g,_('Активный уровень чувствительности'),list(enabled),current,switch_dpi)
         names={0:_('Левая кнопка'),1:_('Правая кнопка'),2:_('Нажатие колёсика'),3:_('Боковая кнопка «Назад»'),4:_('Боковая кнопка «Вперёд»'),5:_('Кнопка переключения чувствительности')}
         if 'G502' in self.current_mouse_name:
@@ -368,11 +392,11 @@ class Center(Adw.Application):
             rgba=Gdk.RGBA();rgba.parse('#'+(led['color'] or 'ffffff'));color.set_rgba(rgba);r.add_suffix(color)
             def write_light(*unused,l=led,m=modes,c=color,available=supported):
                 rgba=c.get_rgba();rgb=''.join(f'{round(v*255):02x}' for v in [rgba.red,rgba.green,rgba.blue]);mode=available[m.get_selected()]
-                def write():
-                    command=[*prefix,'led',str(l['index']),'set']
-                    if mode in ['on','breathing']:run([*command,'color',rgb])
-                    return run([*command,'mode',mode])
-                self.job(write,lambda text:self.load_mouse(device))
+                command=[*prefix,'led',str(l['index']),'set']
+                commands=[]
+                if mode in ['on','breathing']:commands.append([*command,'color',rgb])
+                commands.append([*command,'mode',mode])
+                self.apply_batch(commands,after=lambda results:self.load_mouse(device))
             self.button(r,_('Применить'),write_light)
 
 if __name__=='__main__':Center().run([sys.argv[0]])
