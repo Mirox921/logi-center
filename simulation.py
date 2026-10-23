@@ -1,0 +1,26 @@
+"""Explicit developer-only adapters. Never connect simulations to real CLI writes."""
+from devices import Device,Capability,DeviceManager
+from operations import Plan,Observation,perform
+from execution import Fault,FaultCode
+
+class SimulationAdapter:
+    name='simulation'
+    def __init__(self):self.values={};self.disconnected=set()
+    def discover(self):
+        scenarios=[('simple-mouse','Simple mouse','mouse',[('buttons',3)]),('gaming-mouse','Gaming mouse','mouse',[('buttons',11),('dpi',800),('lighting','44aaff'),('macros',[])]),('rgb-keyboard','RGB keyboard','keyboard',[('lighting','ffffff'),('programmable_keys',[])]),('plain-keyboard','Standard keyboard','keyboard',[('standard_input',True)]),('usb-headset','USB headset','audio',[('volume',50),('microphone_mute',False)]),('wireless-headset','Wireless headset','audio',[('volume',50),('battery_status',78)]),('partial','Partial backend','mouse',[('dpi',800)]),('disconnect','Disconnect during write','mouse',[('dpi',800)])]
+        devices=[]
+        for ident,name,kind,settings in scenarios:
+            caps=[]
+            for setting,value in settings:
+                self.values.setdefault((ident,setting),value)
+                writable=setting not in ['battery_status','standard_input','buttons']
+                caps.append(Capability(setting,self.name,True,True,writable,True,self.values[ident,setting],'simulation',limitation='Simulated data; not hardware evidence.',evidence=['simulation']))
+            devices.append(Device('sim:'+ident,name,kind,self.name,ident,connected=ident not in self.disconnected,capabilities=caps,simulated=True))
+        return devices
+    def apply(self,target,setting,value):
+        def runner(args):
+            if target=='disconnect':self.disconnected.add(target);raise Fault(FaultCode.DISCONNECTED,self.name,'Simulated unplug')
+            if target=='partial':raise Fault(FaultCode.BACKEND_UNSUPPORTED,self.name,'Simulated backend limitation')
+            if target in self.disconnected:raise Fault(FaultCode.DISCONNECTED,self.name,'Simulation offline')
+            self.values[target,setting]=value;return ''
+        return perform(Plan(['simulation',target,setting],value,lambda run:Observation(self.values[target,setting],'simulation')),runner)
