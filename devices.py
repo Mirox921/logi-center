@@ -36,6 +36,7 @@ class Capability:
     last_operation:dict=field(default_factory=dict)
     plan:object=None
     label:str=""
+    step:float=1
 
 @dataclass
 class Device:
@@ -78,6 +79,12 @@ class DeviceManager:
         # Join incomplete CLI records only when both backend selectors and the
         # resolved kernel identity are unique. Two identical units remain separate.
         for item in records:
+            if item.backend=='linux-input' or not item.physical or '|' in item.physical:continue
+            # Same exact USB parent + a single input function of this kind. Keep
+            # receiver slots separate when two input identities share that parent.
+            inputs={p.physical for p in records if p.backend=='linux-input' and p.kind==item.kind and p.physical.split('|',1)[0]==item.physical}
+            if len(inputs)==1:item.physical=next(iter(inputs))
+        for item in records:
             if item.physical or not item.vid or not item.pid or item.simulated:continue
             peers=[p for p in records if not p.simulated and p.vid==item.vid and p.pid==item.pid and p.kind==item.kind]
             candidates={p.physical for p in peers if p.physical}
@@ -99,12 +106,21 @@ class DeviceManager:
             known={(c.name,c.backend) for c in current.capabilities}
             current.capabilities.extend(c for c in item.capabilities if (c.name,c.backend) not in known)
             current.faults.extend(item.faults)
+        for device in merged.values():
+            rgb=[c for c in device.capabilities if c.backend=='openrgb' and c.name in ['lighting','lighting_mode','brightness'] and c.writable]
+            if rgb:
+                for cap in device.capabilities:
+                    if cap.backend!='openrgb' and cap.name in ['lighting','lighting_mode','brightness'] and cap.writable:
+                        cap.writable=False;cap.limitation+=' RGB owner: OpenRGB; competing editor disabled.'
         return list(merged.values())
     def record_operation(self,args,result):
         backend=args[0]
-        target=args[1] if backend=='ratbagctl' and len(args)>1 else args[2] if backend in ['pactl','solaar'] and len(args)>2 else args[args.index('-d')+1] if backend=='headsetcontrol' and '-d' in args else None
+        if backend=='logi-sdk' and len(args)>=5:
+            backend,target,setting=args[1],args[3],args[4]
+        else:
+            target=args[1] if backend=='ratbagctl' and len(args)>1 else args[2] if backend in ['pactl','solaar'] and len(args)>2 else args[args.index('-d')+1] if backend=='headsetcontrol' and '-d' in args else None
         if target is None:return
-        setting='dpi' if 'dpi' in args else 'polling_rate' if 'rate' in args else 'lighting' if 'led' in args else 'buttons' if 'button' in args else 'profiles' if 'profile' in args else 'sidetone' if backend=='headsetcontrol' else args[3] if backend=='solaar' else args[1].rsplit('-',1)[-1]
+        if args[0]!='logi-sdk':setting='dpi' if 'dpi' in args else 'polling_rate' if 'rate' in args else 'lighting' if 'led' in args else 'buttons' if 'button' in args else 'profiles' if 'profile' in args else 'sidetone' if backend=='headsetcontrol' else args[3] if backend=='solaar' else args[1].rsplit('-',1)[-1]
         for device in self.devices:
             if target not in device.targets.get(backend,[]):continue
             if result.state.value=='disconnected':device.connected=False
@@ -115,6 +131,18 @@ class DeviceManager:
                 if result.state.value=='confirmed':
                     evidence='command_confirmed' if result.source=='device' else 'audio_server_command_confirmed'
                     if evidence not in cap.evidence:cap.evidence.append(evidence)
+    def guard_command(self,args):
+        """Apply the same ownership policy to editors and legacy backup writes."""
+        if not args:return
+        if args[0]=='logi-sdk' and len(args)>=5 and args[2]=='set':
+            backend,target,setting=args[1],args[3],args[4]
+            matches=[d for d in self.devices if target in d.targets.get(backend,[])]
+            if len(matches)!=1:raise Fault(FaultCode.DISCONNECTED,'device-manager','Write target is absent or ambiguous')
+            self.route(matches[0].id,setting,backend)
+        if args[0]=='ratbagctl' and len(args)>2 and 'led' in args and 'set' in args:
+            for device in self.devices:
+                if args[1] in device.targets.get('ratbagctl',[]) and any(c.backend=='openrgb' and c.writable and c.name in ['lighting','lighting_mode'] for c in device.capabilities):
+                    raise Fault(FaultCode.CONFIG,'device-manager','OpenRGB owns lighting for this device; competing writes are disabled')
     def route(self,device_id,setting,backend=None):
         device=next((d for d in self.devices if d.id==device_id),None)
         if device is None or device.connected is False:raise Fault(FaultCode.DISCONNECTED,'device-manager','Device is disconnected')
@@ -285,3 +313,16 @@ class SavedSolaarAdapter:
             caps=[Capability(key,self.name,None,True,False,False,value,'local_saved_settings',limitation='Saved configuration only; live feature support has not been probed.',evidence=['backend_supported']) for key,value in item.items() if not key.startswith('_')]
             result.append(Device('solaar-saved:'+identity(str(item.get('_serial') or item.get('_unitId') or str(item.get('_modelId',''))+':record:'+str(index))+name),name,'keyboard' if 'keyboard' in name.lower() or 'G515' in name else 'input',self.name,connected=None,capabilities=caps))
         return result
+
+
+def serial_usb_identity(serial,root='/sys/bus/usb/devices'):
+    """Private exact serial + unique physical USB parent, never public report data."""
+    if not serial or len(serial)<4 or len(set(serial))==1:return '', '', ''
+    matches=[]
+    for node in Path(root).glob('*'):
+        try:
+            if (node/'serial').read_text().strip()==serial:
+                item=usb_identity(node)
+                if item[0] and item not in matches:matches.append(item)
+        except OSError:continue
+    return matches[0] if len(matches)==1 else ('','','')

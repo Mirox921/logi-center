@@ -3,6 +3,12 @@ import json, os, re, subprocess, sys
 
 def run(args, timeout=20, cancel=None):
     from execution import command,Fault,FaultCode
+    if args[:1]==['logi-sdk']:
+        from pathlib import Path
+        raw=command([sys.executable,str(Path(__file__).with_name('sdk_worker.py')),*args[1:]],timeout=timeout,cancel=cancel)
+        reply=json.loads(raw)
+        if not reply['ok']:raise Fault(FaultCode(reply['code']),reply['component'],reply['message'])
+        return json.dumps(reply['value'])
     if len(args)>2 and args[0]=='ratbagctl' and 'set' in args:
         inventory=mouse_list(command(['ratbagctl','list'],timeout=min(timeout,5),cancel=cancel))
         matches=[item for item in inventory if item[0]==args[1]]

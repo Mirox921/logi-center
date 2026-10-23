@@ -151,7 +151,7 @@ def perform(plan,runner=None,cancel=None):
     def call(args):
         if cancel is not None and cancel.is_set():raise Fault(FaultCode.CANCELLED,plan.command[0],'Operation cancelled')
         return runner(args,cancel=cancel) if cancel is not None else runner(args)
-    component=plan.command[0]
+    component=plan.command[1] if plan.command[0]=='logi-sdk' and len(plan.command)>1 else plan.command[0]
     try:call(plan.command)
     except Fault as fault:
         state=fault_state(fault)

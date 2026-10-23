@@ -22,9 +22,13 @@ REMEDIES={
 
 def fault_for(error,component='application'):
     if isinstance(error,Fault):return error
-    if isinstance(error,FileNotFoundError):return Fault(FaultCode.MISSING,component,'Component or file not found')
+    if isinstance(error,(FileNotFoundError,ImportError)):return Fault(FaultCode.MISSING,component,'Component or file not found')
     if isinstance(error,PermissionError):return Fault(FaultCode.PERMISSION,component,'Access denied')
     if isinstance(error,(ValueError,KeyError,TypeError)):return Fault(FaultCode.CONFIG,component,redact(str(error)))
+    if isinstance(error,(ConnectionError,BrokenPipeError)):return Fault(FaultCode.CONNECTION,component,'Backend connection lost')
+    if isinstance(error,NotImplementedError):return Fault(FaultCode.BACKEND_UNSUPPORTED,component,'Operation not implemented by backend')
+    if isinstance(error,OSError) and error.errno in [6,19]:return Fault(FaultCode.DISCONNECTED,component,'Device disconnected')
+    if type(error).__name__=='DaemonNotFound':return Fault(FaultCode.CONNECTION,component,'Required daemon is not running')
     if isinstance(error,TimeoutError):return Fault(FaultCode.TIMEOUT,component,'Operation timed out')
     return Fault(FaultCode.INTERNAL,component,type(error).__name__)
 
@@ -88,4 +92,36 @@ def collect(runner=None,which=None,sysfs='/sys/class/hidraw'):
         report.append({'component':'microphone','state':'available' if physical else 'disconnected','description':str(len(physical))+' '+_('доступных источников; запись не запускалась.')})
     except Exception as error:
         fault=fault_for(error,'pactl');report.append({'component':'microphone','state':fault.code.value,'description':describe(fault)})
+    report.extend(backend_components(runner))
+    return report
+
+
+def backend_components(runner=None):
+    """Explicit read-only API probes. Missing optional components stay independent."""
+    from backend import run
+    runner=runner or run
+    report=[]
+    instructions={'mchose':'Built-in documented subset; USB access required. No automatic udev changes.',
+                  'openrgb':'Optional OpenRGB SDK server on 127.0.0.1:6742 and openrgb-python binding (Arch/AUR python-openrgb).',
+                  'openrazer':'Optional openrazer-daemon and python-openrazer; start/configure according to upstream documentation.',
+                  'rivalcfg':'Optional rivalcfg Python package and its packaged HID access rules.'}
+    for name,hint in instructions.items():
+        try:
+            if name=='mchose':
+                from mchose_adapter import MchoseAdapter
+                devices=MchoseAdapter(runner).discover();faults=[f for d in devices for f in d.faults]
+                state=faults[0].code.value if faults else 'available'
+                detail=str(len(devices))+' configuration interfaces; '+hint
+            else:
+                value=json.loads(runner(['logi-sdk',name,'status'],timeout=5));state='available';detail=str(value['version'])+'; '+str(value['devices'])+' devices; '+hint
+            report.append({'component':name,'state':state,'description':detail})
+        except Exception as error:
+            fault=fault_for(error,name);report.append({'component':name,'state':fault.code.value,'description':describe(fault)+' '+hint})
+    import importlib.metadata
+    try:
+        from ckb_adapter import CkbAdapter
+        devices=CkbAdapter().discover()
+        report.append({'component':'ckb-next','state':'available' if devices else 'not_detected','description':str(len(devices))+' daemon devices; read-only metadata integration. Optional ckb-next; no FIFO writes.'})
+    except Exception as error:
+        fault=fault_for(error,'ckb-next');report.append({'component':'ckb-next','state':fault.code.value,'description':describe(fault)})
     return report
