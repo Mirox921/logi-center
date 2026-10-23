@@ -1,6 +1,41 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Другие доступные настройки можно проверить в Solaar.':'Other available settings can be checked in Solaar.',
+'Данные аудиоустройства неполные; управление недоступно.':'Audio device data is incomplete; controls are unavailable.',
+'Текущее значение: ':'Current value: ',
+'Проверить отдельные настройки Solaar':'Probe individual Solaar settings','Явный запрос чтения. Только сообщённые backend варианты станут доступны для изменения.':'Explicit read request. Only backend-reported choices become writable.','Проверить':'Probe',
+'Backend не подтвердил поддержку этого назначения для выбранной кнопки.':'The backend has not confirmed support for this assignment on the selected button.',
+'Экспортировать отчёт JSON':'Export JSON report','Параметр':'Setting','Сейчас':'Current','Из копии':'From backup','Ожидаемое действие':'Expected action',
+'Мыши через libratbag':'Mice via libratbag',
+'Аудиоустройства Linux. Уровни применяются только по кнопке; выше 100% усиление не задаётся.':'Linux audio devices. Levels change only on request; gain above 100% is not set.',
+'Устройства':'Devices',
+'Клавиатуры':'Keyboards',
+'СИМУЛЯЦИЯ: реальные устройства и аудиозапись отключены.':'SIMULATION: real devices and audio capture are disabled.',
+'Аудиоустройства не обнаружены':'No audio devices detected',
+'Проверь подключение и открой диагностику компонентов.':'Check the connection and open component diagnostics.',
+'Стандартный ввод Linux; дополнительные функции показаны во вкладке устройств.':'Linux standard input; additional capabilities are listed in Devices.',
+'Клавиатуры не обнаружены':'No keyboards detected',
+'Дополнительные аппаратные функции требуют совместимого backend.':'Additional hardware features require a compatible backend.',
+'Справочная раскладка выбрана вручную. Переназначение и подсветка отдельных клавиш не обнаружены.':'Reference layout selected manually. Per-key remapping and lighting have not been detected.',
+'Обнаружено':'Detected',
+'Не поддерживается устройством':'Unsupported by device',
+'Поддержка не проверена':'Support not verified',
+'Чтение и изменение':'Read and write',
+'Изменение без чтения':'Write without readback',
+'Только чтение':'Read only',
+'Только информация backend':'Backend information only',
+'Возможно повторное чтение':'Readback available',
+'Аппаратное подтверждение недоступно':'Hardware verification unavailable',
+'Источник: ':'Source: ',
+'Устройства не обнаружены':'No devices detected',
+'СИМУЛЯЦИЯ · ':'SIMULATION · ',
+'Возможности не прочитаны':'Capabilities not read',
+'Наличие устройства не означает поддержку настройки через backend.':'Device detection does not imply backend configuration support.',
+'Ошибка чтения':'Read error',
+'Диагностика backend':'Backend diagnostics',
+
+'Доступно только локальное значение':'Only a locally saved value is available','Операция не поддерживается':'Operation unsupported','Нет доступа':'Access denied','Подтверждено звуковым сервером':'Confirmed by the audio server','Загрузить текущее':'Use current value','Черновик сохранён, но состояние устройства изменилось. Проверь значения или загрузи текущее.':'Draft retained, but device state changed. Review the values or use the current value.',
 'Схема расположения кнопок · не отображает текущий цвет подсветки':'Button layout illustration · does not show the current lighting color',
 'Кнопки':'Buttons','Подсветка':'Lighting','Профиль':'Profile','Звук':'Audio',
 'Диагностика':'Diagnostics','Диагностика компонентов':'Component diagnostics','Скопировать отчёт без личных данных':'Copy redacted report','Закрыть':'Close',
@@ -129,4 +164,10 @@ def tr(text):
     # Battery suffixes arrive as a formatted percentage string.
     for source in [' · заряжается',' · заряжено']:
         text=text.replace(source,EN[source])
+    return text
+
+def canonical_text(text):
+    if text in EN:return EN[text]
+    for source in ['Профиль ','Уровень ','Клавиша F']:
+        if text.startswith(source):return EN.get(source,source)+text[len(source):]
     return text

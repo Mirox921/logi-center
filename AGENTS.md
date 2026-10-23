@@ -12,3 +12,5 @@ Python 3 / GTK4 / libadwaita Linux desktop application. `app.py` owns the UI; `b
 - Serialize writes; use generation/cancellation guards for disconnects, rebinds and shutdown. No subprocess waits on GTK's main thread.
 - Keep raw HID identifiers, user paths, tokens and recordings out of diagnostic reports/repository. Existing private backups are outside the project.
 - No new release or external publication is implied by a code change. Keep logical local commits; preserve unrelated working changes.
+
+Universal architecture: `devices.py` adapter registry/capability inventory; `device_ui.py` shared presentation; `drafts.py` private base/desired state; `reports.py` allowlisted public JSON; `solaar_adapter.py` explicit scalar probes. Read `docs/universal-progress.md` for this cycle. `--simulate` must stay isolated from real command execution. Never merge units by model/VID/PID alone; require exact physical identity or unique candidates/selectors. Drafts and submitted-unverified values must survive refresh. Arch recipe is local; `scripts/prepare-arch.py` supplies a checksummed source archive, never installs.

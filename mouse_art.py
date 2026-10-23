@@ -7,6 +7,7 @@ WIDTH=480;HEIGHT=440
 
 def callouts(count):
     """Keep numbered controls outside the shell, with generous hit areas."""
+    if count>12:return {i:(50+(i%8)*54,70+(i//8)*44) for i in range(count)}
     left=[i for i in range(count) if i%2==0];right=[i for i in range(count) if i%2]
     result={}
     for side,indices in [(False,left),(True,right)]:
@@ -66,7 +67,8 @@ def render(cr,width,height,name,selected=None,count=11):
     for y in range(85,144,5):cr.move_to(247,y);cr.line_to(263,y);cr.stroke()
     panel(cr,[('move_to',246,179),('line_to',264,179),('line_to',266,193),('line_to',244,193)],(.26,.29,.32),(.10,.12,.15))
     # Subtle geometric palm mark, no external images or misleading live RGB.
-    cr.set_source_rgba(.52,.70,.76,.50);cr.set_line_width(3);cr.move_to(265,314);cr.line_to(246,314);cr.line_to(238,324);cr.line_to(238,340);cr.line_to(259,340);cr.line_to(259,330);cr.line_to(250,330);cr.stroke()
+    cr.set_source_rgba(.52,.70,.76,.50) if 'G502' in name or 'G305' in name else cr.set_source_rgba(0,0,0,0)
+    cr.set_line_width(3);cr.move_to(265,314);cr.line_to(246,314);cr.line_to(238,324);cr.line_to(238,340);cr.line_to(259,340);cr.line_to(259,330);cr.line_to(250,330);cr.stroke()
     anchors=layout(name,count)
     for index,(x,y) in anchors.items():
         ax,ay=x*WIDTH,y*HEIGHT;cx,cy=callouts(count)[index];active=index==selected

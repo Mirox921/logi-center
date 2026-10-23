@@ -10,3 +10,5 @@ Read AGENTS.md and docs/implementation-progress.md in the project root, then ins
 - Before restore, validate schema/model/digest and preserve an independent pre-restore snapshot. Allowlisted typed actions only; never execute commands embedded in a backup.
 - GUI changes must preserve generation guards and close resources on disconnect/shutdown. Audio capture is opt-in and temporary.
 - Run relevant tests first, then full suite for integration. Log only redacted fault classifications. Record actual hardware checks and unresolved limits in the progress file.
+
+- For multi-device changes, inspect devices.py and docs/universal-progress.md. Unknown capability differs from unsupported; merge only reliable identities and route a write once. Preserve private drafts separately from observations. Simulation evidence never upgrades to hardware evidence; public reports use the allowlist in reports.py.

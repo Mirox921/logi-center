@@ -78,9 +78,9 @@ def collect(runner=None,which=None,sysfs='/sys/class/hidraw'):
     for node in Path(sysfs).glob('*'):
         try:text=(node/'device/uevent').read_text()
         except OSError:continue
-        if '0000046D' not in text:continue
+        if 'HID_ID=' not in text:continue
         permitted=os.access('/dev/'+node.name,os.R_OK|os.W_OK)
-        report.append({'component':'Logitech HID access','state':'available' if permitted else 'permission_denied',
+        report.append({'component':'HID interface access','state':'available' if permitted else 'permission_denied',
                        'description':_('Доступ к интерфейсу устройства есть.') if permitted else describe(Fault(FaultCode.PERMISSION,'HID','Device access denied'))})
     try:
         sources=json.loads(runner(['pactl','-f','json','list','sources'],timeout=8))

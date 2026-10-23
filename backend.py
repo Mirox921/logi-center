@@ -3,11 +3,14 @@ import json, os, re, subprocess, sys
 
 def run(args, timeout=20, cancel=None):
     from execution import command,Fault,FaultCode
-    if len(args)>2 and args[:3]==['solaar','config','G515']:
-        if keyboard_online() is not True:raise Fault(FaultCode.DISCONNECTED,'solaar','Keyboard is not responding')
+    if len(args)>3 and args[:2]==['solaar','config']:
+        if args[2]=='G515' and keyboard_online() is not True:raise Fault(FaultCode.DISCONNECTED,'solaar','Keyboard is not responding')
         from pathlib import Path
         args=[sys.executable,str(Path(__file__).with_name('solaar_write.py')),*args[1:]]
-    return command(args,timeout=timeout,cancel=cancel)
+    try:return command(args,timeout=timeout,cancel=cancel)
+    except Fault as fault:
+        if len(args)>4 and args[1].endswith('solaar_write.py'):fault.message=fault.message.replace(args[3],'[device]')
+        raise
 
 def mouse_list(text):
     return [(m[1],m[2].strip()) for m in re.finditer(r'^([^\s:]+):\s+(.+)$',text,re.M)]
@@ -47,10 +50,10 @@ def wireless_batteries(root='/sys/class/power_supply'):
                 if '=' in line:
                     k,v=line.split('=',1);fields[k.removeprefix('POWER_SUPPLY_')]=v
             model=fields.get('MODEL_NAME','')
-            if fields.get('SCOPE')!='Device' or 'logitech' not in fields.get('MANUFACTURER','').lower():continue
+            if fields.get('SCOPE')!='Device':continue
             capacity=fields.get('CAPACITY','')
             percent=int(capacity) if capacity.isdigit() and 0<=int(capacity)<=100 else None
-            result.append({'model':model,'percent':percent,'level':fields.get('CAPACITY_LEVEL','Unknown'),
+            result.append({'id':directory.name,'model':model,'percent':percent,'level':fields.get('CAPACITY_LEVEL','Unknown'),
                            'online':fields.get('ONLINE','1')=='1','status':fields.get('STATUS','Unknown')})
         except OSError:continue
     return result
@@ -80,10 +83,19 @@ def load_preferences(path=None):
 def save_preferences(value,path=None):
     from pathlib import Path
     path=Path(path) if path else Path.home()/'.config/logi-center/preferences.json'
-    path.parent.mkdir(parents=True,exist_ok=True)
-    temporary=path.with_suffix('.tmp')
-    temporary.write_text(json.dumps(value,ensure_ascii=False,indent=2))
-    temporary.replace(path)
+    from drafts import atomic_json
+    atomic_json(path,value)
+
+
+def saved_solaar_devices(path=None):
+    from pathlib import Path
+    import yaml
+    path=Path(path) if path else Path.home()/'.config/solaar/config.yaml'
+    try:
+        if path.stat().st_size>2*1024*1024:return []
+        records=yaml.load(path.read_text(),Loader=yaml.BaseLoader)
+        return [record for record in records if isinstance(record,dict) and isinstance(record.get('_NAME'),str)] if isinstance(records,list) else []
+    except (OSError,ValueError,yaml.YAMLError,TypeError):return []
 
 def saved_keyboard(path=None):
     from pathlib import Path
@@ -172,7 +184,7 @@ def parse_mouse_info(text):
         leds=[]
         for m in re.finditer(r'LED: (\d+), depth: (\w+), mode: (\w+)([^\n]*)',body):
             color=re.search(r'color: ([0-9a-fA-F]{6})',m[4]);duration=re.search(r'duration: (\d+)',m[4]);brightness=re.search(r'brightness: (\d+)',m[4])
-            leds.append({'index':int(m[1]),'mode':m[3],'color':color[1] if color else None,'duration':int(duration[1]) if duration else None,'brightness':int(brightness[1]) if brightness else None})
+            leds.append({'index':int(m[1]),'depth':m[2],'mode':m[3],'color':color[1] if color else None,'duration':int(duration[1]) if duration else None,'brightness':int(brightness[1]) if brightness else None})
         profiles.append({'index':int(match[1]),'active':'(active)' in match[2],'rate':int(rate[1]) if rate else None,'resolutions':resolutions,'buttons':buttons,'leds':leds})
     return {'profiles':profiles,'active':next((p['index'] for p in profiles if p['active']),None)}
 

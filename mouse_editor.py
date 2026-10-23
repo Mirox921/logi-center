@@ -3,15 +3,15 @@ import gi
 gi.require_version('Gtk','4.0')
 from gi.repository import Gtk,Gdk
 from mouse_art import render as render_mouse,callouts,WIDTH,HEIGHT
-from mouse_models import layout,linux_key,friendly,conflicts,MacroDraft,assignment_label
-from operations import macro_tokens
+from mouse_models import layout,linux_key,friendly,conflicts,MacroDraft,assignment_label,action_allowed
+from operations import macro_tokens,read_action,same
 from i18n import tr as _
 
 class MouseEditor(Gtk.Box):
-    def __init__(self,name,buttons,actions,types,on_apply):
+    def __init__(self,name,buttons,actions,types,on_apply,state=None,on_draft=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL,spacing=12)
         self.buttons={b['index']:b for b in buttons};self.actions=actions;self.types=types;self.on_apply=on_apply;self.selected=None;self.recording=False
-        self.drafts={};self.widgets={}
+        self.drafts={};self.widgets={};self.choices={};self.on_draft=on_draft;self.loading=True
         self.append(Gtk.Label(label=_('Схема мыши: выбери кнопку. Изменения остаются черновиком до применения.'),wrap=True))
         self.model_name=name
         card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4)
@@ -42,7 +42,7 @@ class MouseEditor(Gtk.Box):
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),style,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
         self.append(card)
         self.current=Gtk.Label(wrap=True,selectable=True);self.append(self.current)
-        self.options=[_('Собственный макрос'),*actions]
+        self.options=[_('Собственный макрос'),*actions,_('Не изменять')]
         self.action=Gtk.DropDown.new_from_strings(self.options);self.append(self.action)
         tools=Gtk.Box(spacing=8)
         self.record=Gtk.ToggleButton(label=_('Записать клавиши'));self.record.connect('toggled',self.record_changed);tools.append(self.record)
@@ -56,7 +56,14 @@ class MouseEditor(Gtk.Box):
         undo=Gtk.Button(label=_('Отменить черновик'));undo.connect('clicked',lambda *unused:self.reset());commands.append(undo)
         apply=Gtk.Button(label=_('Применить'));apply.connect('clicked',self.apply);commands.append(apply);self.append(commands)
         keys=Gtk.EventControllerKey();keys.connect('key-pressed',self.key_pressed);keys.connect('key-released',self.key_released);self.add_controller(keys);self.set_focusable(True)
-        if buttons:self.select(buttons[0]['index'])
+        self.action.connect('notify::selected',self.choice_changed)
+        if state and isinstance(state,dict):
+            for key,tokens in state.get('tokens',{}).items():
+                if str(key).isdigit() and int(key) in self.buttons and isinstance(tokens,list) and all(isinstance(t,str) for t in tokens):self.drafts[int(key)]=MacroDraft(tokens=tokens)
+            self.choices={int(k):v for k,v in state.get('choices',{}).items() if str(k).isdigit() and int(k) in self.buttons}
+        selected=state.get('selected') if isinstance(state,dict) else None
+        if buttons:self.select(selected if selected in self.buttons else buttons[0]['index'])
+        self.loading=False
     def draw(self,area,cr,width,height):
         render_mouse(cr,width,height,self.model_name,self.selected,len(self.buttons))
     def diagram_clicked(self,gesture,count,x,y):
@@ -72,6 +79,7 @@ class MouseEditor(Gtk.Box):
             index=0 if x<249 else 1
             if index in self.buttons:self.select(index)
     def select(self,index):
+        self.loading=True
         self.record.set_active(False);self.selected=index
         self.drawing.queue_draw()
         for i,widget in self.widgets.items():
@@ -83,17 +91,36 @@ class MouseEditor(Gtk.Box):
         known=assignment_label(button,self.actions)
         readable=known or (' → '.join(friendly(t) for t in tokens) if button['macro'] else _('Собственное назначение'))
         self.current.set_text(_('Кнопка ')+str(index+1)+' · '+_('Сейчас: ')+readable)
-        option=known or self.options[0]
+        previous=self.choices.get(index)
+        option=(_('Не изменять') if previous==['unchanged'] else next((label for label,value in self.actions.items() if value==previous),self.options[0])) if index in self.choices else known or (self.options[0] if button['macro'] else _('Не изменять'))
         self.action.set_selected(self.options.index(option))
         supported=4 in self.types.get(index,[])
         self.record.set_sensitive(supported)
         self.warning.set_text('' if supported else _('Редактирование макросов не подтверждено backend для этой кнопки.'))
-        self.render()
+        self.render();self.loading=False
+    def has_changes(self):
+        for index,draft in self.drafts.items():
+            button=self.buttons[index]
+            if draft.tokens!=(macro_tokens(button['action']) if button['macro'] else []):return True
+        for index,choice in self.choices.items():
+            if choice is None or choice==['unchanged']:continue
+            button=self.buttons[index];actual=read_action(('macro ' if button['macro'] else '')+button['action'])
+            if not same(choice,actual):return True
+        return False
+    def state(self):
+        return {"dirty":self.has_changes(),"selected":self.selected,"tokens":{str(i):d.tokens[:] for i,d in self.drafts.items()},"choices":{str(i):v for i,v in self.choices.items()}}
+    def changed(self):
+        if not self.loading and self.on_draft:self.on_draft(self.state())
+    def choice_changed(self,*unused):
+        if self.loading or self.selected is None:return
+        choice=self.action.get_selected();self.choices[self.selected]=None if choice==0 else ['unchanged'] if self.options[choice]==_('Не изменять') else self.actions[self.options[choice]]
+        self.changed()
     def render(self):
         while self.events.get_first_child():self.events.remove(self.events.get_first_child())
         for index,token in enumerate(self.drafts[self.selected].tokens):
             row=Gtk.Box(spacing=8);row.append(Gtk.Label(label=friendly(token),hexpand=True,xalign=0))
             delete=Gtk.Button(icon_name='edit-delete-symbolic');delete.connect('clicked',lambda *unused,i=index:self.remove(i));row.append(delete);self.events.append(row)
+        self.changed()
     def record_changed(self,button):
         self.recording=button.get_active()
         button.set_label(_('Остановить запись клавиш') if self.recording else _('Записать клавиши'))
@@ -110,10 +137,12 @@ class MouseEditor(Gtk.Box):
     def pause(self,delay):self.drafts[self.selected].tokens.append('t'+str(delay));self.action.set_selected(0);self.render()
     def clear(self):self.drafts[self.selected]=MacroDraft();self.action.set_selected(0);self.render()
     def remove(self,index):self.drafts[self.selected].tokens.pop(index);self.render()
-    def reset(self):self.drafts.pop(self.selected,None);self.select(self.selected)
+    def reset(self):
+        self.drafts.pop(self.selected,None);self.choices.pop(self.selected,None);self.select(self.selected);self.changed()
     def apply(self,*unused):
         self.record.set_active(False)
         choice=self.action.get_selected()
+        if self.options[choice]==_('Не изменять'):return
         if choice==0:
             if 4 not in self.types.get(self.selected,[]):self.warning.set_text(_('Макросы для этой кнопки недоступны.'));return
             draft=self.drafts[self.selected]
@@ -124,4 +153,6 @@ class MouseEditor(Gtk.Box):
                 if getattr(self,'last_warning',None)!=tuple(draft.tokens):self.last_warning=tuple(draft.tokens);return
             action=['macro',*draft.tokens]
         else:action=self.actions[self.options[choice]]
+        if not action_allowed(action,self.types.get(self.selected,[])):
+            self.warning.set_text(_('Backend не подтвердил поддержку этого назначения для выбранной кнопки.'));return
         self.on_apply(self.selected,action)

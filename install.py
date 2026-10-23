@@ -9,7 +9,7 @@ destination=data_root/'logi-center'
 bin_dir=Path.home()/'.local/bin'
 apps_dir=data_root/'applications'
 for folder in [destination,bin_dir,apps_dir]:folder.mkdir(parents=True,exist_ok=True)
-for filename in ['app.py','backend.py','i18n.py','solaar_write.py','execution.py','operations.py','backups.py','discovery.py','ratbag_dbus.py','mouse_models.py','mouse_editor.py','mouse_art.py','audio_pipeline.py','microphone_ui.py','diagnostics.py']:
+for filename in ['app.py','backend.py','i18n.py','solaar_write.py','execution.py','operations.py','backups.py','discovery.py','ratbag_dbus.py','mouse_models.py','mouse_editor.py','mouse_art.py','audio_pipeline.py','microphone_ui.py','diagnostics.py','devices.py','device_ui.py','keyboard_ui.py','simulation.py','drafts.py','reports.py','solaar_adapter.py']:
     target=destination/filename
     if (source/filename).resolve()!=target.resolve():shutil.copy2(source/filename,target)
 launcher=bin_dir/'logi-center'

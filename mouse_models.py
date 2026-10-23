@@ -6,7 +6,11 @@ G502={0:(.445,.24),1:(.61,.24),2:(.532,.26),3:(.356,.51),4:(.357,.425),5:(.332,.
 G305={0:(.45,.24),1:(.61,.24),2:(.532,.26),3:(.375,.55),4:(.375,.46),5:(.53,.425)}
 def layout(name,count):
     known=G502 if 'G502' in name else G305 if 'G305' in name else {}
-    return {i:known.get(i, (.15+(i%4)*.22,.18+(i//4)*.2)) for i in range(count)}
+    rows=max(1,(count+3)//4)
+    return {i:known.get(i, (.17+(i%4)*.22,.18+(i//4)*.64/max(1,rows-1))) for i in range(count)}
+
+def action_allowed(action,types):
+    return {'disabled':0,'button':1,'special':2,'key':3,'macro':4}.get(action[0]) in types
 
 def assignment_label(button,actions):
     """Compare typed assignments, retaining the button/key/special discriminator."""
