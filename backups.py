@@ -135,6 +135,9 @@ class Change:
     category:str
     label:str
     args:list
+    current:object=None
+    desired:object=None
+    id:str=""
 
 @dataclass
 class Preview:
@@ -144,11 +147,33 @@ class Preview:
     skipped:list=field(default_factory=list)
 
 
+def change_values(args,current,backup):
+    def value(document):
+        settings=document['settings']
+        if args[0]=='ratbagctl':
+            if args[2:4]==['profile','active']:return next((p['index']+1 for p in settings['profiles'] if p['active']),None)
+            profile=next(p for p in settings['profiles'] if p['index']==int(args[3]))
+            if args[4]=='rate':return profile['rate']
+            if args[4]=='button':return next(b['action'] for b in profile['buttons'] if b['index']==int(args[5]))
+            if args[4]=='led':return next(v.get(args[7]) for v in profile['leds'] if v['index']==int(args[5]))
+            if args[4]=='resolution':
+                if args[5] in ['active','default']:return next((r['index']+1 for r in profile['resolutions'] if r[args[5]]),None)
+                resolution=next(r for r in profile['resolutions'] if r['index']==int(args[5]))
+                return not resolution['disabled'] if args[6] in ['enabled','disabled'] else resolution['dpi']
+        if args[0]=='solaar':return settings.get(args[3])
+        if args[0]=='pactl':
+            _,kind,field=args[1].split('-');node=next(d for d in settings[kind+'s'] if d['name']==args[2]);return node[field]
+        return None
+    return value(current),value(backup)
+
 def preview(backup,current,target):
     validate(backup);validate(current)
     if backup['device']!=current['device']:raise ValueError('Backup model does not match this device')
     result=Preview(backup,current);kind=backup['device']['kind']
-    def add(category,label,args):result.changes.append(Change(category,label,args))
+    def add(category,label,args):
+        old,new=change_values(args,current,backup)
+        key=hashlib.sha256(json.dumps(args,ensure_ascii=False).encode()).hexdigest()[:20]
+        result.changes.append(Change(category,label,args,old,new,key))
     if kind=='mouse':
         old={p['index']:p for p in current['settings']['profiles']}
         for p in backup['settings']['profiles']:
@@ -212,7 +237,7 @@ def restore(preview,selected,target,runner=None,cancel=None,safety_root=None,on_
     path=safety_root/('before-restore-'+uuid.uuid4().hex+'.json');write_backup(current,path)
     results=[];stopped=False
     for change in fresh.changes:
-        if change.category not in selected:continue
+        if change.category not in selected and change.id not in selected:continue
         result=perform(plan_for(change.args),runner,cancel=cancel);results.append((change.label,result))
         if on_result:on_result(result)
         if not result.accepted:stopped=True;break

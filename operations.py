@@ -5,7 +5,7 @@ import json,re,time
 from execution import Fault,FaultCode
 
 class State(str,Enum):
-    CONFIRMED='confirmed';SENT='sent_unverified';MISMATCH='mismatch';ERROR='error';DISCONNECTED='disconnected';CANCELLED='cancelled'
+    LOCAL='local_saved_only';UNSUPPORTED='unsupported';PERMISSION='permission_denied';CONFIRMED='confirmed';SENT='sent_unverified';MISMATCH='mismatch';ERROR='error';DISCONNECTED='disconnected';CANCELLED='cancelled'
 
 @dataclass
 class Observation:
@@ -137,6 +137,13 @@ def same(expected,actual,tolerance=0):
         return expanded(expected)==expanded(actual)
     return expected==actual
 
+def fault_state(fault,readback=False):
+    if fault.code==FaultCode.DISCONNECTED:return State.DISCONNECTED
+    if fault.code==FaultCode.CANCELLED:return State.CANCELLED
+    if not readback and fault.code in [FaultCode.UNSUPPORTED,FaultCode.DEVICE_UNSUPPORTED,FaultCode.BACKEND_UNSUPPORTED]:return State.UNSUPPORTED
+    if not readback and fault.code==FaultCode.PERMISSION:return State.PERMISSION
+    return State.SENT if readback else State.ERROR
+
 def perform(plan,runner=None,cancel=None):
     if runner is None:
         from backend import run
@@ -147,15 +154,15 @@ def perform(plan,runner=None,cancel=None):
     component=plan.command[0]
     try:call(plan.command)
     except Fault as fault:
-        state=State.DISCONNECTED if fault.code==FaultCode.DISCONNECTED else State.CANCELLED if fault.code==FaultCode.CANCELLED else State.ERROR
+        state=fault_state(fault)
         return Result(state,component,plan.expected,fault=fault)
     except Exception as error:return Result(State.ERROR,component,plan.expected,fault=Fault(FaultCode.INTERNAL,component,type(error).__name__))
     if plan.reader is None:return Result(State.SENT,component,plan.expected)
     try:observation=plan.reader(call)
     except Fault as fault:
-        state=State.DISCONNECTED if fault.code==FaultCode.DISCONNECTED else State.CANCELLED if fault.code==FaultCode.CANCELLED else State.SENT
+        state=fault_state(fault,readback=True)
         return Result(state,component,plan.expected,fault=fault)
     except Exception as error:return Result(State.SENT,component,plan.expected,fault=Fault(FaultCode.INTERNAL,component,'Readback unavailable: '+type(error).__name__))
     if not same(plan.expected,observation.value,plan.tolerance):state=State.MISMATCH
-    else:state=State.CONFIRMED if observation.source in ['device','audio_server'] else State.SENT
+    else:state=State.CONFIRMED if observation.source in ['device','audio_server'] else State.LOCAL if observation.source in ['local','local_saved_settings'] else State.SENT
     return Result(state,component,plan.expected,observation.value,observation.source)

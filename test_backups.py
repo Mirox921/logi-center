@@ -52,3 +52,13 @@ class Backups(unittest.TestCase):
         from backups import digest
         data['sha256']=digest(data)
         with self.assertRaisesRegex(ValueError,'version'):validate(data)
+    def test_preview_contains_old_new_and_stable_setting_id(self):
+        plan=preview(sample(1600),sample(),'mouse');change=plan.changes[0]
+        self.assertEqual((change.current,change.desired),(800,1600));self.assertTrue(change.id)
+        self.assertEqual(change.id,preview(sample(1600),sample(),'mouse').changes[0].id)
+    def test_restore_selects_one_setting_in_category(self):
+        current=sample();plan=preview(sample(1600,500),current,'mouse');dpi=next(c for c in plan.changes if c.desired==1600)
+        runner=Mock(side_effect=['','1600'])
+        with tempfile.TemporaryDirectory() as root,patch('backups.snapshot',return_value=current):
+            report=restore(plan,{dpi.id},'mouse',runner,safety_root=root)
+        self.assertEqual(len(report.results),1);self.assertEqual(runner.call_count,2)
