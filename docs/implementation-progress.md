@@ -80,3 +80,5 @@ Update after each stage with changed files, checks, limits and next action. Do n
 ## Unplugged G502 header fix (before v0.3.0)
 - Split remembered model name from live connectivity using MousePresence. Hotplug/refresh invalidates connectivity immediately; empty ratbag inventory marks it offline, backend failure leaves it unknown. Stale load callbacks are invalidated on refresh.
 - app.py, discovery.py, test_discovery.py and scripts/gui_smoke.py updated; 69 unit tests pass, including unplug/reconnect and backend failure. Current disconnected hardware reports `No devices available.` from ratbag. Header regression is covered by independent GTK smoke.
+
+2026-10-23: optional multi-vendor backend cycle implemented; read [backend expansion progress](backend-expansion-progress.md) and [support/limits](backend-support.md). 132 tests, GTK/simulation checks and local Arch build passed; K7 hardware access remains permission-denied. No new physical setting writes tested.

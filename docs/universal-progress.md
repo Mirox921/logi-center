@@ -46,3 +46,5 @@ Final verification completed:
 Device-name search added after the universal upgrade:
 - Devices tab has a case-insensitive search entry; whitespace is normalized, an empty-result message appears and backend diagnostics remain visible. Filtering only hides existing groups, preserving controls/drafts. Query survives inventory rebuild and language switch; stale search callbacks are ignored.
 - Updated device_ui.py/devices.py/i18n.py and search/GTK checks. 104 unit tests and live GTK smoke pass; no hardware writes/capture. Per-user runtime updated; existing open window is not forcibly closed. The earlier staged Arch package predates this UI addition.
+
+2026-10-23: optional multi-vendor backend cycle implemented; read [backend expansion progress](backend-expansion-progress.md) and [support/limits](backend-support.md). 132 tests, GTK/simulation checks and local Arch build passed; K7 hardware access remains permission-denied. No new physical setting writes tested.

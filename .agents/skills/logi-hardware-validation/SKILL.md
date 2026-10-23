@@ -12,3 +12,5 @@ Read AGENTS.md and docs/implementation-progress.md in the project root, then ins
 - Run relevant tests first, then full suite for integration. Log only redacted fault classifications. Record actual hardware checks and unresolved limits in the progress file.
 
 - For multi-device changes, inspect devices.py and docs/universal-progress.md. Unknown capability differs from unsupported; merge only reliable identities and route a write once. Preserve private drafts separately from observations. Simulation evidence never upgrades to hardware evidence; public reports use the allowlist in reports.py.
+
+- Optional providers run in sdk_worker.py; test fake public API objects as well as the shared Plan path. Do not turn SDK cache into hardware confirmation. MCHOSE read recovery must never send a profile write; retain per-connection selectors and unrelated-byte checks. ckb-next metadata discovery does not authorize FIFO writes. Test RGB ownership guards on legacy restoration, not just visible controls. See docs/backend-support.md for the source audit and denied physical K7 access.

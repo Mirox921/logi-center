@@ -155,3 +155,5 @@ Delete `~/.local/share/logi-center`, `~/.local/bin/logi-center`, and `~/.local/s
 - [EasyEffects](https://github.com/wwmm/easyeffects)
 
 Logi Center's own code is distributed under the [MIT license](LICENSE). Backend tools are installed separately and retain their own licenses. Logitech and device names belong to their respective owners.
+
+Optional multi-vendor providers, supported operations, Arch dependencies and hardware-validation limits are documented in [Backend support](docs/backend-support.md). MCHOSE, OpenRGB and OpenRazer scalar backups are partial capability snapshots; ckb-next currently provides detection only. New provider writes remain unverified on physical equipment in this development cycle.
