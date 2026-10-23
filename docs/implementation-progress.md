@@ -31,3 +31,11 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - 26 tests pass (10 new operation tests), including mismatch, unavailable readback, disconnect, missing backend, cancellation and real subprocess timeout. No device writes made.
 - Limits: libratbag does not expose optical LED state; retained provenance. UI generation/cancellation integration remains for stage 3.
 - Next: versioned backup/restore with typed allowlisted actions and pre-restore safety snapshot.
+
+## Stage 2 implemented
+- Added backups.py: versioned JSON + SHA-256, model/type validation, typed allowlisted restore actions, per-category preview, pre-restore safety snapshot, stale-preview rejection and partial outcome report.
+- Mouse captures supported profiles/macros/DPI/LED data as backend_cache; G515 exports local_saved_settings; audio exports audio_server values. Files are private and never execute embedded commands.
+- Added export/restore controls for mouse, keyboard and audio. Restore stops at first mismatch/error/disconnect; no speculative automatic rollback over a failed transport. Safety snapshot can be restored explicitly.
+- 33 tests pass, including corrupt input, incompatible model, unsafe action, partial restore, selection and changed-since-preview abort. Hardware restore not performed.
+- Limits: not a full firmware image; independent audio channel restoration is skipped rather than flattened. Device-specific unsupported writes remain diagnosed by backend results.
+- Next: event-based discovery, stale-task guards, cancellation and resource lifecycle.

@@ -165,7 +165,7 @@ def parse_mouse_info(text):
     for index,match in enumerate(sections):
         body=text[match.end():sections[index+1].start() if index+1<len(sections) else len(text)]
         rate=re.search(r'Report Rate: (\d+)Hz',body)
-        resolutions=[{'index':int(m[1]),'dpi':int(m[2]),'active':'(active)' in m[3],'disabled':'(disabled)' in m[3]} for m in re.finditer(r'^\s+(\d+): (\d+)dpi([^\n]*)',body,re.M)]
+        resolutions=[{'index':int(m[1]),'dpi':int(m[2]),'active':'(active)' in m[3],'disabled':'(disabled)' in m[3],'default':'(default)' in m[3]} for m in re.finditer(r'^\s+(\d+): (\d+)dpi([^\n]*)',body,re.M)]
         buttons=[{'index':int(m[1]),'action':m[3],'macro':bool(m[2])} for m in re.finditer(r"Button: (\d+) is mapped to (macro )?'([^']+)'",body)]
         leds=[]
         for m in re.finditer(r'LED: (\d+), depth: (\w+), mode: (\w+)([^\n]*)',body):
@@ -174,18 +174,19 @@ def parse_mouse_info(text):
         profiles.append({'index':int(match[1]),'active':'(active)' in match[2],'rate':int(rate[1]) if rate else None,'resolutions':resolutions,'buttons':buttons,'leds':leds})
     return {'profiles':profiles,'active':next((p['index'] for p in profiles if p['active']),None)}
 
-def read_mouse(device):
-    text=run(['ratbagctl',device,'info'])
+def read_mouse(device,runner=None):
+    runner=runner or run
+    text=runner(['ratbagctl',device,'info'])
     data=parse_mouse_info(text);data['text']=text
     for key,command in [('dpis',['dpi','get-all']),('rates',['rate','get-all'])]:
-        try:data[key]=[int(x) for x in run(['ratbagctl',device,*command]).split() if x.isdigit()]
+        try:data[key]=[int(x) for x in runner(['ratbagctl',device,*command]).split() if x.isdigit()]
         except Exception:data[key]=[]
     active=next((p for p in data['profiles'] if p['index']==data['active']),None)
     data['led_modes']={}
     if active:
         for led in active['leds']:
             try:
-                values=run(['ratbagctl',device,'profile',str(active['index']),'led',str(led['index']),'capabilities'])
+                values=runner(['ratbagctl',device,'profile',str(active['index']),'led',str(led['index']),'capabilities'])
                 data['led_modes'][led['index']]=[x for x in re.findall(r'\b(?:off|on|cycle|breathing)\b',values)]
             except Exception:data['led_modes'][led['index']]=[]
     return data

@@ -9,7 +9,7 @@ destination=data_root/'logi-center'
 bin_dir=Path.home()/'.local/bin'
 apps_dir=data_root/'applications'
 for folder in [destination,bin_dir,apps_dir]:folder.mkdir(parents=True,exist_ok=True)
-for filename in ['app.py','backend.py','i18n.py','solaar_write.py','execution.py','operations.py']:
+for filename in ['app.py','backend.py','i18n.py','solaar_write.py','execution.py','operations.py','backups.py']:
     target=destination/filename
     if (source/filename).resolve()!=target.resolve():shutil.copy2(source/filename,target)
 launcher=bin_dir/'logi-center'

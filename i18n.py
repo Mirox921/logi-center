@@ -1,6 +1,13 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Резервная копия':'Backup and recovery','Источник данных указан в файле; локальные настройки не являются аппаратной копией.':'The file identifies its source; local settings are not a hardware image.',
+'Сохранить настройки устройства':'Save device settings','Восстановить настройки':'Restore settings','Копия сохранена. Источник: ':'Backup saved. Source: ',
+'Предпросмотр восстановления':'Restore preview','Источник копии: ':'Backup source: ',
+'Перед изменениями будет сохранена защитная копия. При ошибке восстановление остановится; автоматический откат не гарантируется.':'A safety snapshot is saved before changes. Restore stops on failure; automatic rollback is not guaranteed.',
+'Пропущено: ':'Skipped: ','Изменений нет':'No changes','Отмена':'Cancel','Восстановить выбранное':'Restore selected',
+'Защитная копия: ':'Safety snapshot: ','Восстановление остановлено после ошибки. Проверь частично применённые настройки.':'Restore stopped after an error. Review the partially applied settings.',
+
 'Подтверждено устройством':'Confirmed by device/service','Команда отправлена, подтверждение недоступно':'Command sent; confirmation unavailable',
 'Значение не совпадает':'Value mismatch','Ошибка применения':'Apply failed','Устройство отключено':'Device disconnected','Операция отменена':'Operation cancelled',
 'Ответ из кэша backend, не аппаратное подтверждение':'Backend cache readback, not hardware confirmation','Запрошено: ':'Requested: ','Получено: ':'Reported: ',

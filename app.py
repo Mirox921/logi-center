@@ -4,6 +4,7 @@ from pathlib import Path
 import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
+from backups import snapshot, write_backup, read_backup, preview as backup_preview, restore as restore_backup
 from operations import perform, plan_for, Result, State
 from execution import Fault, FaultCode
 from i18n import tr as _, set_language
@@ -117,6 +118,61 @@ class Center(Adw.Application):
             for result in results:self.show_operation(result)
             if after and len(results)==len(commands) and all(r.accepted for r in results):after(results)
         self.job(write,completed)
+    def backup_controls(self,group,kind,target):
+        row=self.row(group,_('Резервная копия'),_('Источник данных указан в файле; локальные настройки не являются аппаратной копией.'))
+        self.button(row,_('Сохранить настройки устройства'),lambda *unused:self.export_backup(kind,target))
+        self.button(row,_('Восстановить настройки'),lambda *unused:self.choose_backup(kind,target))
+    def export_backup(self,kind,target):
+        dialog=Gtk.FileDialog(title=_('Сохранить настройки устройства'),initial_name=kind+'-backup.json')
+        def chosen(dialog,result):
+            try:path=dialog.save_finish(result).get_path()
+            except GLib.Error:return
+            if not path:return
+            def export():
+                document=snapshot(kind,target);write_backup(document,path);return document['source']
+            self.job(export,lambda source:self.toast.add_toast(Adw.Toast(title=_('Копия сохранена. Источник: ')+source)))
+        dialog.save(self.win,None,chosen)
+    def choose_backup(self,kind,target):
+        dialog=Gtk.FileDialog(title=_('Восстановить настройки'))
+        def chosen(dialog,result):
+            try:path=dialog.open_finish(result).get_path()
+            except GLib.Error:return
+            if not path:return
+            def inspect():
+                document=read_backup(path)
+                if document['device']['kind']!=kind:raise ValueError('Backup is for a different device type')
+                return backup_preview(document,snapshot(kind,target),target)
+            self.job(inspect,lambda value:self.restore_dialog(value,target))
+        dialog.open(self.win,None,chosen)
+    def restore_dialog(self,preview,target):
+        dialog=Adw.Dialog(title=_('Предпросмотр восстановления'),content_width=760,content_height=600)
+        content=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12,margin_start=20,margin_end=20,margin_top=20,margin_bottom=20)
+        content.append(Gtk.Label(label=_('Источник копии: ')+preview.backup['source'],wrap=True))
+        content.append(Gtk.Label(label=_('Перед изменениями будет сохранена защитная копия. При ошибке восстановление остановится; автоматический откат не гарантируется.'),wrap=True))
+        choices={}
+        for category in sorted({c.category for c in preview.changes}):
+            check=Gtk.CheckButton(label=category,active=True);choices[category]=check;content.append(check)
+        text='\n'.join(c.label for c in preview.changes)
+        if preview.skipped:text+='\n'+_('Пропущено: ')+'\n'.join(preview.skipped)
+        if not text:text=_('Изменений нет')
+        view=Gtk.TextView(editable=False,monospace=False,wrap_mode=Gtk.WrapMode.WORD_CHAR);view.get_buffer().set_text(text)
+        scroll=Gtk.ScrolledWindow(vexpand=True);scroll.set_child(view);content.append(scroll)
+        buttons=Gtk.Box(spacing=12,halign=Gtk.Align.END)
+        cancel=Gtk.Button(label=_('Отмена'));cancel.connect('clicked',lambda *unused:dialog.close());buttons.append(cancel)
+        apply=Gtk.Button(label=_('Восстановить выбранное'),sensitive=bool(preview.changes));buttons.append(apply);content.append(buttons)
+        def start(*unused):
+            selected={k for k,c in choices.items() if c.get_active()}
+            if not selected:return
+            dialog.close()
+            def completed(report):
+                lines=[_('Защитная копия: ')+report.safety_copy]
+                for label,result in report.results:lines.append(label+': '+result.state.value)
+                lines.extend(report.skipped)
+                if report.stopped:lines.append(_('Восстановление остановлено после ошибки. Проверь частично применённые настройки.'))
+                self.operation_result.set_text('\n'.join(lines))
+                self.refresh()
+            self.job(lambda:restore_backup(preview,selected,target),completed)
+        apply.connect('clicked',start);dialog.set_child(content);dialog.present(self.win)
     def group(self,page,title,description=None):
         g=Adw.PreferencesGroup(title=title,description=description);self.pages[page].append(g);return g
     def row(self,g,title,subtitle=''):
@@ -284,9 +340,11 @@ class Center(Adw.Application):
                     save_preferences(self.preferences)
                 self.apply_batch([['solaar','config','G515','rgb_control','true'],['solaar','config','G515','rgb_zone_1',value]],after=saved)
             self.button(r,_('Применить'),light)
+        self.backup_controls(kg,'keyboard','G515')
         kg.set_sensitive(self.keyboard_connected is True)
         row=self.row(kg,_('Все настройки клавиатуры'),_('Цвета по клавишам и сложные параметры пока редактируются в Solaar.'));self.button(row,_('Открыть Solaar'),lambda *unused:self.launch(['solaar','--window=show']))
         ag=self.group('audio',_('Звук и микрофон'),_('Выбери USB-карту G Pro X. Уровни применяются только по кнопке; выше 100% усиление не задаётся.'))
+        self.backup_controls(ag,'audio','all')
         found=False
         for kind,title,cmd in [('sinks',_('Выход'),'sink'),('sources',_('Микрофон'),'source')]:
             try:devices=json.loads(data.get(kind,'[]'))
@@ -336,6 +394,7 @@ class Center(Adw.Application):
     def mouse_controls(self,device,data):
         if hasattr(self,'mouse_extra') and self.mouse_extra.get_parent():self.mouse_extra.get_parent().remove(self.mouse_extra)
         g=self.group('mouse',self.current_mouse_name or _('Настройки мыши'));self.mouse_extra=g
+        self.backup_controls(g,'mouse',device)
         profiles=data['profiles']
         active=next((p for p in profiles if p['index']==data['active']),None)
         if active is None:
