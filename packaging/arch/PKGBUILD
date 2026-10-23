@@ -1,0 +1,44 @@
+# Local source package. scripts/prepare-arch.py supplies archive and exact checksum.
+pkgname=logi-center
+pkgver=0.4.0dev
+pkgrel=1
+pkgdesc='Capability-driven Linux peripheral manager using existing hardware backends'
+arch=('any')
+url='https://github.com/Mirox921/logi-center'
+license=('MIT')
+depends=('python' 'python-gobject' 'python-cairo' 'python-yaml' 'gtk4>=4.10' 'libadwaita>=1.5')
+optdepends=(
+  'libratbag: supported gaming mouse settings'
+  'piper: external mouse editor'
+  'solaar: Logitech HID++ settings and explicit feature probes'
+  'headsetcontrol: supported headset hardware features'
+  'libpulse: pactl audio controls and parec/paplay microphone tests'
+  'pipewire-pulse: PulseAudio-compatible audio server (or pulseaudio)'
+  'easyeffects: software audio effects and presets'
+  'python-pyudev: event-based input device detection'
+  'xdg-utils: links to documentation and preset catalogs'
+)
+source=("logi-center-${pkgver}.tar.gz")
+sha256sums=('SKIP') # Replaced by prepare-arch.py; not a network download.
+
+check() {
+  cd "$srcdir/logi-center-$pkgver"
+  python -m unittest -q
+  python -m compileall -q .
+}
+
+package() {
+  cd "$srcdir/logi-center-$pkgver"
+  install -dm755 "$pkgdir/usr/lib/logi-center" "$pkgdir/usr/bin"
+  for module in *.py; do
+    case "$module" in test_*|install.py) continue;; esac
+    install -m644 "$module" "$pkgdir/usr/lib/logi-center/"
+  done
+  printf '#!/bin/sh\nexec /usr/bin/python /usr/lib/logi-center/app.py "$@"\n' > "$pkgdir/usr/bin/logi-center"
+  chmod 755 "$pkgdir/usr/bin/logi-center"
+  install -Dm644 packaging/logi-center.desktop "$pkgdir/usr/share/applications/logi-center.desktop"
+  install -Dm644 packaging/icons/logi-center.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/logi-center.svg"
+  install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+  install -Dm644 README.ru.md "$pkgdir/usr/share/doc/$pkgname/README.ru.md"
+}

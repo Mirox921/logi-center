@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Logi Center
+Comment=Linux peripheral settings through supported backends
+Comment[ru]=Настройка периферии Linux через поддерживаемые backend
+Exec=/usr/bin/logi-center
+Icon=logi-center
+Terminal=false
+Categories=Settings;HardwareSettings;
+StartupNotify=true
+StartupWMClass=local.mirox.LogiCenter

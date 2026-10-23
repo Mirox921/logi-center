@@ -1,10 +1,16 @@
 # Logi Center
 
-A small Linux desktop control panel for Logitech G305, G502 HERO, G515 LIGHTSPEED TKL and wired G PRO X headsets. Built with Python, GTK 4 and libadwaita, with Russian and English interfaces.
+An extensible Linux peripheral control panel using libratbag, Solaar, HeadsetControl and the sound server. Existing Logitech G305, G502 HERO, G515 LIGHTSPEED TKL and wired G PRO X workflows are retained. Built with Python, GTK 4 and libadwaita, with Russian and English interfaces.
 
 [Читать по-русски](README.ru.md)
 
 Logi Center brings common controls into one window using existing Linux tools. It is an independent community project, not an official Logitech app or a complete G HUB replacement. It does not install a custom kernel driver.
+
+## Universal manager development update
+
+The current checkout adds a capability-driven device inventory, private persistent drafts/conflict handling, per-setting backup comparison, conservative backend identity merging, explicit individual Solaar probes, redacted JSON diagnostics and isolated `--simulate` mode. Existing v0.3.0 downloads predate this development work. See [scope, tests and readiness](docs/universal-upgrade.md).
+
+For Arch Linux, see [local package preparation/build/install instructions](packaging/arch/README.md). No package is installed by the preparation script. Per-key RGB/remapping and extra headset features are offered only when an implemented backend adapter exposes them; the generic keyboard diagram is a manually selected reference.
 
 ## Preview
 
