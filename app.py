@@ -4,6 +4,7 @@ from pathlib import Path
 import gi
 gi.require_version('Gtk','4.0');gi.require_version('Adw','1')
 from gi.repository import Gtk, Adw, GLib, Gio, Gdk
+from mouse_editor import MouseEditor
 from backups import snapshot, write_backup, read_backup, preview as backup_preview, restore as restore_backup
 from operations import perform, plan_for, Result, State
 from execution import Fault, FaultCode, CURRENT_CANCEL
@@ -492,6 +493,10 @@ class Center(Adw.Application):
                  **{(_('Клавиша F')+str(i)):['key',f'KEY_F{i}'] for i in range(1,13)},_('Отключить кнопку'):['disabled']}
         descriptions={' '.join(value):key for key,value in actions.items() if value[0] in ['button','special']}
         descriptions.update({value[1]:key for key,value in actions.items() if value[0]=='special'})
+        visual=Adw.ExpanderRow(title=_('Визуальный редактор кнопок'))
+        editor=MouseEditor(self.current_mouse_name,active['buttons'],actions,data.get('button_types',{}),
+            lambda index,action:self.apply([*prefix,'button',str(index),'action','set',*action]))
+        visual.add_row(editor);g.add(visual)
         for button in active['buttons']:
             current=descriptions.get(button['action'],'') if not button['macro'] else ''
             options=list(actions) if current else [_('Не изменять')]+list(actions)

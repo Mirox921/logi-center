@@ -1,6 +1,13 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Визуальный редактор кнопок':'Visual button editor','Схема мыши: выбери кнопку. Изменения остаются черновиком до применения.':'Mouse schematic: select a button. Changes remain a draft until applied.',
+'Собственный макрос':'Custom macro','Записать клавиши':'Record keys','Добавить паузу':'Add delay','Очистить':'Clear','Отменить черновик':'Discard draft',
+'Кнопка ':'Button ','Редактирование макросов не подтверждено backend для этой кнопки.':'The backend has not confirmed macro editing for this button.',
+'Остановить запись клавиш':'Stop recording keys','Нажимай клавиши в этом окне. Системные сочетания могут перехватываться рабочим столом.':'Press keys in this window. Desktop shortcuts may be intercepted by your compositor.',
+'Эта клавиша пока не поддерживается редактором.':'This key is not supported by the editor yet.','Макросы для этой кнопки недоступны.':'Macros are unavailable for this button.',
+'Сочетание может конфликтовать с рабочим столом. Нажми «Применить» повторно для подтверждения.':'This shortcut may conflict with the desktop. Click Apply again to confirm.',
+
 'Резервная копия':'Backup and recovery','Источник данных указан в файле; локальные настройки не являются аппаратной копией.':'The file identifies its source; local settings are not a hardware image.',
 'Сохранить настройки устройства':'Save device settings','Восстановить настройки':'Restore settings','Копия сохранена. Источник: ':'Backup saved. Source: ',
 'Предпросмотр восстановления':'Restore preview','Источник копии: ':'Backup source: ',

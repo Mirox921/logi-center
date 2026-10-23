@@ -182,6 +182,13 @@ def read_mouse(device,runner=None):
         try:data[key]=[int(x) for x in runner(['ratbagctl',device,*command]).split() if x.isdigit()]
         except Exception:data[key]=[]
     active=next((p for p in data['profiles'] if p['index']==data['active']),None)
+    data['button_types']={}
+    if active:
+        try:
+            from ratbag_dbus import button_types
+            match=re.search(r'Model:\s*(\S+)',text)
+            if match:data['button_types']=button_types(match[1],active['index'])
+        except Exception:pass  # Unknown capability must not be presented as supported.
     data['led_modes']={}
     if active:
         for led in active['leds']:

@@ -46,3 +46,9 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - Executor and subscriptions have explicit shutdown. Old mouse selection/refresh callbacks use revision checks.
 - 37 tests pass; inspected the installed pyudev callback signature and corrected to one Device argument. Mock rapid disconnect/reconnect and cancellation checked. Physical unplug/replug not exercised.
 - Next: model-aware visual mouse editor and real key/macro capture.
+
+## Stage 4 implemented
+- Added mouse_models.py / mouse_editor.py: G502 and G305 schematics + generic layout, selectable button regions, current action and macro events, direct key press/release capture, delay insertion/removal, draft reset and explicit apply.
+- Macro validation rejects unbalanced keys and warns on desktop shortcuts. Existing assignment dropdowns remain. ratbag_dbus.py reads ActionTypes; unknown macro capability disables new macro writes rather than assuming support.
+- 41 tests pass (layout, recording autorepeat, unbalanced keys, key mapping and conflict checks included). No button write performed on physical hardware. Full Wayland shortcut interception depends on compositor; UI explains the limit.
+- Next: separate microphone/headphone presets, explicit audio meter and private temporary recording paths.
