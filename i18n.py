@@ -168,6 +168,16 @@ EN.update({'Версия прошивки': 'Firmware version', 'Версия US
 
 EN.update({'Палитра подсветки':'Lighting palette'})
 
+EN.update({'Открыть': 'Open', 'Настройки устройства': 'Device settings', 'Нет доступа к заряду': 'Battery access denied', 'Сохранённое значение': 'Cached value', 'Устаревшее значение': 'Stale value', 'Свежесть неизвестна': 'Freshness unknown', 'Встроенное устройство': 'Internal device', 'Тип соединения неизвестен': 'Unknown connection type', 'Мыши не обнаружены': 'No mice detected', 'Подключи устройство. Сохранённые черновики останутся доступны после подключения.': 'Connect a device. Saved drafts remain available after reconnection.', 'Выбрать устройство': 'Select device', 'Аккумулятор': 'Battery', 'Обзор': 'Overview', 'Возможности устройства': 'Device capabilities', 'Доступны только настройки, предоставленные обнаруженными backend.': 'Only settings provided by detected backends are available.', 'Чувствительность и скорость': 'Sensitivity and speed', 'Диагностика возможностей': 'Capability diagnostics', 'Почему некоторые настройки недоступны': 'Why some settings are unavailable'})
+
+EN.update({'Клавиши':'Keys','Профили':'Profiles','Дополнительные функции':'Additional features'})
+
+EN.update({'Последнее чтение не удалось':'Last read failed','Производитель':'Manufacturer'})
+
+EN.update({'Дополнительно':'More'})
+
+EN.update({'Мыши':'Mice'})
+
 def set_language(language):
     global LANGUAGE
     LANGUAGE=language if language in ['ru','en'] else 'en'

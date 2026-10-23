@@ -10,7 +10,7 @@ bin_dir=Path.home()/'.local/bin'
 apps_dir=data_root/'applications'
 icon_dir=data_root/'icons/hicolor/scalable/apps'
 for folder in [destination,bin_dir,apps_dir,icon_dir]:folder.mkdir(parents=True,exist_ok=True)
-for filename in ['app.py','backend.py','i18n.py','solaar_write.py','execution.py','operations.py','backups.py','discovery.py','ratbag_dbus.py','mouse_models.py','mouse_editor.py','mouse_art.py','audio_pipeline.py','microphone_ui.py','diagnostics.py','devices.py','device_ui.py','keyboard_ui.py','simulation.py','drafts.py','reports.py','solaar_adapter.py','mchose_adapter.py','sdk_worker.py','openrgb_adapter.py','openrazer_adapter.py','rivalcfg_adapter.py','ckb_adapter.py','capability_backup.py','ace68_adapter.py','ace68_protocol.py']:
+for filename in ['app.py','backend.py','i18n.py','solaar_write.py','execution.py','operations.py','backups.py','discovery.py','ratbag_dbus.py','mouse_models.py','mouse_editor.py','mouse_art.py','audio_pipeline.py','microphone_ui.py','diagnostics.py','devices.py','device_ui.py','keyboard_ui.py','simulation.py','drafts.py','reports.py','solaar_adapter.py','mchose_adapter.py','sdk_worker.py','openrgb_adapter.py','openrazer_adapter.py','rivalcfg_adapter.py','ckb_adapter.py','capability_backup.py','ace68_adapter.py','ace68_protocol.py','peripheral_ui.py','device_status.py']:
     target=destination/filename
     if (source/filename).resolve()!=target.resolve():shutil.copy2(source/filename,target)
 icon_source=source/'packaging/icons/logi-center.svg'

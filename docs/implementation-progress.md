@@ -84,3 +84,5 @@ Update after each stage with changed files, checks, limits and next action. Do n
 2026-10-23: optional multi-vendor backend cycle implemented; read [backend expansion progress](backend-expansion-progress.md) and [support/limits](backend-support.md). 132 tests, GTK/simulation checks and local Arch build passed; K7 hardware access remains permission-denied. No new physical setting writes tested.
 
 2026-10-23, subsequent MCHOSE cycle: see [mouse/keyboard progress and current hardware evidence](mchose-devices-progress.md). This supersedes the previous denied-access status for the local K7; Ace68-II uses an independent keyboard adapter.
+
+2026-10-23: physical-device category and keyboard UI correction; see [current progress](category-ui-progress.md).

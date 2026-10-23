@@ -15,7 +15,7 @@ from execution import Fault, FaultCode, CURRENT_CANCEL
 from discovery import Epoch,DeviceMonitor,MousePresence
 from drafts import DraftStore,atomic_json
 from i18n import EN,canonical_text
-from devices import mouse_capabilities,DeviceManager,InputAdapter,RatbagAdapter,PulseAdapter,HeadsetAdapter,SavedSolaarAdapter
+from devices import KernelBatteryAdapter,mouse_capabilities,DeviceManager,InputAdapter,RatbagAdapter,PulseAdapter,HeadsetAdapter,SavedSolaarAdapter
 from device_ui import populate_inventory
 from keyboard_ui import KeyboardDiagram,MagneticKeyboardEditor
 from mchose_adapter import MchoseAdapter
@@ -69,7 +69,7 @@ class Center(Adw.Application):
         header.pack_start(languages);layout.append(header)
         self.stack=Adw.ViewStack();switcher=Adw.ViewSwitcherBar(stack=self.stack,reveal=True);layout.append(switcher)
         self.pages={}
-        for key,title,icon in [('devices',_('Устройства'),'computer-symbolic'),('mouse',_('Мышь'),'input-mouse-symbolic'),('keyboard',_('Клавиатуры'),'input-keyboard-symbolic'),('audio',_('Звук'),'audio-headphones-symbolic')]:
+        for key,title,icon in [('devices',_('Устройства'),'computer-symbolic'),('mouse',_('Мыши'),'input-mouse-symbolic'),('keyboard',_('Клавиатуры'),'input-keyboard-symbolic'),('audio',_('Звук'),'audio-headphones-symbolic')]:
             box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=20,margin_top=24,margin_bottom=24,margin_start=32,margin_end=32)
             clamp=Adw.Clamp(maximum_size=860);clamp.set_child(box)
             scroll=Gtk.ScrolledWindow(vexpand=True);scroll.set_child(clamp)
@@ -79,6 +79,7 @@ class Center(Adw.Application):
         layout.append(self.battery_box)
         self.update_batteries()
         self.battery_timer=GLib.timeout_add_seconds(30,self.poll_keyboard) if not self.simulation else 0
+        self.peripheral_timer=GLib.timeout_add_seconds(30,self.poll_peripherals) if not self.simulation else 0
         self.sdk_timer=GLib.timeout_add_seconds(15,self.poll_sdk) if not self.simulation else 0
         layout.append(self.stack)
         if '--keyboard' in sys.argv:self.stack.set_visible_child_name('keyboard')
@@ -96,6 +97,7 @@ class Center(Adw.Application):
         if language==self.preferences.get('language','ru'):return
         self.preferences['language']=language;save_preferences(self.preferences);set_language(language)
         if getattr(self,'battery_timer',0):GLib.source_remove(self.battery_timer)
+        if getattr(self,'peripheral_timer',0):GLib.source_remove(self.peripheral_timer)
         if getattr(self,'sdk_timer',0):GLib.source_remove(self.sdk_timer)
         old_window=self.win
         page=self.stack.get_visible_child_name()
@@ -361,16 +363,63 @@ class Center(Adw.Application):
             GLib.idle_add(deliver)
         future.add_done_callback(finish)
         return True
+    def poll_peripherals(self):
+        if self.closed:return False
+        if self.active_jobs or not self.win.get_visible():return True
+        devices=[d for d in self.device_manager.active('mouse')+self.device_manager.active('keyboard') if any(c.name=='battery_status' and c.backend in ['mchose','openrazer'] for c in d.capabilities)]
+        def collect():
+            results=[]
+            for device in devices:
+                for backend in ['mchose','openrazer']:
+                    targets=device.targets.get(backend,[])
+                    if len(targets)!=1:continue
+                    try:
+                        state=json.loads(run(['logi-sdk',backend,'read',targets[0]]))
+                        results.append((device.id,backend,targets[0],state,None))
+                    except Exception as error:results.append((device.id,backend,targets[0],None,error))
+            kernel=KernelBatteryAdapter().discover();KernelBatteryAdapter().associate([*self.device_manager.devices,*kernel])
+            return results,kernel
+        def loaded(outcome):
+            results,kernel=outcome
+            from devices import now
+            from diagnostics import fault_for
+            for ident,backend,target,state,error in results:
+                current=next((d for d in self.device_manager.devices if d.id==ident and target in d.targets.get(backend,[])),None)
+                if current is None:continue
+                if error:
+                    fault=fault_for(error,backend)
+                    current.faults=[f for f in current.faults if f.component!=backend]+[fault]
+                    if fault.code==FaultCode.DISCONNECTED:
+                        current.connected=False
+                        GLib.idle_add(lambda:(self.refresh(force=False),False)[1])
+                    continue
+                for cap in current.capabilities:
+                    if cap.backend==backend and cap.name in ['battery_status','charging']:
+                        value=state.get('settings',{}).get(cap.name,{}).get('value') if backend=='openrazer' else state.get(cap.name)
+                        cap.value=value;cap.observed_at=now()
+                current.faults=[f for f in current.faults if f.component!=backend]
+            for battery in kernel:
+                matches=[d for d in self.device_manager.devices if d.physical==battery.physical and d.kind==battery.kind]
+                if len(matches)==1:
+                    current=matches[0]
+                    for observed in battery.capabilities:
+                        cap=next((c for c in current.capabilities if c.name==observed.name and c.backend==observed.backend),None)
+                        if cap:cap.value=observed.value;cap.observed_at=observed.observed_at
+            self.update_batteries()
+        self.job(collect,loaded)
+        return True
     def update_batteries(self):
         if self.simulation:return True
+        from peripheral_ui import battery_text
         entries=[]
-        if self.mouse_presence.name:
-            state=self.mouse_presence.connected
-            status=_('Подключена по USB') if state is True and 'G502' in self.mouse_presence.name else _('Подключена') if state is True else _('Не в сети') if state is False else _('Связь не подтверждена')
-            entries.append(('mouse',self.mouse_presence.name+' · '+status,'input-mouse-symbolic' if state is True else 'network-offline-symbolic'))
-        for index,battery in enumerate(wireless_batteries()):
-            text,icon=battery_label(battery)
-            entries.append((battery.get('id',str(index)),battery['model']+' · '+_(text),icon))
+        for kind in ['mouse','keyboard']:
+            for device in self.device_manager.active(kind):
+                if not any(c.name=='battery_status' for c in device.capabilities):continue
+                entries.append((device.id,device.name+' · '+battery_text(device),'battery-good-symbolic'))
+            selected=getattr(self,'peripheral_battery_rows',{}).get(kind)
+            if selected:
+                device=next((d for d in self.device_manager.devices if d.id==selected[0]),None)
+                if device:selected[1].set_subtitle(battery_text(device))
         keys=tuple(item[0] for item in entries)
         if keys!=self.battery_keys:
             while self.battery_box.get_first_child():self.battery_box.remove(self.battery_box.get_first_child())
@@ -385,6 +434,7 @@ class Center(Adw.Application):
     def hardware_event(self,reason):
         if self.closed:return False
         if reason=='battery':
+            self.poll_peripherals()
             self.update_batteries()
             if not self.keyboard_polling:self.poll_keyboard()
             return False
@@ -402,6 +452,7 @@ class Center(Adw.Application):
     def shutdown_resources(self,*unused):
         self.closed=True;self.epoch.invalidate()
         if getattr(self,'battery_timer',0):GLib.source_remove(self.battery_timer)
+        if getattr(self,'peripheral_timer',0):GLib.source_remove(self.peripheral_timer)
         if getattr(self,'sdk_timer',0):GLib.source_remove(self.sdk_timer)
         if self.hotplug_timer:GLib.source_remove(self.hotplug_timer)
         if hasattr(self,'audio_session'):self.audio_session.close()
@@ -437,7 +488,7 @@ class Center(Adw.Application):
             cached={tuple(args):data[key] for key,args in [('mice',['ratbagctl','list']),('headset',['headsetcontrol','-o','json']),('sinks',['pactl','-f','json','list','sinks']),('sources',['pactl','-f','json','list','sources'])] if key in data}
             def inventory_run(args,**kwargs):
                 return cached[tuple(args)] if tuple(args) in cached else run(args,**kwargs)
-            manager=DeviceManager([InputAdapter(),RatbagAdapter(inventory_run),PulseAdapter(inventory_run),HeadsetAdapter(inventory_run),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter(),Ace68Adapter()])
+            manager=DeviceManager([InputAdapter(),KernelBatteryAdapter(),RatbagAdapter(inventory_run),PulseAdapter(inventory_run),HeadsetAdapter(inventory_run),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter(),Ace68Adapter()])
             manager.discover();data['manager']=manager
             return data
         self.job(collect,lambda data:self.populate(data,force) if revision==self.refresh_revision else None)
@@ -492,17 +543,11 @@ class Center(Adw.Application):
             if page in changed:self.clear(page);builder(data)
         self.page_fingerprints=fingerprints
     def populate_mouse(self,data):
-        mice=list(dict.fromkeys(mouse_list(data.get('mice',''))))
-        selected=self.mouse_presence.update(mice,error='mice_error' in data)
-        g=self.group('mouse',_('Мыши через libratbag'),_('Настрой скорость движения указателя, плавность и действия кнопок.'))
-        if mice:
-            for device,name in mice:
-                row=self.row(g,name,_('Неоднозначный идентификатор backend') if device in self.ambiguous_mouse_targets else _('Подключена'))
-                button=self.button(row,_('Прочитать настройки'),lambda *unused,d=device,n=name:self.load_mouse(d,n));button.set_sensitive(device not in self.ambiguous_mouse_targets)
-            selected=next((item for item in mice if item[0] not in self.ambiguous_mouse_targets and item==selected),next((item for item in mice if item[0] not in self.ambiguous_mouse_targets),None))
-            if selected:self.load_mouse(selected[0],selected[1])
-        else:self.row(g,_('Мышь недоступна'),_('Включи мышь и подключи USB-приёмник.'))
-        row=self.row(g,_('Расширенный редактор'),_('Полный интерфейс Piper: профили и макросы.'));self.button(row,_('Открыть Piper'),lambda *unused:self.launch(['piper']))
+        from peripheral_ui import populate
+        populate(self,'mouse',data)
+    def keyboard_controls(self,data):
+        from peripheral_ui import populate
+        populate(self,'keyboard',data)
     def populate_audio(self,data):
         ag=self.group('audio',_('Звук и микрофон'),_('Аудиоустройства Linux. Уровни применяются только по кнопке; выше 100% усиление не задаётся.'))
         self.draft_scope='audio'
@@ -559,24 +604,8 @@ class Center(Adw.Application):
         r=self.row(effects,_('Эквалайзер и обработка микрофона'));self.button(r,_('Редактор эффектов'),lambda *unused:self.launch(['easyeffects']))
         r=self.row(effects,_('Звуковые эффекты'),_('Общий обход обработки влияет и на микрофон, и на наушники.'));self.button(r,_('С эффектами'),lambda *unused:self.apply(['easyeffects','-b','2']));self.button(r,_('Без эффектов'),lambda *unused:self.apply(['easyeffects','-b','1']))
         GLib.timeout_add(80,self.restore_scroll)
-    def keyboard_controls(self,data):
-        keyboards=[d for d in self.device_manager.devices if d.kind=='keyboard' and d.backend!='solaar-local']
-        for device in keyboards:
-            if 'mchose-ace68' in device.backends:
-                group=self.group('keyboard',device.name,_('Настройки магнитных клавиш прочитаны из устройства. Изменения применяются только по кнопке.'))
-                group.add(MagneticKeyboardEditor(self,device))
-                from device_ui import add_control,add_backup_controls
-                for cap in device.capabilities:
-                    if cap.name in ['profiles','polling_rate','brightness','lighting_mode','lighting_speed','lighting_palette','lighting'] and cap.plan and cap.writable:
-                        row=self.row(group,_(dict(profiles='Встроенный профиль',polling_rate='Частота опроса, Гц',brightness='Яркость',lighting_mode='Эффект подсветки',lighting_speed='Скорость эффекта',lighting_palette='Палитра подсветки',lighting='Подсветка')[cap.name]))
-                        add_control(self,row,device,cap)
-                if any(c.name=='profiles' and c.backend=='mchose-ace68' for c in device.capabilities):add_backup_controls(self,group,device)
-                continue
-            group=self.group('keyboard',device.name,_('Стандартный ввод Linux; дополнительные функции показаны во вкладке устройств.'))
-            group.add(KeyboardDiagram())
-        if not saved_keyboard() and data.get('keyboard_online') is not True:
-            if not keyboards:self.group('keyboard',_('Клавиатуры не обнаружены'),_('Дополнительные аппаратные функции требуют совместимого backend.'))
-            return
+    def legacy_keyboard_controls(self,data):
+        if data.get('keyboard_online') is not True:return
         kg=self.group('keyboard','Logitech G515 Lightspeed TKL',_('Выбери яркость, цвет и поведение подсветки.'))
         self.keyboard_connected=data.get('keyboard_online')
         self.update_batteries()
@@ -670,9 +699,9 @@ class Center(Adw.Application):
             self.current_mouse_name=selected_name
             self.mouse_presence.name=selected_name;self.mouse_presence.connected=True
             self.update_batteries()
-            record=next((d for d in self.device_manager.devices if d.backend=='ratbagctl' and d.target==device),None)
+            record=next((d for d in self.device_manager.devices if device in d.targets.get('ratbagctl',[])),None)
             if record:
-                record.capabilities=mouse_capabilities(data,device)
+                record.capabilities=[c for c in record.capabilities if c.backend!='ratbagctl']+mouse_capabilities(data,device)
                 match=re.search(r'Model:\s*[^:]+:([0-9a-fA-F]{4}):([0-9a-fA-F]{4})',data.get('text',''))
                 if match:record.vid,record.pid=match.groups()
                 DeviceManager.link_physical(self.device_manager.devices)

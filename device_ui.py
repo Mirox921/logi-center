@@ -52,7 +52,10 @@ def populate_inventory(center,devices,faults=()):
                         populate_inventory(center,center.device_manager.devices,center.device_manager.faults)
                     center.job(lambda:probe(r),loaded)
                 center.button(row,_('Проверить'),inspect)
-        if any(c.backend in ['mchose','openrgb','openrazer','mchose-ace68'] and c.readable for c in device.capabilities):add_backup_controls(center,group,device)
+        if device.kind in ['mouse','keyboard']:
+            destination='mouse' if device.kind=='mouse' else 'keyboard'
+            center.button(center.row(group,_('Настройки устройства')),_('Открыть'),lambda *unused,p=destination:center.stack.set_visible_child_name(p))
+        elif any(c.backend in ['mchose','openrgb','openrazer','mchose-ace68'] and c.readable for c in device.capabilities):add_backup_controls(center,group,device)
         if not device.capabilities:center.row(group,_('Возможности не прочитаны'),_('Наличие устройства не означает поддержку настройки через backend.'))
         for cap in device.capabilities:
             setting=cap.name.rsplit(':',1)[-1]
@@ -73,7 +76,7 @@ def populate_inventory(center,devices,faults=()):
                     except ValueError as error:center.present_fault(error);return
                     center.job(lambda:center.simulation_adapter.apply(d.target,c.name,value),center.show_operation)
                 center.button(row,_('Применить'),simulate)
-            if cap.writable and cap.plan is not None and not device.simulated:
+            if cap.writable and cap.plan is not None and not device.simulated and device.kind not in ['mouse','keyboard']:
                 add_control(center,row,device,cap)
         for fault in device.faults:center.row(group,_('Ошибка чтения'),str(fault))
     center.pages['devices'].append(empty)
@@ -117,8 +120,9 @@ def add_control(center,row,device,cap):
             plan=current.plan(value)
             center.submit_drafts([key],lambda:center.apply(plan.command,verified_plan=plan,after=(lambda result:center.refresh(force=False)) if cap.name in ['profiles','lighting_mode'] else None))
         except Exception as error:center.present_fault(error)
-    center.button(row,_('Загрузить текущее'),lambda *unused:(center.draft_store.discard(key),setter(observed)))
-    center.button(row,_('Применить'),apply)
+    reset=center.button(row,_('Загрузить текущее'),lambda *unused:(center.draft_store.discard(key),setter(observed)))
+    reset.set_child(Gtk.Image(icon_name='edit-undo-symbolic'));reset.set_tooltip_text(_('Загрузить текущее'))
+    submit=center.button(row,_('Применить'),apply);submit.set_child(Gtk.Image(icon_name='object-select-symbolic'));submit.set_tooltip_text(_('Применить'))
 
 
 def add_backup_controls(center,group,device):
@@ -138,5 +142,5 @@ def add_backup_controls(center,group,device):
             except GLib.Error:return
             if path:center.job(lambda:backup.preview(backup.read(path),backup.capture(device),device),lambda preview:center.restore_dialog(preview,device,restorer=backup.restore))
         dialog.open(center.win,None,chosen)
-    center.button(row,_('Сохранить настройки устройства'),save)
-    center.button(row,_('Восстановить настройки'),load)
+    save_button=center.button(row,_('Сохранить настройки устройства'),save);save_button.set_child(Gtk.Image(icon_name='document-save-symbolic'));save_button.set_tooltip_text(_('Сохранить настройки устройства'))
+    load_button=center.button(row,_('Восстановить настройки'),load);load_button.set_child(Gtk.Image(icon_name='document-open-symbolic'));load_button.set_tooltip_text(_('Восстановить настройки'))

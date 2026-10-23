@@ -1,23 +1,28 @@
 """A labelled generic keyboard diagram; no unsupported per-key write controls."""
 import gi
 gi.require_version('Gtk','4.0')
-from gi.repository import Gtk
+from gi.repository import Gtk,Gdk,Pango
 from i18n import tr as _
 
 class KeyboardDiagram(Gtk.Box):
     def __init__(self,model=None,on_select=None):
         super().__init__(orientation=Gtk.Orientation.VERTICAL,spacing=8)
+        self.set_hexpand(True)
         self.buttons={};self.on_select=on_select;self.selected=None
         if model=='ace68':
             from ace68_adapter import LAYOUT
             from ace68_protocol import KEY_INDICES
             ids=iter(KEY_INDICES)
-            for labels in LAYOUT:
-                row=Gtk.Box(spacing=3,homogeneous=False)
+            widths=[{'Backspace':8},{'Tab':6,'\\':6},{'Caps':7,'Enter':9},{'LShift':9,'RShift':7},{'LCtrl':5,'Super':5,'LAlt':5,'Space':25}]
+            for row_index,labels in enumerate(LAYOUT):
+                row=Gtk.Grid(column_homogeneous=True,column_spacing=0);column=0
                 for label in labels:
-                    index=str(next(ids));button=Gtk.Button(label=label,hexpand=True,tooltip_text=label)
-                    button.set_size_request(70 if label=='Space' else 30,-1)
-                    button.connect('clicked',lambda unused,k=index:self.select(k));self.buttons[index]=button;row.append(button)
+                    index=str(next(ids));caption={'Backspace':'⌫','LShift':'⇧','RShift':'⇧','LCtrl':'Ctrl','RCtrl':'Ctrl','LAlt':'Alt','RAlt':'Alt','Space':'Space','Enter':'↵','Super':'◆','Caps':'⇪','PgUp':'Pg↑','PgDn':'Pg↓'}.get(label,label)
+                    button=Gtk.Button(label=caption,hexpand=True,tooltip_text=label);button.add_css_class('keycap')
+                    text=button.get_child();text.set_ellipsize(Pango.EllipsizeMode.END);text.set_width_chars(1)
+                    button.set_size_request(0,34)
+                    button.connect('clicked',lambda unused,k=index:self.select(k));self.buttons[index]=button
+                    span=widths[row_index].get(label,4);button.set_margin_end(2);row.attach(button,column,0,span,1);column+=span
                 self.append(row)
             return
         self.size=Gtk.DropDown.new_from_strings(['ANSI · TKL','ANSI · Full size','ISO · TKL'])
@@ -46,6 +51,8 @@ class KeyboardDiagram(Gtk.Box):
 
 KEY_LABELS={'actuation':'Точка срабатывания, мм','rapid_trigger':'Режим Rapid Trigger','rt_press':'RT при нажатии, мм','rt_release':'RT при отпускании, мм','press_dead_zone':'Верхняя мёртвая зона, мм','release_dead_zone':'Нижняя мёртвая зона, мм'}
 
+_key_style_display=None
+
 class MagneticKeyboardEditor(Gtk.Box):
     """Shared diagram + parameter-driven selected-key editor, no key capture."""
     def __init__(self,center,device):
@@ -53,17 +60,20 @@ class MagneticKeyboardEditor(Gtk.Box):
         self.center=center;self.device=device
         self.caps={c.name:c for c in device.capabilities if c.backend=='mchose-ace68'}
         self.profile=self.caps.get('profiles').value if self.caps.get('profiles') else '?'
+        global _key_style_display
+        display=Gdk.Display.get_default()
+        if _key_style_display is not display:
+            provider=Gtk.CssProvider();provider.load_from_string('.keycap { padding: 4px 2px; min-width: 16px; border-radius: 6px; font-size: 11px; }')
+            Gtk.StyleContext.add_provider_for_display(display,provider,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION);_key_style_display=display
         self.diagram=KeyboardDiagram('ace68',self.edit_key);self.append(self.diagram)
         self.form=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8);self.append(self.form)
         if not hasattr(center,'ace_selected'):center.ace_selected={}
         self.diagram.select(center.ace_selected.get(device.id,'50'))
     def edit_key(self,index):
-        from gi.repository import Adw
         from ace68_protocol import validate_key_value
-        import math
         self.center.ace_selected[self.device.id]=index
         while self.form.get_first_child():self.form.remove(self.form.get_first_child())
-        name=self.diagram.buttons[index].get_label()
+        name=self.diagram.buttons[index].get_tooltip_text()
         title=Gtk.Label(label=name+' · '+_('Встроенный профиль')+' '+str(self.profile),xalign=0);title.add_css_class('title-3');self.form.append(title)
         if not all(k in self.caps for k in KEY_LABELS):
             self.form.append(Gtk.Label(label=_('Параметры клавиш не прочитаны. Проверь доступ и диагностику устройства.'),wrap=True));return

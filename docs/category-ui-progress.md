@@ -1,0 +1,34 @@
+# Physical-device control pages — 2026-10-23
+
+## Root causes
+
+`Center.populate_mouse()` used only `ratbagctl list`; MCHOSE/OpenRazer/rivalcfg capabilities lived in inventory. Footer battery widgets used legacy ratbag presence and kernel battery files, never MCHOSE's observed battery capability. Keyboard pages rendered every device vertically, including a remembered G515 branch. Kernel input detection mistook touchpads and mouse/keyboard auxiliary interfaces for independent peripherals. A shared physical parent could also merge different device types.
+
+## Changes
+
+- `DeviceManager.active(kind)` selects current, non-disconnected devices with detected/live or kernel presence. Saved Solaar records and simulations are excluded from normal control pages; unknown backend-only records without current presence remain diagnostic. Temporary permission/read failures retain OS-confirmed devices; an explicit disconnected result excludes them. Physical merge keys include device type. Identical models on separate ports remain separate.
+- `InputAdapter`: exclude BTN_TOOL_FINGER touchpads; retain HID parent identities for Bluetooth and read input bus type. Exact K7 auxiliary keyboard and exact Ace68-II auxiliary mouse interfaces remain diagnostic-only `interface` records. No generic name-based suppression.
+- `peripheral_ui.py`: common mouse/keyboard selector, stable selected ID, current status/backend/manufacturer/profile metadata, battery, provider-owned capability controls and backups. Mouse settings no longer require the inventory page. Existing libratbag button/macro/LED/profile editor retained for the selected ratbag device. Read-only MCHOSE stage list and sensor flags are displayed honestly. Unknown standard devices have no invented controls.
+- Keyboard page: responsive section navigation, overview/keys/profiles/lighting/more only when implemented; 68-key Ace diagram with proportional key widths and selected-key highlight. Bounded GTK minimum widths, compact controls and backup actions. Per-device section selection and existing device/profile/key drafts survive rebuilds; stale operations retain epoch/profile/connection guards. G515-specific controls require a selected currently detected G515 and live Solaar ping; history alone never creates a control panel.
+- `device_status.py`: GTK-independent battery/status formatting. Real percent including 0 differs from unknown; coarse levels remain text. Charging, cache source, stale timestamp, read failure and permission failure have distinct labels. No last-known value is silently upgraded to a live read.
+- Charge refresh: every 30 seconds, serialized executor, only reported MCHOSE/OpenRazer battery providers plus cheap kernel power-supply reads; no editor rebuild. Missing/failed reads retain error/freshness evidence. Power-supply events request a bounded update. `KernelBatteryAdapter` associates kernel battery facts only with a unique exact physical input parent, preserving existing kernel-backed Logitech battery support without joining by model name. Ambiguous receivers remain unassociated.
+- Discovery monitors input/Bluetooth lifecycle in addition to USB/hidraw/sound; fallback includes input-node identities. Debounced hotplug disables old controls immediately, invalidates operations, rediscovers and restores context/drafts. No full discovery on ordinary widget changes or battery refresh.
+- Inventory becomes overview/diagnostics and links to mouse/keyboard controls. Audio control architecture remains intact.
+
+## Checks
+
+178 deterministic unit tests pass, compileall and whitespace checks pass. New cases cover cross-vendor category membership, history/offline/simulation filtering, permission ambiguity, auxiliary interfaces, type-safe merging, identical units, exact kernel battery association, routing on disconnect/reconnect, unknown keyboards, battery provenance/charging/unknown/error cases. Unit tests import pure formatting rather than GTK, preserving headless CI.
+
+Existing GTK smoke checks provider editors in the mouse page, no duplicate controls in diagnostic inventory, drafts, Ace selection, languages and dialog/capture cancellation. Simulation smoke retains 14 isolated scenarios and uses a unique application ID to prevent a previous test window absorbing a new launch.
+
+Read-only physical GTK review: K7 Ultra is in mice with actual reported charge 54%; Ace68-II is in keyboards. Their auxiliary interfaces are absent from active control categories. Internal system mouse and keyboard remain selectable; touchpads are excluded. Existing settings were not changed. GTK render snapshots saved privately under `/tmp/logi-peripheral-review`; inspected mouse and keyboard images. Layout review tests wide and 520-pixel content, 68 key selection, minimum width and no horizontal overflow. The review script changes only its own temporary test window when Hyprland is available. No global display/window configuration is changed.
+
+## Limits / release readiness
+
+Physical unplug/replug, Bluetooth sleep and Logitech/Razer hardware are not exercised in this cycle; tests cover state/routing behavior, not hardware certification. A receiver's kernel presence is not proof its sleeping radio peripheral is awake; explicit backend disconnect takes precedence and ambiguous read failure is not treated as unplug. No general BlueZ pairing inventory is used as active-device evidence. No unsupported Ace advanced-key features were added. Existing backend limitations remain documented in `mchose-devices-progress.md` and `backend-support.md`.
+
+The change fixes category routing and the tested connected-device UI; it does not establish universal support for all devices. Installer/runtime manifest and Arch archive must include the two new runtime modules. No publication or system package installation is implied.
+
+Changed: `app.py`, `devices.py`, `discovery.py`, `mchose_adapter.py`, `ace68_adapter.py`, `device_ui.py`, `keyboard_ui.py`, `peripheral_ui.py` (new), `device_status.py` (new), `i18n.py`, `install.py`, `test_peripheral_ui.py` (new), `test_i18n.py`, `scripts/gui_smoke.py`, `scripts/simulation_smoke.py`, `scripts/peripheral_smoke.py` (new), this file and progress/agent documentation.
+
+Final live review: actual own-window sizes 1000×780 and 640×780 passed. Ace diagram minimum 384 px, narrow allocated width 481 px; no horizontal scroll range. Read-only battery refresh retained the existing editor instance. Snapshot images were inspected. GTK mock unplug/replug removes the keyboard editor and restores its draft. 33 runtime modules are included by the installer; user settings and hardware parameters remain unchanged.
