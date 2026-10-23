@@ -36,7 +36,7 @@ def decode(body,ident):
     if not 1<=body[16]<=6 or any(not 50<=v<=65535 for v in stages) or body[0]>2:raise ValueError('Config does not match the supported family')
     pair=body[1] if ident['mode']==0 else body[2];stage=pair&15;rate=pair>>4
     if stage>=body[16] or rate>=len(RATES):raise ValueError('Invalid active stage/rate')
-    return {'firmware_version':ident.get('firmware_code'),'dpi':stages[stage],'dpi_stages':stages,'stage':stage,'polling_rate':RATES[rate],'debounce':body[18],'sleep':body[19],'motion_sync':bool(body[17]&16),'ripple':bool(body[17]&4),'angle_snap':bool(body[17]&8),'profiles':body[0],'battery_status':ident['battery'],'raw':list(body),'identity':ident}
+    return {'firmware_version':ident.get('firmware_code'),'dpi':stages[stage],'dpi_stages':stages,'stage':stage,'polling_rate':RATES[rate],'debounce':body[18],'sleep':body[19],'motion_sync':bool(body[17]&16),'ripple':bool(body[17]&4),'angle_snap':bool(body[17]&8),'profiles':body[0],'charging':ident.get('charging',False),'battery_status':ident['battery'],'raw':list(body),'identity':ident}
 
 class Transport:
     def __init__(self,node):self.node=node;self.fd=None;self.last=0
@@ -140,6 +140,13 @@ class MchoseAdapter:
     def __init__(self,runner=None,root='/sys/class/hidraw'):
         from backend import run
         self.run=runner or run;self.root=root
+    def associate(self,records):
+        # The exact K7 receiver exports a keyboard interface for mouse bindings.
+        # It is not a second physical keyboard; do not infer this for other models.
+        for mouse in [d for d in records if d.backend==self.name and d.vid=='3837' and d.pid=='1001']:
+            for peer in records:
+                if peer.backend=='linux-input' and peer.kind=='keyboard' and peer.vid==mouse.vid and peer.pid==mouse.pid and peer.physical.split('|',1)[0]==mouse.physical:
+                    peer.kind='interface'
     def discover(self):
         records=[]
         for item in candidates(self.root):
@@ -147,7 +154,7 @@ class MchoseAdapter:
             try:
                 state=json.loads(self.run(['logi-sdk','mchose','read',item['node']]))
                 connected=True
-                for field in ['firmware_version','dpi','stage','polling_rate','debounce','sleep','profiles','battery_status','motion_sync','ripple','angle_snap']:
+                for field in ['firmware_version','dpi','stage','polling_rate','debounce','sleep','profiles','battery_status','charging','motion_sync','ripple','angle_snap']:
                     value=state.get(field)
                     if value is None:continue
                     writable=field in ['dpi','stage','polling_rate','debounce','sleep','profiles']

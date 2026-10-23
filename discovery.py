@@ -39,14 +39,14 @@ class DeviceMonitor:
         if shutil.which('pactl'):self._thread(self._audio)
     def _udev_event(self,device):
         if self.stop_event.is_set():return
-        if device.subsystem in ['usb','hidraw','sound'] and device.action in ['add','remove','bind','unbind']:self.callback('devices')
+        if device.subsystem in ['usb','hidraw','sound','input','bluetooth'] and device.action in ['add','remove','bind','unbind','change']:self.callback('devices')
         elif device.subsystem=='power_supply' and device.action=='change':self.callback('battery')
     def _thread(self,fn):
         thread=Thread(target=fn,daemon=True);self.threads.append(thread);thread.start()
     def _fallback(self):
         previous=None
         while not self.stop_event.wait(5):
-            current=tuple(sorted(str(p.resolve()) for folder in ['/sys/class/hidraw','/sys/class/sound'] for p in Path(folder).glob('*')))
+            current=tuple(sorted(str(p.resolve()) for folder in ['/sys/class/hidraw','/sys/class/sound','/sys/class/input'] for p in Path(folder).glob('*')))
             if previous is not None and current!=previous:self.callback('devices')
             previous=current
     def _audio(self):

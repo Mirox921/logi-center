@@ -98,12 +98,14 @@ class DeviceManager:
         merged={}
         for item in records:
             # Exact physical path only. VID/PID or model alone never merge units.
-            key=('sim' if item.simulated else 'real',item.physical or item.id)
+            key=('sim' if item.simulated else 'real',item.physical or item.id,item.kind)
             if key not in merged:merged[key]=item;continue
             current=merged[key]
             if current.kind=='input':current.kind=item.kind
             if current.backend=='linux-input' and item.backend!='linux-input':
                 current.name=item.name;current.kind=item.kind;current.backend=item.backend;current.target=item.target
+            if item.backend!='linux-input' and item.connected is False:current.connected=False
+            elif current.connected is None and item.connected is True:current.connected=True
             current.backends=list(dict.fromkeys([*current.backends,*item.backends]))
             for backend,targets in item.targets.items():current.targets[backend]=list(dict.fromkeys([*current.targets.get(backend,[]),*targets]))
             known={(c.name,c.backend) for c in current.capabilities}
@@ -116,6 +118,9 @@ class DeviceManager:
                     if cap.backend!='openrgb' and cap.name in ['lighting','lighting_mode','brightness','lighting_speed','lighting_palette'] and cap.writable:
                         cap.writable=False;cap.limitation+=' RGB owner: OpenRGB; competing editor disabled.'
         return list(merged.values())
+    def active(self,kind,simulation=False):
+        """Current discovery only; remembered pairings never enter control pages."""
+        return [d for d in self.devices if d.kind==kind and d.simulated==simulation and d.backend!='solaar-local' and d.connected is not False and (d.connected is True or any(c.source=='kernel' for c in d.capabilities) or d.physical and Path(d.physical.split('|',1)[0]).exists())]
     def record_operation(self,args,result):
         backend=args[0]
         if backend=='logi-sdk' and len(args)>=5:
@@ -188,18 +193,56 @@ class InputAdapter:
             try:
                 name=(node/'name').read_text().strip();bits=parse_key_mask((node/'capabilities/key').read_text())
             except (OSError,ValueError):continue
-            keyboard=all(bits&(1<<key) for key in [14,30,57]);mouse=bool(bits&(1<<272))
+            keyboard=all(bits&(1<<key) for key in [14,30,57]);mouse=bool(bits&(1<<272));touchpad=bool(bits&(1<<325))
+            if touchpad:continue
             if not keyboard and not mouse:continue
             physical,vid,pid=usb_identity(node)
             # Receiver slots/interface paths stay intact; stripping /inputN:slot
             # would incorrectly merge two devices behind one receiver.
             try:input_phys=(node/'phys').read_text().strip()
             except OSError:input_phys=''
+            if not physical:
+                for parent in [node.resolve(),*node.resolve().parents]:
+                    try:uevent=(parent/'uevent').read_text()
+                    except OSError:continue
+                    if 'HID_ID=' in uevent:
+                        physical=str(parent);break
+                try:vid=(node/'id/vendor').read_text().strip();pid=(node/'id/product').read_text().strip()
+                except OSError:pass
             if physical and input_phys:physical+='|'+input_phys
             ident=physical or str(node.resolve())
+            try:bus=(node/'id/bustype').read_text().strip()
+            except OSError:bus=''
             cap=Capability('standard_input',self.name,True,True,False,False,'keyboard' if keyboard else 'mouse','kernel',limitation='Kernel input detection does not imply RGB or remapping support.',evidence=['software_detected','read_observed'])
-            records.append(Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection='usb' if vid else 'unknown',capabilities=[cap]))
+            records.append(Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection='bluetooth' if bus=='0005' or '/bluetooth' in str(node.resolve()) else 'usb' if vid else 'internal',capabilities=[cap]))
         return DeviceManager.merge(records)
+
+class KernelBatteryAdapter:
+    name='kernel-battery'
+    def __init__(self,root='/sys/class/power_supply'):self.root=Path(root)
+    def discover(self):
+        # Enrich only an exact kernel parent, never join batteries by model name.
+        records=[]
+        for directory in self.root.glob('*'):
+            try:
+                fields=dict(line.split('=',1) for line in (directory/'uevent').read_text().splitlines() if '=' in line)
+                if fields.get('POWER_SUPPLY_SCOPE')!='Device':continue
+                parent=(directory/'device').resolve()
+                if not parent.exists():continue
+                physical,vid,pid=usb_identity(parent)
+                physical=physical or str(parent)
+                value=fields.get('POWER_SUPPLY_CAPACITY','')
+                value=int(value) if value.isdigit() and 0<=int(value)<=100 else fields.get('POWER_SUPPLY_CAPACITY_LEVEL','Unknown')
+                caps=[Capability('battery_status',self.name,True,True,value=value,source='kernel'),Capability('charging',self.name,True,True,value=fields.get('POWER_SUPPLY_STATUS')=='Charging',source='kernel')]
+                records.append(Device(self.name+':'+identity(physical),fields.get('POWER_SUPPLY_MODEL_NAME','Peripheral'),'battery',self.name,physical=physical,vid=vid,pid=pid,connected=None,capabilities=caps))
+            except OSError:continue
+        return records
+    def associate(self,records):
+        for battery in [d for d in records if d.backend==self.name]:
+            peers=[d for d in records if 'linux-input' in d.backends and d.kind in ['mouse','keyboard'] and d.physical.split('|',1)[0]==battery.physical]
+            candidates={(d.physical,d.kind) for d in peers}
+            if len(candidates)==1:battery.physical,battery.kind=next(iter(candidates))
+
 
 class RatbagAdapter:
     name='ratbagctl'

@@ -113,6 +113,7 @@ class Ace68Adapter:
         # multi-unit wireless receiver. Collapse only these known kernel siblings.
         for device in [d for d in records if d.backend==self.name]:
             for peer in records:
+                if peer.backend=='linux-input' and peer.kind=='mouse' and peer.vid==VID and peer.pid==PID and peer.physical.split('|',1)[0]==device.physical:peer.kind='interface'
                 if peer.backend=='linux-input' and peer.kind=='keyboard' and peer.vid==VID and peer.pid==PID and peer.physical.split('|',1)[0]==device.physical:
                     peer.physical=device.physical;peer.id=device.id
     def discover(self):
