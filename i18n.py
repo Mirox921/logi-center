@@ -1,0 +1,75 @@
+"""English translations for the Russian source UI. No external dependencies."""
+LANGUAGE='ru'
+EN={
+'Твои устройства · один центр управления':'Your devices · one control center','Обновить устройства':'Refresh devices',
+'Чтение устройств…':'Reading devices…','Выполняется…':'Working…','Готово':'Ready',
+'Не удалось выполнить действие. Проверь подключение устройства.':'Could not complete the action. Check the device connection.',
+'Настройка не применена. Проверь подключение и попробуй ещё раз.':'Setting was not applied. Check the connection and try again.',
+'Настройка применена':'Setting applied','Применить':'Apply','Мышь ':'Mouse ','Клавиатура ':'Keyboard ',
+'Мышь G305':'G305 mouse','Клавиатура G515':'G515 keyboard',' · Проверка заряда…':' · Checking battery…',
+'Мышь сообщает уровень заряда без точного процента.':'The mouse reports a battery level, not an exact percentage.',
+'Обновляется каждые 30 секунд. ':'Updates every 30 seconds. ','Показание устройства.':'Reported by the device.',
+'Связь не подтверждена':'Connection not confirmed','Не в сети':'Offline','Подключена':'Connected',
+'Поиск мыши…':'Looking for mouse…','Поиск клавиатуры…':'Looking for keyboard…','Чтение аудиоустройств…':'Reading audio devices…',
+'Настрой скорость движения указателя, плавность и действия кнопок.':'Adjust pointer sensitivity, polling rate and button actions.',
+'Прочитать настройки':'Read settings','Мышь недоступна':'Mouse unavailable','Включи мышь и подключи USB-приёмник.':'Turn on the mouse and connect its USB receiver.',
+'Расширенный редактор':'Advanced editor','Полный интерфейс Piper: профили и макросы.':'Full Piper editor for profiles and macros.',
+'Открыть Piper':'Open Piper','Открыть Solaar':'Open Solaar','Все настройки клавиатуры':'All keyboard settings',
+'Выбери яркость, цвет и поведение подсветки.':'Choose lighting brightness, color and effects.',
+'Клавиатура не в сети':'Keyboard offline','Не удалось проверить связь':'Could not verify connection',
+'Сохранённые настройки доступны для просмотра. Включи клавиатуру и обнови список.':'Saved settings are shown. Turn on the keyboard and refresh devices.',
+'Настройки недоступны':'Settings unavailable','Подключи клавиатуру и нажми кнопку обновления вверху окна.':'Connect the keyboard and click Refresh at the top.',
+'Управление подсветкой из приложения':'Control lighting from this app','Приглушать подсветку при бездействии':'Dim lighting when idle',
+'Выключать подсветку при бездействии':'Turn lighting off when idle','Включено':'Enabled','Выключено':'Off','Выключена':'Off','Никогда':'Never',
+'Через 15 секунд':'After 15 seconds','Через 30 секунд':'After 30 seconds','Через минуту':'After 1 minute',
+'Через 2 минуты':'After 2 minutes','Через 5 минут':'After 5 minutes','Через 10 минут':'After 10 minutes',
+'Через 15 минут':'After 15 minutes','Через 30 минут':'After 30 minutes','Яркость подсветки':'Lighting brightness',
+'Режим подсветки':'Lighting effect','Выбери эффект и цвет, затем нажми «Применить».':'Choose an effect and color, then click Apply.',
+'Статичный цвет':'Solid color','Дыхание':'Breathing','Цикл цветов':'Color cycle','Выбери цвет подсветки':'Choose lighting color',
+'Выбрать любой цвет':'Choose any color','Белый':'White','Красный':'Red','Оранжевый':'Orange','Жёлтый':'Yellow',
+'Зелёный':'Green','Голубой':'Light blue','Синий':'Blue','Фиолетовый':'Purple','Розовый':'Pink','Подсветка применена':'Lighting applied',
+'Цвета по клавишам и сложные параметры пока редактируются в Solaar.':'Per-key colors and advanced settings are edited in Solaar.',
+'Звук и микрофон':'Sound and microphone','Выбери USB-карту G Pro X. Уровни применяются только по кнопке; выше 100% усиление не задаётся.':'Select the G Pro X USB sound card. Levels change only when applied and are limited to 100%.',
+'Выход':'Output','Микрофон':'Microphone','Аудиоустройство':'Audio device','Монитор или телевизор (HDMI)':'Monitor or TV (HDMI)',
+'Динамики ноутбука':'Laptop speakers','Встроенный микрофон':'Built-in microphone','Уровень громкости, %':'Volume, %',
+'Громкость':'Set volume','По умолчанию':'Set as default','Вкл. микр.':'Unmute mic','Включить':'Enable','Заглушить':'Mute',
+'USB-карта G Pro X пока не обнаружена':'G Pro X USB sound card not detected','Общие аудиоустройства доступны выше. Подключи карту и обнови список.':'Other audio devices are shown above. Connect the USB card and refresh.',
+'Обработка звука':'Audio effects','Собственные пресеты EasyEffects можно включать отсюда. Редактирование цепочки эффектов открывается в его редакторе.':'Apply saved EasyEffects presets here. Use its editor to customize the effects chain.',
+'Готовые эффекты сообщества':'Community presets','Настройки для микрофона и наушников. Откроются в браузере.':'Presets for microphones and headphones. Opens in your browser.',
+'Найти готовые эффекты':'Browse presets','Добавить скачанный эффект':'Add a downloaded preset',
+'Выбери файл .json для микрофона или наушников. Затем выбери его в списке ниже.':'Choose a microphone or headphone .json preset, then select it below.',
+'Импортировать эффект':'Import preset','Пресет':'Preset','Пресетов пока нет':'No presets yet',
+'Создай эквалайзер или обработку микрофона в редакторе EasyEffects.':'Create a headphone or microphone preset in the EasyEffects editor.',
+'Эквалайзер и обработка микрофона':'Equalizer and microphone effects','Редактор эффектов':'Effects editor',
+'Звуковые эффекты':'Sound processing','Эквалайзер и фильтры для наушников и микрофона. Без эффектов звук продолжает работать.':'Equalizer and filters for headphones and microphone. Audio still works when effects are bypassed.',
+'С эффектами':'Effects on','Без эффектов':'Effects off','Гарнитура':'Headset',
+'USB-карта подключена · можно настроить слышимость своего голоса':'USB sound card connected · sidetone available',
+'Слышимость своего голоса':'Hear your own voice (sidetone)','Очень тихо':'Very quiet','Тихо':'Quiet','Средне':'Medium','Громко':'Loud','Максимально':'Maximum',
+'Выбери желаемый уровень и нажми «Применить». Показан последний сохранённый выбор; текущее значение устройство не сообщает.':'Choose a level and click Apply. The last saved selection is shown; the device does not report its current level.',
+'Настройки мыши':'Mouse settings','Мышь подключена':'Mouse connected','Настройки прочитаны. Изменения сохраняются по кнопке «Применить».':'Settings loaded. Click Apply to save each change.',
+'Чувствительность DPI':'Pointer sensitivity (DPI)','Частота опроса, Гц':'Polling rate, Hz','Левая кнопка':'Left button','Правая кнопка':'Right button',
+'Нажатие колёсика':'Middle click','Боковая кнопка «Назад»':'Back side button','Боковая кнопка «Вперёд»':'Forward side button',
+'Кнопка переключения чувствительности':'DPI button','Левый щелчок':'Left click','Правый щелчок':'Right click','Назад':'Back','Вперёд':'Forward',
+'Переключать чувствительность':'Cycle DPI','Копировать':'Copy','Вставить':'Paste','Вырезать':'Cut','Отменить':'Undo','Выделить всё':'Select all',
+'Клавиша F':'F key ','Отключить кнопку':'Disable button','Не изменять':'Keep current action','Дополнительная кнопка':'Extra button',
+'Сейчас: ':'Current: ','Собственное назначение':'Custom action','Импортировать готовый эффект':'Import a preset',
+'Пресеты EasyEffects (*.json)':'EasyEffects presets (*.json)','Сначала скачай файл на компьютер.':'Download the file to your computer first.',
+'Не удалось импортировать: ':'Import failed: ','Эффект добавлен: ':'Preset imported: ','. Выбери его и нажми «Применить».':'. Select it and click Apply.',
+'Заряд недоступен':'Battery unavailable','Не подключено или спит':'Disconnected or asleep','Высокий заряд':'High battery','Средний заряд':'Medium battery',
+'Низкий заряд':'Low battery','Пора заменить батарейку':'Replace the battery','Заряд неизвестен':'Battery unknown',' · заряжается':' · charging',' · заряжено':' · fully charged',
+'Файл слишком большой для пресета (больше 2 МБ).':'Preset file exceeds the 2 MB limit.',
+'Нужен пресет EasyEffects в формате JSON.':'Choose an EasyEffects JSON preset.',
+'Это не пресет EasyEffects: настройки микрофона или наушников не найдены.':'Not an EasyEffects preset: no input or output settings found.',
+'Клавиатура не отвечает. Включи её и обнови список устройств.':'The keyboard is not responding. Turn it on and refresh devices.',
+}
+def set_language(language):
+    global LANGUAGE
+    LANGUAGE=language if language in ['ru','en'] else 'en'
+
+def tr(text):
+    if LANGUAGE=='ru':return text
+    if text in EN:return EN[text]
+    # Battery suffixes arrive as a formatted percentage string.
+    for source in [' · заряжается',' · заряжено']:
+        text=text.replace(source,EN[source])
+    return text
