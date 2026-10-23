@@ -15,3 +15,15 @@ class MouseEditing(unittest.TestCase):
         self.assertEqual(linux_key('Control_L'),'KEY_LEFTCTRL')
         self.assertIsNone(linux_key('unknown-key'))
         self.assertTrue(conflicts(['+KEY_LEFTALT','KEY_F4','-KEY_LEFTALT']))
+
+    def test_standard_button_names_keep_assignment_type(self):
+        from mouse_models import assignment_label
+        actions={'Left':['button','1'],'Right':['button','2'],'DPI':['special','resolution-up'],'F9':['key','KEY_F9'],'Off':['disabled']}
+        for raw,expected in [('button 1','Left'),('button 2','Right'),('resolution-up','DPI'),('KEY_F9','F9'),('disabled','Off')]:
+            self.assertEqual(assignment_label({'action':raw,'macro':False},actions),expected)
+    def test_named_macro_matches_tap_expansion(self):
+        from mouse_models import assignment_label
+        self.assertEqual(assignment_label({'action':'↓KEY_LEFTCTRL ↓KEY_C ↑KEY_C ↑KEY_LEFTCTRL','macro':True},{'Copy':['macro','+KEY_LEFTCTRL','KEY_C','-KEY_LEFTCTRL']}),'Copy')
+    def test_unknown_assignment_is_not_guessed(self):
+        from mouse_models import assignment_label
+        self.assertIsNone(assignment_label({'action':'button 6','macro':False},{'Left':['button','1']}))

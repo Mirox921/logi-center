@@ -8,6 +8,12 @@ def layout(name,count):
     known=G502 if 'G502' in name else G305 if 'G305' in name else {}
     return {i:known.get(i, (.15+(i%4)*.22,.18+(i//4)*.2)) for i in range(count)}
 
+def assignment_label(button,actions):
+    """Compare typed assignments, retaining the button/key/special discriminator."""
+    from operations import read_action,same
+    actual=read_action(('macro ' if button.get('macro') else '')+button['action'])
+    return next((label for label,value in actions.items() if same(value,actual)),None)
+
 def linux_key(name):
     special={'Control_L':'LEFTCTRL','Control_R':'RIGHTCTRL','Shift_L':'LEFTSHIFT','Shift_R':'RIGHTSHIFT','Alt_L':'LEFTALT','Alt_R':'RIGHTALT','Super_L':'LEFTMETA','Super_R':'RIGHTMETA','Return':'ENTER','Escape':'ESC','space':'SPACE','BackSpace':'BACKSPACE','Tab':'TAB','Delete':'DELETE','Insert':'INSERT','Home':'HOME','End':'END','Page_Up':'PAGEUP','Page_Down':'PAGEDOWN','Left':'LEFT','Right':'RIGHT','Up':'UP','Down':'DOWN','minus':'MINUS','equal':'EQUAL','comma':'COMMA','period':'DOT','slash':'SLASH','semicolon':'SEMICOLON','apostrophe':'APOSTROPHE','bracketleft':'LEFTBRACE','bracketright':'RIGHTBRACE','backslash':'BACKSLASH','grave':'GRAVE'}
     if name in special:return 'KEY_'+special[name]

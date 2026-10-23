@@ -3,7 +3,7 @@ import gi
 gi.require_version('Gtk','4.0')
 from gi.repository import Gtk,Gdk
 from mouse_art import render as render_mouse,callouts,WIDTH,HEIGHT
-from mouse_models import layout,linux_key,friendly,conflicts,MacroDraft
+from mouse_models import layout,linux_key,friendly,conflicts,MacroDraft,assignment_label
 from operations import macro_tokens
 from i18n import tr as _
 
@@ -80,9 +80,10 @@ class MouseEditor(Gtk.Box):
         button=self.buttons[index]
         tokens=macro_tokens(button['action']) if button['macro'] else []
         if index not in self.drafts:self.drafts[index]=MacroDraft(tokens=list(tokens))
-        readable=' → '.join(friendly(t) for t in tokens) if button['macro'] else next((label for label,value in self.actions.items() if ' '.join(value[1:])==button['action']),_('Собственное назначение'))
+        known=assignment_label(button,self.actions)
+        readable=known or (' → '.join(friendly(t) for t in tokens) if button['macro'] else _('Собственное назначение'))
         self.current.set_text(_('Кнопка ')+str(index+1)+' · '+_('Сейчас: ')+readable)
-        option=next((label for label,value in self.actions.items() if not button['macro'] and ' '.join(value[1:])==button['action']),self.options[0])
+        option=known or self.options[0]
         self.action.set_selected(self.options.index(option))
         supported=4 in self.types.get(index,[])
         self.record.set_sensitive(supported)

@@ -72,3 +72,7 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - Replaced generic capsule with model-specific Cairo vectors: angular G502 with thumb shelf/paddles and rounded wireless G305 with two side buttons. Added metal wheel/grip/panel details, isolated callouts, selected-only leader and direct diagram hit selection. The illustration explicitly does not claim live RGB color.
 - Files: mouse_art.py (new shared renderer), mouse_editor.py, mouse_models.py, i18n.py, install.py, scripts/gui_smoke.py. GUI smoke now uses its own application ID so an already open app cannot absorb the test launch.
 - Checked rendered G502/G305 PNG previews visually; 64 unit tests, compileall, diff check and independent live GTK smoke pass. No hardware writes or microphone capture. G305 physical device remains unavailable.
+
+## Assignment label correction
+- Fixed typed assignment matching: `button 1` was incorrectly compared with `1`, causing standard clicks to select the custom macro entry. Both assignment interfaces now share assignment_label; recognized macros compare equivalent tap/press-release forms.
+- Files: mouse_models.py, mouse_editor.py, app.py, test_mouse_editor.py. 67 unit tests, compileall and diff check pass. Actual device assignments are unchanged.
