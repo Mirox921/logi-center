@@ -162,6 +162,12 @@ EN={
 'Эффект подсветки':'Lighting effect','Яркость':'Brightness','Зоны подсветки':'Lighting zones','Ступень DPI':'Active DPI stage','Ступени DPI':'DPI stages','Задержка устранения дребезга, мс':'Debounce, ms','Таймер сна (единицы протокола)':'Sleep timer (protocol units)','Синхронизация сенсора':'Motion Sync','Подавление дрожания':'Ripple control','Выпрямление линий':'Angle snapping',
 'Клавиатура не отвечает. Включи её и обнови список устройств.':'The keyboard is not responding. Turn it on and refresh devices.',
 }
+EN.update({'Точка срабатывания, мм': 'Actuation point, mm', 'Режим Rapid Trigger': 'Rapid Trigger mode', 'RT при нажатии, мм': 'RT press distance, mm', 'RT при отпускании, мм': 'RT release distance, mm', 'Верхняя мёртвая зона, мм': 'Upper dead zone, mm', 'Нижняя мёртвая зона, мм': 'Lower dead zone, mm', 'Параметры клавиш не прочитаны. Проверь доступ и диагностику устройства.': 'Key settings have not been read. Check device access and diagnostics.', 'Непрерывный RT': 'Continuous RT', 'Отменить черновик': 'Discard draft', 'Применить к выбранной клавише': 'Apply to selected key', 'Настройки магнитных клавиш прочитаны из устройства. Изменения применяются только по кнопке.': 'Magnetic key settings are read from the device. Changes require the Apply button.', 'Скорость эффекта': 'Effect speed'})
+
+EN.update({'Версия прошивки': 'Firmware version', 'Версия USB-устройства': 'USB device release', 'Раскладка клавиатуры': 'Keyboard layout', 'Точка срабатывания': 'Actuation point', 'RT при нажатии': 'RT press distance', 'RT при отпускании': 'RT release distance', 'Верхняя мёртвая зона': 'Upper dead zone', 'Нижняя мёртвая зона': 'Lower dead zone', 'Параметры магнитных переключателей': 'Magnetic switch parameters', 'Динамическое нажатие (DKS)': 'Dynamic keystroke (DKS)', 'Переназначение клавиш': 'Key remapping', 'Слои клавиатуры': 'Keyboard layers', 'Настройка отдельных клавиш доступна во вкладке «Клавиатура».': 'Individual key settings are available in the Keyboard tab.'})
+
+EN.update({'Палитра подсветки':'Lighting palette'})
+
 def set_language(language):
     global LANGUAGE
     LANGUAGE=language if language in ['ru','en'] else 'en'

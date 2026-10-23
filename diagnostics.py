@@ -117,7 +117,12 @@ def backend_components(runner=None):
             report.append({'component':name,'state':state,'description':detail})
         except Exception as error:
             fault=fault_for(error,name);report.append({'component':name,'state':fault.code.value,'description':describe(fault)+' '+hint})
-    import importlib.metadata
+    try:
+        from ace68_adapter import Ace68Adapter
+        devices=Ace68Adapter(runner=runner).discover();faults=[f for d in devices for f in d.faults]
+        report.append({'component':'mchose-ace68','state':faults[0].code.value if faults else 'available' if devices else 'not_detected','description':str(len(devices))+' Ace68-II 41e4:2116 interfaces; separate keyboard protocol; no mouse commands.'})
+    except Exception as error:
+        fault=fault_for(error,'mchose-ace68');report.append({'component':'mchose-ace68','state':fault.code.value,'description':describe(fault)})
     try:
         from ckb_adapter import CkbAdapter
         devices=CkbAdapter().discover()

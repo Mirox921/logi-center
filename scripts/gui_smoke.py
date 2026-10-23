@@ -71,6 +71,25 @@ def check():
     populate_inventory(application,rgb+mice)
     spins=[w for w in descendants(application.pages['devices']) if isinstance(w,Gtk.SpinButton)]
     assert spins[0].get_value_as_int()==42
+    from test_ace68 import MemoryWire,ITEM
+    from ace68_adapter import Ace68Adapter,hardware
+    from keyboard_ui import MagneticKeyboardEditor
+    wire=MemoryWire()
+    with patch('ace68_adapter.candidates',return_value=[ITEM]):
+        ace=Ace68Adapter(runner=lambda args:json.dumps(hardware('read',args[3],transport=lambda node:wire))).discover()[0]
+    application.device_manager.devices=[ace]
+    magnetic=MagneticKeyboardEditor(application,ace);application.pages['keyboard'].append(magnetic)
+    assert len(magnetic.diagram.buttons)==68
+    magnetic.diagram.select('50')
+    control=next(w for w in descendants(magnetic.form) if isinstance(w,Gtk.SpinButton))
+    control.set_value(.31)
+    magnetic.diagram.select('0');magnetic.diagram.select('50')
+    control=next(w for w in descendants(magnetic.form) if isinstance(w,Gtk.SpinButton))
+    assert control.get_value()==.31
+    restored_keyboard=MagneticKeyboardEditor(application,ace)
+    control=next(w for w in descendants(restored_keyboard.form) if isinstance(w,Gtk.SpinButton))
+    assert restored_keyboard.diagram.selected=='50' and control.get_value()==.31
+    assert not wire.writes
     application.device_manager=old_manager
     populate_inventory(application,old_manager.devices,old_manager.faults)
     original_presence=application.mouse_presence

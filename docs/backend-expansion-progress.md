@@ -60,3 +60,5 @@ Remaining work is evidence-driven: approved device access and explicit hardware 
 - `simulation.py`
 - `test_backend_expansion.py`
 - `test_devices.py`
+
+2026-10-23, subsequent MCHOSE cycle: see [mouse/keyboard progress and current hardware evidence](mchose-devices-progress.md). This supersedes the previous denied-access status for the local K7; Ace68-II uses an independent keyboard adapter.

@@ -8,6 +8,8 @@ from devices import matches_name
 
 NAMES={'dpi_x':'DPI по горизонтали','dpi_y':'DPI по вертикали','backend_features':'Возможности, сообщённые backend','dpi':'Чувствительность DPI','polling_rate':'Частота опроса, Гц','profiles':'Встроенный профиль','buttons':'Кнопки','macros':'Макросы','lighting':'Подсветка','standard_input':'Стандартный ввод','sidetone':'Слышимость своего голоса','battery_status':'Заряд аккумулятора','volume':'Громкость','mute':'Без звука','lighting_mode':'Эффект подсветки','brightness':'Яркость','zones':'Зоны подсветки','stage':'Ступень DPI','dpi_stages':'Ступени DPI','debounce':'Задержка устранения дребезга, мс','sleep':'Таймер сна (единицы протокола)','motion_sync':'Синхронизация сенсора','ripple':'Подавление дрожания','angle_snap':'Выпрямление линий'}
 
+NAMES.update({'firmware_version':'Версия прошивки','usb_release':'Версия USB-устройства','keyboard_layout':'Раскладка клавиатуры','actuation':'Точка срабатывания','rapid_trigger':'Rapid Trigger','rt_press':'RT при нажатии','rt_release':'RT при отпускании','press_dead_zone':'Верхняя мёртвая зона','release_dead_zone':'Нижняя мёртвая зона','key_details':'Параметры магнитных переключателей','lighting_palette':'Палитра подсветки','lighting_speed':'Скорость эффекта','socd':'SOCD / Snap Tap','dks':'Динамическое нажатие (DKS)','mod_tap':'Mod Tap','toggle_key':'Toggle Key','key_remap':'Переназначение клавиш','layers':'Слои клавиатуры'})
+
 def capability_text(cap):
     support=_('Обнаружено') if cap.supported is True else _('Не поддерживается устройством') if cap.supported is False else _('Поддержка не проверена')
     access=_('Чтение и изменение') if cap.writable and cap.readable else _('Изменение без чтения') if cap.writable else _('Только чтение') if cap.readable else _('Только информация backend')
@@ -50,13 +52,15 @@ def populate_inventory(center,devices,faults=()):
                         populate_inventory(center,center.device_manager.devices,center.device_manager.faults)
                     center.job(lambda:probe(r),loaded)
                 center.button(row,_('Проверить'),inspect)
-        if any(c.backend in ['mchose','openrgb','openrazer'] and c.readable for c in device.capabilities):add_backup_controls(center,group,device)
+        if any(c.backend in ['mchose','openrgb','openrazer','mchose-ace68'] and c.readable for c in device.capabilities):add_backup_controls(center,group,device)
         if not device.capabilities:center.row(group,_('Возможности не прочитаны'),_('Наличие устройства не означает поддержку настройки через backend.'))
         for cap in device.capabilities:
             setting=cap.name.rsplit(':',1)[-1]
             name=_(NAMES.get(setting,setting.replace('_',' ')))
             if cap.label:name=cap.label+' · '+name
             value_text='\n'+_('Текущее значение: ')+str(cap.value) if cap.readable and type(cap.value) in [int,float,bool] else ''
+            if cap.readable and isinstance(cap.value,str):value_text='\n'+_('Текущее значение: ')+cap.value
+            if cap.backend=='mchose-ace68' and isinstance(cap.value,dict):value_text='\n'+_('Настройка отдельных клавиш доступна во вкладке «Клавиатура».')
             if setting in ['dpi_stages','backend_features'] and isinstance(cap.value,list):value_text='\n'+_('Текущее значение: ')+', '.join(str(v) for v in cap.value)
             if setting=='zones' and isinstance(cap.value,list):value_text='\n'+', '.join(z['name']+' ('+str(z['leds'])+')' for z in cap.value)
             row=center.row(group,name,capability_text(cap)+value_text);row.set_subtitle_lines(0)
@@ -111,7 +115,7 @@ def add_control(center,row,device,cap):
             if current.minimum is not None and (not current.minimum<=value<=current.maximum or (value-current.minimum)%current.step):raise ValueError('Value is outside capability range/step')
             if current.plan is None:raise ValueError('Capability plan is no longer available')
             plan=current.plan(value)
-            center.submit_drafts([key],lambda:center.apply(plan.command,verified_plan=plan))
+            center.submit_drafts([key],lambda:center.apply(plan.command,verified_plan=plan,after=(lambda result:center.refresh(force=False)) if cap.name in ['profiles','lighting_mode'] else None))
         except Exception as error:center.present_fault(error)
     center.button(row,_('Загрузить текущее'),lambda *unused:(center.draft_store.discard(key),setter(observed)))
     center.button(row,_('Применить'),apply)

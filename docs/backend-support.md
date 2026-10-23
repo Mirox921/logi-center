@@ -61,3 +61,5 @@ Use these upstream compatibility lists for **exact models and revisions**, then 
 - [VIA supported keyboards](https://caniusevia.com/docs/supported_keyboards/) and [VIA firmware requirements](https://github.com/the-via/website/blob/master/docs/configuring_qmk.md): firmware/keymap support is required, not merely a Keychron/Glorious brand. No automatic VIA/Vial packet probe, flashing, keymap/macro writes or new integration claimed.
 
 No suitable safely audited additional settings API was integrated for unlisted Pulsar/Lamzu/Endgame/Redragon revisions. They retain generic Linux input and any independently discovered OpenRGB functionality. A diagnostic report can establish what is actually present; it is not a device driver.
+
+2026-10-23, subsequent MCHOSE cycle: see [mouse/keyboard progress and current hardware evidence](mchose-devices-progress.md). This supersedes the previous denied-access status for the local K7; Ace68-II uses an independent keyboard adapter.

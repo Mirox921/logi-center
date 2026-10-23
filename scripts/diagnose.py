@@ -11,6 +11,7 @@ from openrgb_adapter import OpenRGBAdapter
 from openrazer_adapter import OpenRazerAdapter
 from rivalcfg_adapter import RivalcfgAdapter
 from ckb_adapter import CkbAdapter
-manager=DeviceManager([InputAdapter(),RatbagAdapter(detailed=True),PulseAdapter(),HeadsetAdapter(),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter()])
+from ace68_adapter import Ace68Adapter
+manager=DeviceManager([InputAdapter(),RatbagAdapter(detailed=True),PulseAdapter(),HeadsetAdapter(),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter(),Ace68Adapter()])
 manager.discover()
 print(json.dumps(build_report(manager,collect()),ensure_ascii=False,indent=2))

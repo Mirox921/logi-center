@@ -17,12 +17,13 @@ from drafts import DraftStore,atomic_json
 from i18n import EN,canonical_text
 from devices import mouse_capabilities,DeviceManager,InputAdapter,RatbagAdapter,PulseAdapter,HeadsetAdapter,SavedSolaarAdapter
 from device_ui import populate_inventory
-from keyboard_ui import KeyboardDiagram
+from keyboard_ui import KeyboardDiagram,MagneticKeyboardEditor
 from mchose_adapter import MchoseAdapter
 from openrgb_adapter import OpenRGBAdapter
 from openrazer_adapter import OpenRazerAdapter
 from rivalcfg_adapter import RivalcfgAdapter
 from ckb_adapter import CkbAdapter
+from ace68_adapter import Ace68Adapter
 from reports import build_report
 from i18n import tr as _, set_language
 from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings, read_mouse
@@ -187,17 +188,18 @@ class Center(Adw.Application):
                 for key in draft_keys:self.draft_store.submitted(key,result.state.value)
             if after and result.accepted:after(result)
         self.job(write,completed)
-    def apply_batch(self,commands,after=None):
+    def apply_batch(self,commands,after=None,verified_plans=None):
         if self.simulation:self.present_fault(Fault(FaultCode.BACKEND_UNSUPPORTED,'simulation','Real hardware writes are disabled in simulation mode'));return
         draft_keys=self.submitting_drafts
         def write():
             results=[]
-            for command in commands:
-                result=perform(plan_for(command),self.guarded_run);self.log.operation(result);results.append(result)
+            for command,plan in zip(commands,verified_plans or [plan_for(c) for c in commands]):
+                result=perform(plan,self.guarded_run);self.log.operation(result);results.append(result)
                 if not result.accepted:break
             return results
         def completed(results):
-            for result in results:self.show_operation(result)
+            for command,result in zip(commands,results):
+                self.device_manager.record_operation(command,result);self.show_operation(result)
             if len(results)==len(commands) and all(r.accepted for r in results):
                 for key in draft_keys:self.draft_store.submitted(key,"confirmed" if all(r.state==State.CONFIRMED for r in results) else "sent_unverified")
                 if after:after(results)
@@ -435,7 +437,7 @@ class Center(Adw.Application):
             cached={tuple(args):data[key] for key,args in [('mice',['ratbagctl','list']),('headset',['headsetcontrol','-o','json']),('sinks',['pactl','-f','json','list','sinks']),('sources',['pactl','-f','json','list','sources'])] if key in data}
             def inventory_run(args,**kwargs):
                 return cached[tuple(args)] if tuple(args) in cached else run(args,**kwargs)
-            manager=DeviceManager([InputAdapter(),RatbagAdapter(inventory_run),PulseAdapter(inventory_run),HeadsetAdapter(inventory_run),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter()])
+            manager=DeviceManager([InputAdapter(),RatbagAdapter(inventory_run),PulseAdapter(inventory_run),HeadsetAdapter(inventory_run),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter(),Ace68Adapter()])
             manager.discover();data['manager']=manager
             return data
         self.job(collect,lambda data:self.populate(data,force) if revision==self.refresh_revision else None)
@@ -560,6 +562,16 @@ class Center(Adw.Application):
     def keyboard_controls(self,data):
         keyboards=[d for d in self.device_manager.devices if d.kind=='keyboard' and d.backend!='solaar-local']
         for device in keyboards:
+            if 'mchose-ace68' in device.backends:
+                group=self.group('keyboard',device.name,_('Настройки магнитных клавиш прочитаны из устройства. Изменения применяются только по кнопке.'))
+                group.add(MagneticKeyboardEditor(self,device))
+                from device_ui import add_control,add_backup_controls
+                for cap in device.capabilities:
+                    if cap.name in ['profiles','polling_rate','brightness','lighting_mode','lighting_speed','lighting_palette','lighting'] and cap.plan and cap.writable:
+                        row=self.row(group,_(dict(profiles='Встроенный профиль',polling_rate='Частота опроса, Гц',brightness='Яркость',lighting_mode='Эффект подсветки',lighting_speed='Скорость эффекта',lighting_palette='Палитра подсветки',lighting='Подсветка')[cap.name]))
+                        add_control(self,row,device,cap)
+                if any(c.name=='profiles' and c.backend=='mchose-ace68' for c in device.capabilities):add_backup_controls(self,group,device)
+                continue
             group=self.group('keyboard',device.name,_('Стандартный ввод Linux; дополнительные функции показаны во вкладке устройств.'))
             group.add(KeyboardDiagram())
         if not saved_keyboard() and data.get('keyboard_online') is not True:
