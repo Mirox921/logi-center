@@ -1,6 +1,7 @@
 """English translations for the Russian source UI. No external dependencies."""
 LANGUAGE='ru'
 EN={
+'Схема расположения кнопок · не отображает текущий цвет подсветки':'Button layout illustration · does not show the current lighting color',
 'Кнопки':'Buttons','Подсветка':'Lighting','Профиль':'Profile','Звук':'Audio',
 'Диагностика':'Diagnostics','Диагностика компонентов':'Component diagnostics','Скопировать отчёт без личных данных':'Copy redacted report','Закрыть':'Close',
 'Не установлен компонент':'Component not installed','Установи пакет из репозитория своего дистрибутива.':'Install the package from your distribution repository.',

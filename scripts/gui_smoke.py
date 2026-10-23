@@ -12,7 +12,7 @@ from backups import preview
 from test_backups import sample
 from i18n import set_language
 
-application=Center();application.preferences['language']='ru';set_language('ru')
+application=Center();application.set_application_id('local.mirox.LogiCenter.Smoke');application.preferences['language']='ru';set_language('ru')
 checks=[]
 def descendants(widget):
     yield widget

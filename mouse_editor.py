@@ -2,6 +2,7 @@
 import gi
 gi.require_version('Gtk','4.0')
 from gi.repository import Gtk,Gdk
+from mouse_art import render as render_mouse,callouts,WIDTH,HEIGHT
 from mouse_models import layout,linux_key,friendly,conflicts,MacroDraft
 from operations import macro_tokens
 from i18n import tr as _
@@ -12,12 +13,34 @@ class MouseEditor(Gtk.Box):
         self.buttons={b['index']:b for b in buttons};self.actions=actions;self.types=types;self.on_apply=on_apply;self.selected=None;self.recording=False
         self.drafts={};self.widgets={}
         self.append(Gtk.Label(label=_('Схема мыши: выбери кнопку. Изменения остаются черновиком до применения.'),wrap=True))
-        overlay=Gtk.Overlay();drawing=Gtk.DrawingArea(content_width=420,content_height=340);drawing.set_draw_func(self.draw);overlay.set_child(drawing)
-        fixed=Gtk.Fixed(width_request=420,height_request=340,halign=Gtk.Align.CENTER,valign=Gtk.Align.CENTER);overlay.add_overlay(fixed)
-        for index,(x,y) in layout(name,len(buttons)).items():
-            button=Gtk.Button(label=str(index+1),width_request=38,height_request=32)
-            button.connect('clicked',lambda widget,i=index:self.select(i));fixed.put(button,x*420-19,y*340-16);self.widgets[index]=button
-        self.append(overlay)
+        self.model_name=name
+        card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=4)
+        card.add_css_class('logi-mouse-card')
+        title=Gtk.Label(label=name,margin_top=18);title.add_css_class('heading');card.append(title)
+        overlay=Gtk.Overlay(halign=Gtk.Align.CENTER)
+        self.drawing=Gtk.DrawingArea(content_width=WIDTH,content_height=HEIGHT)
+        self.drawing.set_draw_func(self.draw);overlay.set_child(self.drawing)
+        click=Gtk.GestureClick();click.connect('pressed',self.diagram_clicked);self.drawing.add_controller(click)
+        self.drawing.set_cursor_from_name('pointer')
+        fixed=Gtk.Fixed(width_request=WIDTH,height_request=HEIGHT,halign=Gtk.Align.CENTER,valign=Gtk.Align.CENTER);overlay.add_overlay(fixed)
+        for index,(x,y) in callouts(len(buttons)).items():
+            button=Gtk.Button(label=str(index+1),width_request=36,height_request=36)
+            button.add_css_class('logi-mouse-pin')
+            button.set_tooltip_text(_('Кнопка ')+str(index+1))
+            button.connect('clicked',lambda widget,i=index:self.select(i))
+            fixed.put(button,x-18,y-18);self.widgets[index]=button
+        card.append(overlay)
+        note=Gtk.Label(label=_('Схема расположения кнопок · не отображает текущий цвет подсветки'),wrap=True,margin_bottom=16)
+        note.add_css_class('dim-label');note.add_css_class('caption');card.append(note)
+        style=Gtk.CssProvider()
+        style.load_from_data(b"""
+        .logi-mouse-card { background: #141a22; border: 1px solid #303b48; border-radius: 20px; color: #e2e9f1; }
+        .logi-mouse-pin { border-radius: 18px; padding: 0; min-width: 34px; min-height: 34px; background: #202b38; color: #bac9d8; border: 1px solid #445262; box-shadow: none; font-weight: 700; }
+        .logi-mouse-pin:hover { background: #314658; color: white; border-color: #70cfdf; }
+        .logi-mouse-pin.suggested-action { background: #143f50; border-color: #63d8ef; color: #b4f2ff; box-shadow: 0 0 0 3px alpha(#63d8ef, 0.12); }
+        """)
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),style,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        self.append(card)
         self.current=Gtk.Label(wrap=True,selectable=True);self.append(self.current)
         self.options=[_('Собственный макрос'),*actions]
         self.action=Gtk.DropDown.new_from_strings(self.options);self.append(self.action)
@@ -34,12 +57,23 @@ class MouseEditor(Gtk.Box):
         apply=Gtk.Button(label=_('Применить'));apply.connect('clicked',self.apply);commands.append(apply);self.append(commands)
         keys=Gtk.EventControllerKey();keys.connect('key-pressed',self.key_pressed);keys.connect('key-released',self.key_released);self.add_controller(keys);self.set_focusable(True)
         if buttons:self.select(buttons[0]['index'])
-    @staticmethod
-    def draw(area,cr,width,height):
-        cr.save();cr.translate(width/2-120,12);cr.scale(240/240,(height-24)/310)
-        cr.set_source_rgb(.18,.20,.23);cr.move_to(45,15);cr.curve_to(65,-5,170,-5,195,20);cr.curve_to(225,55,245,230,210,280);cr.curve_to(170,322,60,322,27,275);cr.curve_to(-5,225,0,60,45,15);cr.close_path();cr.fill_preserve();cr.set_source_rgb(.5,.6,.7);cr.set_line_width(2);cr.stroke();cr.move_to(120,5);cr.line_to(120,110);cr.stroke();cr.restore()
+    def draw(self,area,cr,width,height):
+        render_mouse(cr,width,height,self.model_name,self.selected,len(self.buttons))
+    def diagram_clicked(self,gesture,count,x,y):
+        width=self.drawing.get_width();height=self.drawing.get_height()
+        scale=min(width/WIDTH,height/HEIGHT)
+        if scale<=0:return
+        x=(x-(width-WIDTH*scale)/2)/scale;y=(y-(height-HEIGHT*scale)/2)/scale
+        anchors=layout(self.model_name,len(self.buttons))
+        if not anchors:return
+        index=min(anchors,key=lambda i:(anchors[i][0]*WIDTH-x)**2+(anchors[i][1]*HEIGHT-y)**2)
+        if (anchors[index][0]*WIDTH-x)**2+(anchors[index][1]*HEIGHT-y)**2<=24**2:self.select(index)
+        elif 185<x<317 and 47<y<180:
+            index=0 if x<249 else 1
+            if index in self.buttons:self.select(index)
     def select(self,index):
         self.record.set_active(False);self.selected=index
+        self.drawing.queue_draw()
         for i,widget in self.widgets.items():
             if i==index:widget.add_css_class('suggested-action')
             else:widget.remove_css_class('suggested-action')

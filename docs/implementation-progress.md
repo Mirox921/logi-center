@@ -67,3 +67,8 @@ Update after each stage with changed files, checks, limits and next action. Do n
 - 64 unit tests pass; compileall passes. Connected G502 read-only snapshot: 5 profiles, JSON write/read/validate and identical preview passed. Audio server snapshot validates. GUI editor/language smoke passed; expanded dialog/cancel smoke passed.
 - No physical write/restore, USB unplug, G515/G305 reconnect or real microphone capture performed. Final constraints and file map: docs/reliability-upgrade.md. No system permission/config changes or external publication.
 - Final: all runtime modules installed for current user and compared byte-for-byte with source. Documentation lists per-stage scope and pending physical checks. Local changes retained in logical commits; no release/push performed.
+
+## Mouse illustration refinement
+- Replaced generic capsule with model-specific Cairo vectors: angular G502 with thumb shelf/paddles and rounded wireless G305 with two side buttons. Added metal wheel/grip/panel details, isolated callouts, selected-only leader and direct diagram hit selection. The illustration explicitly does not claim live RGB color.
+- Files: mouse_art.py (new shared renderer), mouse_editor.py, mouse_models.py, i18n.py, install.py, scripts/gui_smoke.py. GUI smoke now uses its own application ID so an already open app cannot absorb the test launch.
+- Checked rendered G502/G305 PNG previews visually; 64 unit tests, compileall, diff check and independent live GTK smoke pass. No hardware writes or microphone capture. G305 physical device remains unavailable.
