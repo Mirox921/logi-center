@@ -121,7 +121,9 @@ def backend_components(runner=None):
     try:
         from ckb_adapter import CkbAdapter
         devices=CkbAdapter().discover()
-        report.append({'component':'ckb-next','state':'available' if devices else 'not_detected','description':str(len(devices))+' daemon devices; read-only metadata integration. Optional ckb-next; no FIFO writes.'})
+        installed=bool(shutil.which('ckb-next-daemon'))
+        state='available' if devices else 'component_unavailable' if installed else 'missing_component'
+        report.append({'component':'ckb-next','state':state,'description':str(len(devices))+' daemon devices; '+('Daemon executable found; no device metadata. ' if installed and not devices else '')+'Read-only metadata integration. Optional Arch package ckb-next; no FIFO writes.'})
     except Exception as error:
         fault=fault_for(error,'ckb-next');report.append({'component':'ckb-next','state':fault.code.value,'description':describe(fault)})
     return report

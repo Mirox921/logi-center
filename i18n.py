@@ -156,6 +156,10 @@ EN={
 'Файл слишком большой для пресета (больше 2 МБ).':'Preset file exceeds the 2 MB limit.',
 'Нужен пресет EasyEffects в формате JSON.':'Choose an EasyEffects JSON preset.',
 'Это не пресет EasyEffects: настройки микрофона или наушников не найдены.':'Not an EasyEffects preset: no input or output settings found.',
+'DPI по горизонтали':'Horizontal DPI','DPI по вертикали':'Vertical DPI','Возможности, сообщённые backend':'Backend-reported features',
+'Предпросмотр отчёта JSON':'JSON report preview',
+'Backend и компоненты':'Backends and components',
+'Эффект подсветки':'Lighting effect','Яркость':'Brightness','Зоны подсветки':'Lighting zones','Ступень DPI':'Active DPI stage','Ступени DPI':'DPI stages','Задержка устранения дребезга, мс':'Debounce, ms','Таймер сна (единицы протокола)':'Sleep timer (protocol units)','Синхронизация сенсора':'Motion Sync','Подавление дрожания':'Ripple control','Выпрямление линий':'Angle snapping',
 'Клавиатура не отвечает. Включи её и обнови список устройств.':'The keyboard is not responding. Turn it on and refresh devices.',
 }
 def set_language(language):

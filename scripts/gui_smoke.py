@@ -51,6 +51,28 @@ def check():
     assert all(not group.get_visible() for name,group in application.inventory_groups)
     application.inventory_search.set_text('');application.inventory_search.emit('search-changed')
     assert all(group.get_visible() for name,group in application.inventory_groups)
+    # Exercise new provider widgets with no hardware commands, including persistent drafts.
+    from test_backend_expansion import OpenRGBTests,config
+    from openrgb_adapter import describe,OpenRGBAdapter
+    from mchose_adapter import MchoseAdapter
+    from devices import DeviceManager
+    import json
+    fake=OpenRGBTests();fake.client()
+    rgb=OpenRGBAdapter(lambda args:json.dumps([describe(fake.device)])).discover()
+    item={'node':'fake','physical':'/sys/fixture','vid':'3837','pid':'1001','name':'K7 fixture'}
+    with patch('mchose_adapter.candidates',return_value=[item]):mice=MchoseAdapter(lambda args:json.dumps(config())).discover()
+    old_manager=application.device_manager
+    application.device_manager=DeviceManager();application.device_manager.devices=rgb+mice
+    populate_inventory(application,rgb+mice)
+    assert any(isinstance(w,Gtk.ColorDialogButton) for w in descendants(application.pages['devices']))
+    spins=[w for w in descendants(application.pages['devices']) if isinstance(w,Gtk.SpinButton)]
+    assert spins
+    spins[0].set_value(42)
+    populate_inventory(application,rgb+mice)
+    spins=[w for w in descendants(application.pages['devices']) if isinstance(w,Gtk.SpinButton)]
+    assert spins[0].get_value_as_int()==42
+    application.device_manager=old_manager
+    populate_inventory(application,old_manager.devices,old_manager.faults)
     original_presence=application.mouse_presence
     application.mouse_presence=MousePresence('Logitech G502 HERO',False);application.update_batteries()
     assert application.battery_widgets['mouse'][0].get_text()=='Logitech G502 HERO · Не в сети'

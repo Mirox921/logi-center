@@ -20,7 +20,7 @@ class Devices(unittest.TestCase):
     def test_unknown_mouse_capabilities_are_not_assumed(self):
         self.assertEqual(mouse_capabilities({'profiles':[]}),[])
     def test_simulated_data_never_becomes_hardware_confirmation(self):
-        adapter=SimulationAdapter();self.assertEqual(len(adapter.discover()),8)
+        adapter=SimulationAdapter();self.assertEqual(len(adapter.discover()),14)
         self.assertEqual(adapter.apply('gaming-mouse','dpi',1600).state,State.SENT)
         self.assertEqual(adapter.apply('disconnect','dpi',1600).state,State.DISCONNECTED)
         self.assertEqual(adapter.apply('partial','dpi',1600).state,State.UNSUPPORTED)

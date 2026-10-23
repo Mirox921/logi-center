@@ -18,6 +18,11 @@ from i18n import EN,canonical_text
 from devices import mouse_capabilities,DeviceManager,InputAdapter,RatbagAdapter,PulseAdapter,HeadsetAdapter,SavedSolaarAdapter
 from device_ui import populate_inventory
 from keyboard_ui import KeyboardDiagram
+from mchose_adapter import MchoseAdapter
+from openrgb_adapter import OpenRGBAdapter
+from openrazer_adapter import OpenRazerAdapter
+from rivalcfg_adapter import RivalcfgAdapter
+from ckb_adapter import CkbAdapter
 from reports import build_report
 from i18n import tr as _, set_language
 from backend import run, mouse_list, solaar_settings, audio_devices, volume, wireless_batteries, battery_label, load_preferences, save_preferences, saved_keyboard, import_preset, keyboard_online, keyboard_saved_settings, read_mouse
@@ -27,7 +32,7 @@ class Center(Adw.Application):
         simulation='--simulate' in sys.argv
         super().__init__(application_id='local.mirox.LogiCenter.Simulation' if simulation else 'local.mirox.LogiCenter')
         self.simulation=simulation
-        self.device_manager=DeviceManager();self.page_fingerprints={};self.ambiguous_mouse_targets=set()
+        self.active_jobs=0;self.sdk_available=None;self.device_manager=DeviceManager();self.page_fingerprints={};self.ambiguous_mouse_targets=set()
         if self.simulation:
             from simulation import SimulationAdapter
             self.simulation_adapter=SimulationAdapter()
@@ -73,6 +78,7 @@ class Center(Adw.Application):
         layout.append(self.battery_box)
         self.update_batteries()
         self.battery_timer=GLib.timeout_add_seconds(30,self.poll_keyboard) if not self.simulation else 0
+        self.sdk_timer=GLib.timeout_add_seconds(15,self.poll_sdk) if not self.simulation else 0
         layout.append(self.stack)
         if '--keyboard' in sys.argv:self.stack.set_visible_child_name('keyboard')
         if '--audio' in sys.argv:self.stack.set_visible_child_name('audio')
@@ -89,6 +95,7 @@ class Center(Adw.Application):
         if language==self.preferences.get('language','ru'):return
         self.preferences['language']=language;save_preferences(self.preferences);set_language(language)
         if getattr(self,'battery_timer',0):GLib.source_remove(self.battery_timer)
+        if getattr(self,'sdk_timer',0):GLib.source_remove(self.sdk_timer)
         old_window=self.win
         page=self.stack.get_visible_child_name()
         del self.win
@@ -96,6 +103,7 @@ class Center(Adw.Application):
         self.stack.set_visible_child_name(page)
         old_window.destroy()
     def job(self,fn,done=None,failed=None):
+        self.active_jobs+=1
         self.status.set_label(_('Выполняется…'))
         token=self.epoch.token();ui_generation=self.ui_generation
         def worker():
@@ -107,6 +115,7 @@ class Center(Adw.Application):
             try: value=f.result();error=None
             except Exception as exc:value=None;error=exc
             def deliver():
+                self.active_jobs=max(0,self.active_jobs-1)
                 if self.closed or token.is_set() or ui_generation!=self.ui_generation:return False
                 if error:
                     self.present_fault(error)
@@ -127,7 +136,12 @@ class Center(Adw.Application):
         content=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12,margin_start=20,margin_end=20,margin_top=20,margin_bottom=20)
         text=json.dumps(build_report(self.device_manager,report),ensure_ascii=False,indent=2)
         view=Gtk.TextView(editable=False,wrap_mode=Gtk.WrapMode.WORD_CHAR);view.get_buffer().set_text(text)
-        scroll=Gtk.ScrolledWindow(vexpand=True);scroll.set_child(view);content.append(scroll)
+        rows=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=8)
+        component_list=Gtk.ListBox(selection_mode=Gtk.SelectionMode.NONE);component_list.add_css_class('boxed-list');rows.append(component_list)
+        for component in report:
+            row=Adw.ActionRow(title=component['component'],subtitle=component['state']+' · '+component['description']);row.set_subtitle_lines(0);component_list.append(row)
+        preview=Gtk.Expander(label=_('Предпросмотр отчёта JSON'));preview.set_child(view);rows.append(preview)
+        scroll=Gtk.ScrolledWindow(vexpand=True);scroll.set_child(rows);content.append(scroll)
         copy=Gtk.Button(label=_('Скопировать отчёт без личных данных'));copy.connect('clicked',lambda *unused:Gdk.Display.get_default().get_clipboard().set(text));content.append(copy)
         export=Gtk.Button(label=_('Экспортировать отчёт JSON'))
         def save_report(*unused):
@@ -152,11 +166,14 @@ class Center(Adw.Application):
         text=self.operation_text(result)
         self.operation_result.set_text(text)
         self.toast.add_toast(Adw.Toast(title=text.split(' · ',1)[-1].split('\n')[0]))
+    def guarded_run(self,args,**kwargs):
+        self.device_manager.guard_command(args)
+        return run(args,**kwargs)
     def apply(self,args,after=None,verified_plan=None):
         if self.simulation:self.present_fault(Fault(FaultCode.BACKEND_UNSUPPORTED,'simulation','Real hardware writes are disabled in simulation mode'));return
         draft_keys=self.submitting_drafts
         def write():
-            result=perform(verified_plan or plan_for(args))
+            result=perform(verified_plan or plan_for(args),self.guarded_run)
             self.log.operation(result)
             if result.accepted:
                 if args[0]=='headsetcontrol' and '-s' in args:self.preferences['sidetone']=args[-1]
@@ -176,7 +193,7 @@ class Center(Adw.Application):
         def write():
             results=[]
             for command in commands:
-                result=perform(plan_for(command));self.log.operation(result);results.append(result)
+                result=perform(plan_for(command),self.guarded_run);self.log.operation(result);results.append(result)
                 if not result.accepted:break
             return results
         def completed(results):
@@ -211,7 +228,7 @@ class Center(Adw.Application):
                 return backup_preview(document,snapshot(kind,target),target)
             self.job(inspect,lambda value:self.restore_dialog(value,target))
         dialog.open(self.win,None,chosen)
-    def restore_dialog(self,preview,target):
+    def restore_dialog(self,preview,target,restorer=None):
         dialog=Adw.Dialog(title=_('Предпросмотр восстановления'),content_width=760,content_height=600)
         content=Gtk.Box(orientation=Gtk.Orientation.VERTICAL,spacing=12,margin_start=20,margin_end=20,margin_top=20,margin_bottom=20)
         content.append(Gtk.Label(label=_('Источник копии: ')+preview.backup['source'],wrap=True))
@@ -243,7 +260,7 @@ class Center(Adw.Application):
                 if report.stopped:lines.append(_('Восстановление остановлено после ошибки. Проверь частично применённые настройки.'))
                 self.operation_result.set_text('\n'.join(lines))
                 self.refresh()
-            self.job(lambda:restore_backup(preview,selected,target,on_result=self.log.operation),completed)
+            self.job(lambda:(restorer or restore_backup)(preview,selected,target,runner=self.guarded_run,on_result=self.log.operation),completed)
         apply.connect('clicked',start);dialog.set_child(content);dialog.present(self.win)
     def group(self,page,title,description=None):
         g=Adw.PreferencesGroup(title=title,description=description);self.pages[page].append(g);return g
@@ -310,15 +327,29 @@ class Center(Adw.Application):
                 self.toast.add_toast(Adw.Toast(title=_('Эффект добавлен: ')+name+_('. Выбери его и нажми «Применить».')))
             self.job(install,completed)
         dialog.open(self.win,None,selected)
+    def poll_sdk(self):
+        if self.closed:return False
+        if self.active_jobs or not self.win.get_visible():return True
+        def probe():
+            import socket
+            try:
+                with socket.create_connection(('127.0.0.1',6742),timeout=.25):return True
+            except OSError:return False
+        def changed(online):
+            previous=self.sdk_available;self.sdk_available=online
+            if online!=previous and (previous is not None or online):self.refresh(force=False)
+        self.job(probe,changed)
+        return True
     def poll_keyboard(self):
         if self.keyboard_polling:return True
-        self.keyboard_polling=True
+        self.keyboard_polling=True;self.active_jobs+=1
         token=self.epoch.token()
         future=self.pool.submit(keyboard_online)
         def finish(f):
             try:connected=f.result()
             except Exception:connected=None
             def deliver():
+                self.active_jobs=max(0,self.active_jobs-1)
                 self.keyboard_polling=False
                 if self.closed or token.is_set():return False
                 self.keyboard_connected=connected
@@ -369,6 +400,7 @@ class Center(Adw.Application):
     def shutdown_resources(self,*unused):
         self.closed=True;self.epoch.invalidate()
         if getattr(self,'battery_timer',0):GLib.source_remove(self.battery_timer)
+        if getattr(self,'sdk_timer',0):GLib.source_remove(self.sdk_timer)
         if self.hotplug_timer:GLib.source_remove(self.hotplug_timer)
         if hasattr(self,'audio_session'):self.audio_session.close()
         # Monitor shutdown runs outside GTK; its observer may be waiting for netlink.
@@ -403,7 +435,7 @@ class Center(Adw.Application):
             cached={tuple(args):data[key] for key,args in [('mice',['ratbagctl','list']),('headset',['headsetcontrol','-o','json']),('sinks',['pactl','-f','json','list','sinks']),('sources',['pactl','-f','json','list','sources'])] if key in data}
             def inventory_run(args,**kwargs):
                 return cached[tuple(args)] if tuple(args) in cached else run(args,**kwargs)
-            manager=DeviceManager([InputAdapter(),RatbagAdapter(inventory_run),PulseAdapter(inventory_run),HeadsetAdapter(inventory_run),SavedSolaarAdapter()])
+            manager=DeviceManager([InputAdapter(),RatbagAdapter(inventory_run),PulseAdapter(inventory_run),HeadsetAdapter(inventory_run),SavedSolaarAdapter(),MchoseAdapter(),OpenRGBAdapter(),OpenRazerAdapter(),RivalcfgAdapter(),CkbAdapter()])
             manager.discover();data['manager']=manager
             return data
         self.job(collect,lambda data:self.populate(data,force) if revision==self.refresh_revision else None)
@@ -698,7 +730,8 @@ class Center(Adw.Application):
                 if value==_('Не изменять'):return
                 self.apply([*prefix,'button',str(i),'action','set',*actions[value]])
             self.choice(g,names.get(button['index'],_('Дополнительная кнопка')+' '+str(button['index']+1)),options,current if current in supported_actions else _('Не изменять'),set_action,_('Сейчас: ')+(current or _('Собственное назначение')))
-        for led in active['leds']:
+        rgb_owner=any('ratbagctl' in d.targets and device in d.targets['ratbagctl'] and any(c.backend=='openrgb' and c.writable and c.name in ['lighting','lighting_mode'] for c in d.capabilities) for d in self.device_manager.devices)
+        for led in ([] if rgb_owner else active['leds']):
             supported=data['led_modes'].get(led['index'],[])
             if not supported:continue
             r=self.row(g,_('Зона подсветки ')+str(led['index']+1),_('Показаны данные профиля; фактический цвет может отличаться.'))
