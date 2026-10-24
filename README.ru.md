@@ -33,7 +33,8 @@
     <td width="50%"><a href="docs/screenshots/current-keyboard.png"><img src="docs/screenshots/current-keyboard.png" alt="Вкладка клавиатуры с редактором MCHOSE Ace68-II" width="100%"></a><br><sub>Клавиатуры — выбор клавиши и поддерживаемые настройки срабатывания.</sub></td>
   </tr>
   <tr>
-    <td colspan="2"><a href="docs/screenshots/current-devices.png"><img src="docs/screenshots/current-devices.png" alt="Обзор устройств со сворачиваемыми диагностическими карточками" width="72%"></a><br><sub>Устройства — компактные раскрывающиеся карточки и поиск.</sub></td>
+    <td width="50%"><a href="docs/screenshots/current-devices.png"><img src="docs/screenshots/current-devices.png" alt="Список устройств с раскрывающейся диагностикой" width="100%"></a><br><sub>Устройства — список подключённой периферии и диагностика backend.</sub></td>
+    <td width="50%"><a href="docs/screenshots/current-audio.png"><img src="docs/screenshots/current-audio.png" alt="Полноэкранный раздел аудио с устройствами Linux и гарнитурой" width="100%"></a><br><sub>Аудио — полноэкранный раздел; интерфейс на снимке показан на английском.</sub></td>
   </tr>
 </table>
 

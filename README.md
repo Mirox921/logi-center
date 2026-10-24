@@ -33,7 +33,8 @@ Mouse, keyboard and audio controls in a GTK4/libadwaita desktop app.<br>
     <td width="50%"><a href="docs/screenshots/current-keyboard.png"><img src="docs/screenshots/current-keyboard.png" alt="Keyboard page with the MCHOSE Ace68-II key editor" width="100%"></a><br><sub>Keyboard page — Ace68-II key selection and supported actuation controls.</sub></td>
   </tr>
   <tr>
-    <td colspan="2"><a href="docs/screenshots/current-devices.png"><img src="docs/screenshots/current-devices.png" alt="Device inventory with collapsible diagnostic cards" width="72%"></a><br><sub>Device inventory — compact, expandable cards and device search.</sub></td>
+    <td width="50%"><a href="docs/screenshots/current-devices.png"><img src="docs/screenshots/current-devices.png" alt="Device inventory with expandable device and backend diagnostics" width="100%"></a><br><sub>Devices — expandable device cards and backend diagnostics.</sub></td>
+    <td width="50%"><a href="docs/screenshots/current-audio.png"><img src="docs/screenshots/current-audio.png" alt="Full-screen audio page with system outputs and headset controls" width="100%"></a><br><sub>Audio — full-screen view of Linux audio devices and headset controls.</sub></td>
   </tr>
 </table>
 
