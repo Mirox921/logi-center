@@ -22,6 +22,14 @@ def battery_text(device):
     return text
 
 
+def battery_icon(device):
+    if device.connected is False:return 'network-offline-symbolic'
+    if any(f.code.value=='permission_denied' for f in device.faults):return 'battery-missing-symbolic'
+    if any(c.name=='charging' and c.value is True for c in device.capabilities):return 'battery-good-charging-symbolic'
+    if not any(c.name=='battery_status' and c.value is not None for c in device.capabilities):return 'battery-missing-symbolic'
+    return 'battery-good-symbolic'
+
+
 def status_text(device):
     status=_('Подключена') if device.connected is True else _('Связь не подтверждена')
     transport={'usb':'USB','bluetooth':'Bluetooth','internal':_('Встроенное устройство')}.get(device.connection,_('Тип соединения неизвестен'))

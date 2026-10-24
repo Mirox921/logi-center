@@ -8,6 +8,7 @@ from unittest.mock import patch
 from app import Center,Gtk,GLib
 from drafts import DraftStore
 from peripheral_ui import populate
+from device_ui import populate_inventory
 from keyboard_ui import MagneticKeyboardEditor
 from gi.repository import Gsk
 app=Center();app.set_application_id('local.mirox.LogiCenter.PeripheralReview'+str(__import__('os').getpid()))
@@ -48,9 +49,19 @@ def step(index=0):
             if k7:
                 app.selected_peripherals['mouse']=k7.id;populate(app,'mouse',{})
                 assert any(c.name=='battery_status' and c.value is not None for c in k7.capabilities)
-            resize(1000,780)
-            app.stack.set_visible_child_name('mouse')
-            GLib.timeout_add(700,lambda:(capture('mouse-wide'),step(1),False)[-1]);return False
+                battery_row=app.peripheral_battery_rows['mouse'];assert battery_row[2].get_icon_name()=='battery-good-symbolic'
+                charging=next(c for c in k7.capabilities if c.name=='charging');actual=charging.value
+                charging.value=True;app.update_batteries();assert battery_row[2].get_icon_name()=='battery-good-charging-symbolic'
+                charging.value=actual;app.update_batteries()
+            populate_inventory(app,app.device_manager.devices,app.device_manager.faults)
+            from gi.repository import Adw
+            cards=[w for w in descendants(app.pages['devices']) if isinstance(w,Adw.ExpanderRow)]
+            assert len(cards)==len([d for d in app.device_manager.devices if d.kind!='interface']) and all(not row.get_expanded() for row in cards)
+            cards[0].set_expanded(True);assert cards[0].get_expanded();cards[0].set_expanded(False)
+            assert not cards[0].get_expanded()
+            app.stack.set_visible_child_name('devices')
+            GLib.timeout_add(400,lambda:(capture('devices-collapsed'),cards[0].set_expanded(True),GLib.timeout_add(400,lambda:(capture('devices-expanded'),cards[0].set_expanded(False),app.stack.set_visible_child_name('mouse'),GLib.timeout_add(400,lambda:(resize(1000,780),capture('mouse-wide'),step(1),False)[-1]),False)[-1]),False)[-1])
+            return False
         if index==1:
             ace=next((d for d in app.device_manager.active('keyboard') if 'mchose-ace68' in d.backends),None)
             if ace:

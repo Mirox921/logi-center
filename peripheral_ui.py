@@ -7,7 +7,7 @@ from i18n import tr as _
 from device_ui import add_control,add_backup_controls,NAMES
 
 
-from device_status import battery_text,status_text
+from device_status import battery_text,battery_icon,status_text
 
 
 def populate(center,kind,data):
@@ -38,7 +38,8 @@ def populate(center,kind,data):
     center.peripheral_battery_rows.pop(kind,None)
     if any(c.name=='battery_status' for c in selected.capabilities) or selected.connection=='bluetooth' or any(f.code.value=='permission_denied' for f in selected.faults):
         battery_row=center.row(header,_('Аккумулятор'),battery_text(selected))
-        center.peripheral_battery_rows[kind]=(selected.id,battery_row)
+        icon=Gtk.Image(icon_name=battery_icon(selected));battery_row.add_prefix(icon)
+        center.peripheral_battery_rows[kind]=(selected.id,battery_row,icon)
     for fault in selected.faults:center.row(header,_('Ошибка чтения'),str(fault))
     # Detailed libratbag editor remains intact; provider controls augment it below.
     if kind=='mouse' and 'ratbagctl' in selected.backends:

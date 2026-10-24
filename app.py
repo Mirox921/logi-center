@@ -269,7 +269,10 @@ class Center(Adw.Application):
     def group(self,page,title,description=None):
         g=Adw.PreferencesGroup(title=title,description=description);self.pages[page].append(g);return g
     def row(self,g,title,subtitle=''):
-        r=Adw.ActionRow(title=GLib.markup_escape_text(title),subtitle=GLib.markup_escape_text(subtitle));r.set_subtitle_lines(3);g.add(r);return r
+        r=Adw.ActionRow(title=GLib.markup_escape_text(title),subtitle=GLib.markup_escape_text(subtitle));r.set_subtitle_lines(3)
+        if isinstance(g,Adw.ExpanderRow):g.add_row(r)
+        else:g.add(r)
+        return r
     def button(self,row,label,callback):
         b=Gtk.Button(label=label,valign=Gtk.Align.CENTER);b.connect('clicked',callback);row.add_suffix(b);return b
     def submit_drafts(self,keys,callback,*args):
@@ -410,16 +413,17 @@ class Center(Adw.Application):
         return True
     def update_batteries(self):
         if self.simulation:return True
-        from peripheral_ui import battery_text
+        from peripheral_ui import battery_text,battery_icon
         entries=[]
         for kind in ['mouse','keyboard']:
             for device in self.device_manager.active(kind):
                 if not any(c.name=='battery_status' for c in device.capabilities):continue
-                entries.append((device.id,device.name+' · '+battery_text(device),'battery-good-symbolic'))
+                entries.append((device.id,device.name+' · '+battery_text(device),battery_icon(device)))
             selected=getattr(self,'peripheral_battery_rows',{}).get(kind)
             if selected:
                 device=next((d for d in self.device_manager.devices if d.id==selected[0]),None)
-                if device:selected[1].set_subtitle(battery_text(device))
+                if device:
+                    selected[1].set_subtitle(battery_text(device));selected[2].set_from_icon_name(battery_icon(device))
         keys=tuple(item[0] for item in entries)
         if keys!=self.battery_keys:
             while self.battery_box.get_first_child():self.battery_box.remove(self.battery_box.get_first_child())

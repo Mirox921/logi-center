@@ -86,3 +86,5 @@ Update after each stage with changed files, checks, limits and next action. Do n
 2026-10-23, subsequent MCHOSE cycle: see [mouse/keyboard progress and current hardware evidence](mchose-devices-progress.md). This supersedes the previous denied-access status for the local K7; Ace68-II uses an independent keyboard adapter.
 
 2026-10-23: physical-device category and keyboard UI correction; see [current progress](category-ui-progress.md).
+
+2026-10-24: Mouse charging indicator and collapsible device inventory cards; see [follow-up details](category-ui-progress.md).

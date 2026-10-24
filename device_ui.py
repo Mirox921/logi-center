@@ -22,6 +22,7 @@ def populate_inventory(center,devices,faults=()):
     search.set_text(getattr(center,'inventory_query',''))
     center.pages['devices'].append(search)
     center.inventory_search=search
+    devices=[d for d in devices if d.kind!='interface']
     device_groups=[]
     empty=Gtk.Label(label=_('Устройства с таким названием не найдены'),wrap=True,visible=False,margin_top=16)
     empty.add_css_class('dim-label')
@@ -33,11 +34,16 @@ def populate_inventory(center,devices,faults=()):
             visible=matches_name(name,center.inventory_query);group.set_visible(visible);found=found or visible
         empty.set_visible(bool(devices) and not found)
     search.connect('search-changed',filter_devices)
+    inventory=None
+    if devices:inventory=center.group('devices',_('Обнаруженное оборудование'),_('Разверни устройство, чтобы просмотреть возможности и действия.'))
     if not devices:
         center.group('devices',_('Устройства не обнаружены'),_('Проверь подключение и открой диагностику компонентов.'))
     for device in devices:
         title=(_('СИМУЛЯЦИЯ · ') if device.simulated else '')+device.name
-        group=center.group('devices',title,device.kind+' · '+', '.join(device.backends)+' · '+(_('Подключена') if device.connected is True else _('Не в сети') if device.connected is False else _('Связь не подтверждена')))
+        if not hasattr(center,'device_expanded'):center.device_expanded={}
+        group=Adw.ExpanderRow(title=title,subtitle=device.kind+' · '+', '.join(device.backends)+' · '+(_('Подключена') if device.connected is True else _('Не в сети') if device.connected is False else _('Связь не подтверждена')),expanded=center.device_expanded.get(device.id,False))
+        group.connect('notify::expanded',lambda row,param,key=device.id:center.device_expanded.__setitem__(key,row.get_expanded()))
+        inventory.add(group)
         device_groups.append((device.name,group))
         if device.backend=='solaar-local' and not device.simulated:
             from backend import saved_solaar_devices

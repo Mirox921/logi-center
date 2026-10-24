@@ -174,7 +174,7 @@ EN.update({'Клавиши':'Keys','Профили':'Profiles','Дополнит
 
 EN.update({'Последнее чтение не удалось':'Last read failed','Производитель':'Manufacturer'})
 
-EN.update({'Дополнительно':'More'})
+EN.update({'Дополнительно':'More','Обнаруженное оборудование':'Detected devices','Разверни устройство, чтобы просмотреть возможности и действия.':'Expand a device to view its capabilities and actions.'})
 
 EN.update({'Мыши':'Mice'})
 

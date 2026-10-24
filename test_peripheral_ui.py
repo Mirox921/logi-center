@@ -4,7 +4,7 @@ from datetime import datetime,timezone,timedelta
 from devices import Device,Capability,DeviceManager
 from execution import Fault,FaultCode
 from mchose_adapter import MchoseAdapter
-from device_status import battery_text
+from device_status import battery_text,battery_icon
 from i18n import set_language
 
 class Categories(unittest.TestCase):
@@ -70,7 +70,11 @@ class Battery(unittest.TestCase):
     def test_none_is_not_zero(self):self.assertEqual(battery_text(self.device()),'Заряд недоступен')
     def test_approximate_level_is_not_invented_percent(self):self.assertEqual(battery_text(self.device('low')),'low')
     def test_charge_status(self):
-        d=self.device(54);d.capabilities.append(Capability('charging','mchose',value=True));self.assertIn('заряжается',battery_text(d))
+        d=self.device(54);d.capabilities.append(Capability('charging','mchose',value=True));self.assertIn('заряжается',battery_text(d));self.assertEqual(battery_icon(d),'battery-good-charging-symbolic')
+    def test_charging_icon_requires_positive_backend_state(self):
+        self.assertEqual(battery_icon(self.device(54)),'battery-good-symbolic')
+        self.assertEqual(battery_icon(self.device()),'battery-missing-symbolic')
+        d=self.device(54);d.connected=False;self.assertEqual(battery_icon(d),'network-offline-symbolic')
     def test_permission_denied_does_not_display_old_value_as_live(self):
         d=self.device(54);d.faults=[Fault(FaultCode.PERMISSION,'mchose','denied')];self.assertEqual(battery_text(d),'Нет доступа к заряду')
     def test_cached_and_stale_are_labeled(self):

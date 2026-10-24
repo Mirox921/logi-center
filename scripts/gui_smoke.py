@@ -15,7 +15,7 @@ from drafts import DraftStore
 from backend import parse_mouse_info
 from i18n import set_language
 
-application=Center();application.set_application_id('local.mirox.LogiCenter.Smoke');application.preferences['language']='ru';set_language('ru')
+application=Center();application.set_application_id('local.mirox.LogiCenter.Smoke'+str(__import__('os').getpid()));application.preferences['language']='ru';set_language('ru')
 temporary=tempfile.TemporaryDirectory(prefix='logi-gui-check-');application.draft_store=DraftStore(Path(temporary.name)/'drafts.json')
 checks=[]
 def descendants(widget):
@@ -66,6 +66,15 @@ def check():
     application.device_manager=DeviceManager();application.device_manager.devices=rgb+mice
     from peripheral_ui import populate as populate_peripheral
     populate_inventory(application,rgb+mice)
+    from gi.repository import Adw
+    expanders=[w for w in descendants(application.pages['devices']) if isinstance(w,Adw.ExpanderRow)]
+    assert len(expanders)==len([d for d in rgb+mice if d.kind!='interface']) and all(not row.get_expanded() for row in expanders)
+    expanded_id=application.inventory_groups[0][1].get_title()
+    expanders[0].set_expanded(True);assert expanders[0].get_expanded()
+    populate_inventory(application,rgb+mice)
+    reopened=next(row for row in descendants(application.pages['devices']) if isinstance(row,Adw.ExpanderRow) and row.get_title()==expanded_id)
+    assert reopened.get_expanded()
+    reopened.set_expanded(False);assert not reopened.get_expanded()
     assert not any(isinstance(w,Gtk.ColorDialogButton) for w in descendants(application.pages['devices']))
     populate_peripheral(application,'mouse',{})
     assert any(isinstance(w,Gtk.ColorDialogButton) for w in descendants(application.pages['mouse']))
