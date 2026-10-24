@@ -1,85 +1,89 @@
-# Logi Center
+<p align="center">
+  <img src="docs/hero.svg" alt="Logi Center — one Linux app for many peripherals" width="100%">
+</p>
 
-An extensible Linux peripheral control panel using libratbag, Solaar, HeadsetControl and the sound server. Existing Logitech G305, G502 HERO, G515 LIGHTSPEED TKL and wired G PRO X workflows are retained. Built with Python, GTK 4 and libadwaita, with Russian and English interfaces.
+<p align="center">
+  <a href="https://github.com/Mirox921/logi-center/releases/latest"><img src="https://img.shields.io/github/v/release/Mirox921/logi-center?style=for-the-badge&color=6c8cff" alt="Latest release"></a>
+  <a href="https://github.com/Mirox921/logi-center/stargazers"><img src="https://img.shields.io/github/stars/Mirox921/logi-center?style=for-the-badge&logo=github&color=f0b84b" alt="GitHub stars"></a>
+  <a href="https://github.com/Mirox921/logi-center/releases"><img src="https://img.shields.io/github/downloads/Mirox921/logi-center/total?style=for-the-badge&label=release%20downloads&color=58c99b" alt="Release asset downloads"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-58c99b?style=for-the-badge" alt="MIT license"></a>
+</p>
 
-[Читать по-русски](README.ru.md)
+<p align="center"><b>One Linux app. Many peripheral backends.</b><br>
+Mouse, keyboard and audio controls in a GTK4/libadwaita desktop app.<br>
+<a href="README.ru.md">Русская версия</a> · <a href="https://github.com/Mirox921/logi-center/releases/latest">Download</a> · <a href="https://github.com/Mirox921/logi-center/issues">Report a problem</a></p>
 
-Logi Center brings common controls into one window using existing Linux tools. It is an independent community project, not an official Logitech app or a complete G HUB replacement. It does not install a custom kernel driver.
+> **Logi Center is no longer Logitech-only.** It combines capabilities from Linux device services and vendor-focused open-source backends. What appears in the app depends on the exact device, its firmware, the installed backend and access permissions. A brand appearing in an upstream project does not mean every model from that brand is supported here.
 
-## Universal manager development update
+## At a glance
 
-The current checkout adds a capability-driven device inventory, private persistent drafts/conflict handling, per-setting backup comparison, conservative backend identity merging, explicit individual Solaar probes, redacted JSON diagnostics and isolated `--simulate` mode. Existing v0.3.0 downloads predate this development work. See [scope, tests and readiness](docs/universal-upgrade.md).
+| | |
+|---|---|
+| **Device categories** | Mice · keyboards · headsets and system audio |
+| **Verified on physical hardware** | MCHOSE K7 Ultra mouse · MCHOSE Ace68-II keyboard · Logitech G502 HERO read-only discovery/backup |
+| **Backends** | libratbag, Solaar, MCHOSE adapters, OpenRGB, OpenRazer, rivalcfg, ckb-next, HeadsetControl, PipeWire/PulseAudio and Linux input/udev |
+| **Desktop** | GTK 4.10+ · libadwaita · Python · Russian and English |
+| **License** | MIT for Logi Center; backend projects keep their own licenses |
 
-For Arch Linux, see [local package preparation/build/install instructions](packaging/arch/README.md). No package is installed by the preparation script. Per-key RGB/remapping and extra headset features are offered only when an implemented backend adapter exposes them; the generic keyboard diagram is a manually selected reference.
+## See the app
 
-## Preview
+<table>
+  <tr>
+    <td width="50%"><a href="docs/screenshots/current-mouse.png"><img src="docs/screenshots/current-mouse.png" alt="Mouse page with a connected MCHOSE K7 Ultra and its available controls" width="100%"></a><br><sub>Mouse page — capabilities come from the selected device and backend.</sub></td>
+    <td width="50%"><a href="docs/screenshots/current-keyboard.png"><img src="docs/screenshots/current-keyboard.png" alt="Keyboard page with the MCHOSE Ace68-II key editor" width="100%"></a><br><sub>Keyboard page — Ace68-II key selection and supported actuation controls.</sub></td>
+  </tr>
+  <tr>
+    <td colspan="2"><a href="docs/screenshots/current-devices.png"><img src="docs/screenshots/current-devices.png" alt="Device inventory with collapsible diagnostic cards" width="72%"></a><br><sub>Device inventory — compact, expandable cards and device search.</sub></td>
+  </tr>
+</table>
 
-![Connected G502 HERO profiles and mouse controls](docs/screenshots/g502-profiles.png)
+These are real GTK screenshots from the current app. The K7 charge shown is a live read at capture time. The keyboard diagram represents the supported Ace68-II layout; it does not imply that all displayed keys have every possible function.
 
-[G502 HERO lighting zones and extra buttons](docs/screenshots/g502-lighting.png)
+## What works, and how well it is verified
 
-![Audio effects, preset import and headset controls](docs/screenshots/audio.png)
+### Confirmed on physical devices
 
-![Saved keyboard lighting controls with the keyboard offline](docs/screenshots/keyboard.png)
+| Device | Verified in this project | Still not established |
+|---|---|---|
+| **MCHOSE K7 Ultra** · USB `3837:1001` | Device identity/config reads, DPI and stages, polling, profile and selected flags, debounce/sleep, battery read. DPI was changed `400 → 450 → 400` and confirmed by fresh device reads; the original config was restored. The app displays it in **Mice** and shows the reported battery state. | Other MCHOSE revisions; writes for DPI stages, polling, profile, sleep/debounce; LOD; mouse-protocol RGB; buttons/macros; charging indication on this physical unit. |
+| **MCHOSE Ace68-II** · USB `41e4:2116`, firmware code `121` | Active profile, brightness, RGB palette/color/effect/speed, polling, selected-key actuation, Rapid Trigger mode/press/release, dead zones and profile selection. Reversible changes were read back and restored. Selective backup/restore was exercised. | Other Ace68 revisions/firmware, power-cycle persistence, all-profile backup, per-key RGB, SOCD/Snap Tap, DKS, Mod Tap, Toggle Key, remapping and macros. |
+| **Logitech G502 HERO** · USB `046d:c08b` | Physical read-only discovery: five profiles, eleven buttons and two lighting zones; JSON backup validation/preview. | Physical setting writes and optical RGB verification. libratbag values may be daemon cache, not proof of the visible device state. |
 
-[Headset volume and microphone controls](docs/screenshots/audio-devices.png)
+Only these checks are claimed as hardware validation. The Ace68-II name refers to the detected device/revision represented by the tested USB identity; it does not certify every product sold as “Ace 68”.
 
-These are real application screenshots. The keyboard is offline, so its saved controls are shown disabled. G502 HERO is connected in the mouse screenshots. No device readings are simulated.
+### Backend integrations
 
-[Download the current preview release](https://github.com/Mirox921/logi-center/releases/tag/v0.3.0) · [Report a problem](https://github.com/Mirox921/logi-center/issues)
+| Backend | What this app can use | Evidence and boundary |
+|---|---|---|
+| **libratbag / ratbagd** | Reported mouse DPI, polling, profiles, buttons/macros and lighting controls | Existing generic provider; availability follows ratbag's exact device database. Values can be daemon cache. |
+| **Solaar** | Saved Logitech device inventory and explicit supported scalar probes/controls | Uses Solaar's supported devices and settings. Saved history alone is not an active connection. |
+| **MCHOSE** | Separate K7 mouse and Ace68-II keyboard adapters | Documented, revision-scoped protocol subset; physical checks above apply only to the named units. |
+| **OpenRGB SDK** | Local RGB device/zone/mode discovery, color, and reported brightness | Connects to a user-configured loopback SDK server; no server is started and no external listener is enabled. A cached server value is not optical proof. |
+| **OpenRazer** | Features exposed by installed OpenRazer API, including supported DPI/rate/brightness/battery fields | Requires its own driver and daemon. Only runtime-reported capabilities appear; cache provenance is retained. |
+| **rivalcfg** | Exact supported SteelSeries HID profiles and a limited set of scalar settings | Mostly write-only; the app does not invent current values or unsupported effects. |
+| **ckb-next** | Corsair device metadata and feature discovery | Detection only in this app; no profile or lighting writes are integrated. |
+| **HeadsetControl** | Battery and sidetone where the installed version/device supports them | Exact model support is determined by HeadsetControl. |
+| **PipeWire / PulseAudio** | System audio device selection, volume, mute and explicit microphone tests | These are sound-server controls, not proof of headset firmware/DSP settings. EasyEffects presets are software processing. |
+| **Linux input / udev** | Current mouse/keyboard presence and hotplug signals | Standard input detection does not itself make vendor settings configurable. |
 
-## Features
+See [backend support, dependencies and limitations](docs/backend-support.md) and the detailed [MCHOSE hardware report](docs/mchose-devices-progress.md). The project does **not** claim universal support for Logitech, Razer, Corsair, SteelSeries or any other manufacturer.
 
-| Device / area | Controls |
-| --- | --- |
-| G305 / G502 HERO mice | Active-profile DPI, polling rate and button assignments; G502 adds 5 onboard profiles, 11 buttons and 2 lighting zones |
-| G515 LIGHTSPEED TKL | Brightness, solid color, breathing, color cycle and lighting timers through Solaar |
-| Wireless battery | G305 and G515 battery indicators, refreshed every 30 seconds; coarse levels remain coarse rather than invented percentages |
-| G PRO X USB sound card | Output/microphone volume, mute and selection as the default audio device through PipeWire/PulseAudio |
-| Sidetone | Supported HeadsetControl devices; last selected level is shown because live readback is not available through this interface |
-| EasyEffects | Apply local presets, turn effects on/off, import input/output JSON presets and open the community preset catalog |
-| Language | Switch Russian / English in the header; the choice is saved |
+## What changed in v0.4.0
 
-Piper, Solaar and EasyEffects editors can be opened for advanced settings. These editors are separate windows. Button mappings and lighting are applied only when you click **Apply**. Imported presets are saved under a new name when a matching name already exists.
+- Reframed the app around physical device categories and discovered capabilities rather than a fixed Logitech-only view.
+- Added separate MCHOSE K7 Ultra mouse and Ace68-II keyboard adapters and a shared capability-driven control/backup path.
+- Added provider discovery for OpenRGB, OpenRazer, rivalcfg and ckb-next alongside existing libratbag, Solaar, HeadsetControl and Linux audio/input integration.
+- Routed connected mice and keyboards to their own pages; separated active devices from saved history and simulation records; retained conservative identity matching to avoid merging identical units by name alone.
+- Added device provenance and charging states, compact expandable diagnostic cards, name search and refreshed mouse/keyboard interfaces.
+- Expanded mock and hardware-free regression coverage, GTK smoke checks, simulation scenarios and Arch packaging instructions.
 
-## Reliability upgrade (v0.3.0 preview)
+Full details and caveats: [v0.4.0 release notes](docs/RELEASE-v0.4.0.md), [implementation progress](docs/implementation-progress.md) and [category/UI verification](docs/category-ui-progress.md).
 
-- Writes distinguish confirmed, sent without confirmation, mismatch, error, disconnected and cancelled. G502 libratbag values are explicitly **backend cache**, including RGB: matching cache is not proof of the visible color.
-- Device backup/restore uses versioned JSON, checksum/model validation, category selection, change preview and a private pre-restore safety copy. Restoration stops on the first failed/mismatched operation and reports partial results. Backups contain supported backend fields, **not a full hardware image**; keyboard data comes from saved Solaar settings.
-- USB/HID/audio connection events refresh controls automatically and cancel stale work. Optional `pyudev` enables udev events; otherwise a five-second sysfs fallback is used.
-- A model-aware mouse diagram supports assignment drafts, keyboard recording and macro editing when ratbag reports that capability. Existing assignment controls remain available.
-- Microphone and headphone presets are separate. Explicit buttons start the microphone meter or an eight-second temporary test recording. Processed playback is offered only when the actual EasyEffects capture route is found. Clips are deleted on refresh, disconnect, explicit deletion or exit.
-- The header diagnostics button reports components, device access and faults with recovery advice. Bounded logs omit assignment/macro values and redact identifiers.
+## Download and install
 
-The screenshots above predate these changes. See the [v0.3.0 release notes](docs/RELEASE-v0.3.0.md) and [validation and remaining limits](docs/reliability-upgrade.md).
+**Latest stable version: [v0.4.0](https://github.com/Mirox921/logi-center/releases/tag/v0.4.0).** The release page contains the source archive and downloadable assets when published. The project is also prepared for a local Arch Linux package; see [Arch build instructions](packaging/arch/README.md).
 
-![New G502 and G305 editor illustrations](docs/illustrations/mouse-layouts.png)
-
-Renderer previews with example selection; not live RGB readings.
-
-## Requirements
-
-Tested on Arch Linux with a Wayland desktop. Other distributions are not yet verified.
-
-- Python 3, PyGObject, Pycairo, GTK 4 (4.10 or newer), libadwaita and PyYAML
-- `libratbag` / `ratbagctl`, `piper`, `solaar`, `headsetcontrol`, `easyeffects`
-- PipeWire with its PulseAudio compatibility service, `pactl`, `parec`, `paplay`, `xdg-open`; optional Python `pyudev`
-- Device access using the udev rules supplied by the backend packages
-
-On Arch Linux:
-
-```sh
-sudo pacman -S --needed python python-gobject python-cairo python-yaml gtk4 libadwaita \
-  libratbag piper solaar headsetcontrol easyeffects pipewire-pulse libpulse xdg-utils
-```
-
-If some EasyEffects plugins are missing, install their dependencies as described in the [EasyEffects documentation](https://github.com/wwmm/easyeffects).
-
-## Install and run
-
-The current v0.3.0 preview includes G502 HERO support and the reliability upgrade. Download the current release archive and run `python install.py`, or use the clone instructions below.
-
-Clone the repository and run the user installer:
+For a user-local installation from source:
 
 ```sh
 git clone https://github.com/Mirox921/logi-center.git
@@ -87,75 +91,48 @@ cd logi-center
 python install.py
 ```
 
-The installer copies the application to `~/.local/share/logi-center`, adds a launcher at `~/.local/bin/logi-center`, and creates a desktop menu entry. `XDG_DATA_HOME` is respected. No administrator access is needed for the app itself.
+The installer places the app under `~/.local/share/logi-center`, adds `~/.local/bin/logi-center` and a desktop entry. It does not need root. Install only the optional backends you need; Logi Center does not install or reconfigure system services, drivers, groups or udev rules automatically.
 
-Open **Logi Center** from your application menu, or run:
+### Base desktop dependencies (Arch Linux)
 
 ```sh
-~/.local/bin/logi-center
+sudo pacman -S --needed python python-gobject python-cairo python-yaml gtk4 libadwaita
 ```
 
-For development, run `python app.py` directly. Select **English** or **Русский** in the header. Run the installer again after pulling an update.
+Backend tools are optional and model-specific. See [the full Arch dependency list](packaging/arch/PKGBUILD) and [backend setup notes](docs/backend-support.md). Do not run the whole GUI as root to work around device permissions.
 
-### Keyboard setup
+## Safety and data
 
-Keyboard controls are built from settings already discovered and saved by Solaar. For a new G515 installation, initialize it in the Solaar GUI first and save the desired settings. Check the [Solaar documentation](https://pwr-solaar.github.io/Solaar/issues/) for RGB control conflicts: do not let several applications control the same lighting settings simultaneously.
+- Settings show whether a value came from the device, a backend cache, application storage or an unsaved draft. A write without readback is not reported as device-confirmed.
+- Versioned backups contain supported fields, not complete firmware or every setting in device memory. Preview and select fields before restore; some backends cannot roll back a partial restore automatically.
+- Diagnostics export is explicit and redacted; there is no automatic upload. Macro contents and device serials are not included by default.
+- No firmware flashing, factory reset, speculative HID command or automatic backend installation is performed.
+- OpenRGB connects to the local SDK endpoint only; configure/start the SDK server yourself if you use it.
 
-At startup, Logi Center reads the saved settings and performs only a low-level HID++ ROOT ping to verify the keyboard connection. It does not run Solaar's full settings enumeration, which can invoke RGB shutdown cleanup in some builds. Explicit writes use a process-local adapter that suppresses that shutdown handler. The installed Solaar files are not modified.
-
-### Ready-made audio presets
-
-Open **G Pro X → Audio effects → Browse presets**, download an EasyEffects `.json` preset, then click **Import preset**. Select the imported preset and click **Apply**, then **Effects on**.
-
-Input presets process microphone audio; output presets process headphone/speaker audio. **Effects off** bypasses EasyEffects processing without muting your devices. Presets requiring separate impulse-response or noise-model files need those resources installed using EasyEffects; the JSON importer does not bundle or download them.
-
-## Saved settings
-
-- Mouse values are reported by libratbag and may be daemon cache; audio levels are read from the sound server.
-- Keyboard preferences are read from `~/.config/solaar/config.yaml`.
-- Language, last selected audio preset, lighting selection and sidetone selection are saved to `~/.config/logi-center/preferences.json` after successful actions.
-- Import destinations: `~/.config/easyeffects/input` and `~/.config/easyeffects/output`.
-
-Opening the app does not automatically replay sidetone or audio commands. A last saved selection is not proof of a device's current setting. Device reconnects and a full operating-system reboot have not been comprehensively tested. There is no automatic background service or login startup configuration.
-
-## Current limitations
-
-- No original Blue VO!CE or DTS engine, G HUB community integration, firmware updates or automatic per-game profiles.
-- No integrated per-key RGB editor or audio effect-chain editor; use the external editors.
-- G502 HERO readout was checked on connected hardware (USB 046d:c08b): 5 profiles, 11 buttons and 2 LEDs. Changing profiles, mappings and lighting still needs physical verification. Saved profile colors may differ from the visible lighting.
-- G515 lighting writes and G PRO X sidetone need further physical testing across firmware versions.
-- Controls target the listed hardware; other Logitech devices are not automatically supported.
-- Battery connectivity is verified separately for G515; other battery readings depend on the kernel's reported state.
-
-## Feedback
-
-Hardware reports are welcome. Include your distribution, backend versions, device model and connection type, plus what you expected and what happened. Remove device serial numbers and personal paths from logs. For announcement text, see [community post drafts](docs/COMMUNITY_POSTS.md).
-
-## Development and checks
+## Build, checks and simulation
 
 ```sh
-python -m unittest -v
+python -m unittest -q
 python scripts/check.py
-python scripts/diagnose.py
 python scripts/gui_smoke.py
-python app.py --smoke
+python scripts/simulation_smoke.py
+python app.py --simulate
 ```
 
-`--smoke` opens the GUI, reads devices and closes after 12 seconds without applying settings. `--keyboard` and `--audio` select the initial tab. Hardware-dependent smoke checks require a running desktop session and device permissions.
+The hardware-free suite and GTK/simulation smoke tests do not replace physical device testing. The specific hardware checks are listed above and in the device report. To prepare an Arch build without installing it, follow [packaging/arch/README.md](packaging/arch/README.md).
 
-## Uninstall
+## Known limits
 
-Delete `~/.local/share/logi-center`, `~/.local/bin/logi-center`, and `~/.local/share/applications/logi-center.desktop` (adjust the data paths if `XDG_DATA_HOME` is set). Optionally delete `~/.config/logi-center`. Device settings, Solaar settings and imported EasyEffects presets are left intact.
+- Hardware feature coverage depends on the installed provider and exact device/firmware revision; unlisted devices may appear only as standard input or diagnostic inventory.
+- Some backends expose cached state or write-only controls. Those operations remain labelled accordingly and are not presented as readback confirmation.
+- ckb-next currently provides detection only. OpenRGB, OpenRazer and rivalcfg integrations are provider/API integrations, not physical certification of every listed model.
+- Advanced Ace68-II key features (SOCD/Snap Tap, DKS, Mod Tap, Toggle Key, remapping and macros) are not editable because safe write formats are not confirmed.
+- Bluetooth sleep, broad unplug/reconnect behavior, clean-system installation and power-cycle persistence need additional hardware/environment testing.
 
-## Backends and license
+## Contributing
 
-- [libratbag](https://github.com/libratbag/libratbag) / [Piper](https://github.com/libratbag/piper)
-- [Solaar](https://github.com/pwr-Solaar/Solaar)
-- [HeadsetControl](https://github.com/Sapd/HeadsetControl)
-- [EasyEffects](https://github.com/wwmm/easyeffects)
+Issues and pull requests are welcome. For a new device, include its model and connection type, backend/version, capabilities discovered and a redacted diagnostic report. Never publish serial numbers, personal paths, private macros or raw configuration reports. See [`AGENTS.md`](AGENTS.md) for the project workflow.
 
-Logi Center's own code is distributed under the [MIT license](LICENSE). Backend tools are installed separately and retain their own licenses. Logitech and device names belong to their respective owners.
+## License
 
-Optional multi-vendor providers, supported operations, Arch dependencies and hardware-validation limits are documented in [Backend support](docs/backend-support.md). MCHOSE, OpenRGB and OpenRazer scalar backups are partial capability snapshots; ckb-next currently provides detection only. New provider writes remain unverified on physical equipment in this development cycle.
-
-[MCHOSE K7 Ultra / Ace68-II: implementation, hardware checks and limitations](docs/mchose-devices-progress.md).
+Logi Center is MIT licensed. Third-party backends and device names remain under their respective licenses and trademarks.

@@ -1,6 +1,6 @@
 # Local source package. scripts/prepare-arch.py supplies archive and exact checksum.
 pkgname=logi-center
-pkgver=0.4.0dev
+pkgver=0.4.0
 pkgrel=1
 pkgdesc='Capability-driven Linux peripheral manager using existing hardware backends'
 arch=('any')

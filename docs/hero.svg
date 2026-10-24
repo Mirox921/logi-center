@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="440" viewBox="0 0 1440 440" role="img" aria-labelledby="title desc">
+  <title id="title">Logi Center</title>
+  <desc id="desc">One Linux app for mouse, keyboard and audio peripherals.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101827"/><stop offset=".55" stop-color="#182640"/><stop offset="1" stop-color="#171a31"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop stop-color="#78a6ff"/><stop offset="1" stop-color="#7be1cb"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="28"/></filter>
+  </defs>
+  <rect width="1440" height="440" rx="28" fill="url(#bg)"/>
+  <circle cx="1180" cy="66" r="145" fill="#4d83ff" opacity=".15" filter="url(#glow)"/>
+  <circle cx="1380" cy="360" r="180" fill="#4bcbb5" opacity=".12" filter="url(#glow)"/>
+  <path d="M0 360C280 300 405 452 710 375s450-20 730-130v195H0z" fill="#fff" opacity=".025"/>
+  <g transform="translate(92 86)">
+    <rect width="56" height="56" rx="17" fill="#293c5d" stroke="#5577a9"/>
+    <path d="M28 11c-7 0-12 5-12 12v11a12 12 0 0 0 24 0V23c0-7-5-12-12-12Zm0 0v13" fill="none" stroke="url(#accent)" stroke-width="3.5" stroke-linecap="round"/>
+    <text x="76" y="39" fill="#eaf1ff" font-family="Inter,Segoe UI,sans-serif" font-size="21" font-weight="650" letter-spacing="2">LINUX PERIPHERAL CONTROL</text>
+  </g>
+  <text x="92" y="225" fill="#f4f7ff" font-family="Inter,Segoe UI,sans-serif" font-size="82" font-weight="750" letter-spacing="-3">Logi Center</text>
+  <text x="96" y="282" fill="#b8c6dd" font-family="Inter,Segoe UI,sans-serif" font-size="27" font-weight="450">One app. Many device backends.</text>
+  <text x="96" y="326" fill="#91a4c3" font-family="Inter,Segoe UI,sans-serif" font-size="19">Mice  ·  Keyboards  ·  Headsets  ·  System audio</text>
+  <g transform="translate(910 104)" stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(0 13)">
+      <rect x="22" y="0" width="104" height="167" rx="49" fill="#202f49" stroke="#506789" stroke-width="2"/>
+      <path d="M74 2v54" stroke="#607a9f" stroke-width="2"/>
+      <rect x="68" y="17" width="12" height="29" rx="6" fill="#7faaff"/>
+      <circle cx="15" cy="85" r="5" fill="#74dac5" stroke="none"/><circle cx="133" cy="107" r="5" fill="#74dac5" stroke="none"/>
+    </g>
+    <g transform="translate(197 52)">
+      <g fill="#263955" stroke="#58739a" stroke-width="1.5">
+        <rect x="0" y="0" width="49" height="37" rx="8"/><rect x="56" y="0" width="49" height="37" rx="8"/><rect x="112" y="0" width="49" height="37" rx="8"/>
+        <rect x="0" y="45" width="49" height="37" rx="8"/><rect x="56" y="45" width="49" height="37" rx="8"/><rect x="112" y="45" width="49" height="37" rx="8"/>
+        <rect x="0" y="90" width="49" height="37" rx="8"/><rect x="56" y="90" width="105" height="37" rx="8"/>
+      </g>
+      <path d="M18 18h13M74 18h13M130 18h13M18 63h13M74 63h13M130 63h13M18 108h13" stroke="#8ba8d2" stroke-width="2" opacity=".8"/>
+      <rect x="56" y="90" width="105" height="37" rx="8" fill="#284763" stroke="#79d9c5"/>
+    </g>
+    <g transform="translate(423 26)" fill="none" stroke="#7ba9e2" stroke-width="7">
+      <path d="M10 82V59a57 57 0 0 1 114 0v23"/>
+      <rect x="0" y="69" width="27" height="61" rx="13" fill="#263955" stroke="#6385b1" stroke-width="2"/>
+      <rect x="107" y="69" width="27" height="61" rx="13" fill="#263955" stroke="#6385b1" stroke-width="2"/>
+      <path d="M124 124c-7 19-25 28-48 28h-8" stroke="#79d9c5" stroke-width="3"/>
+      <circle cx="64" cy="152" r="7" fill="#79d9c5" stroke="none"/>
+    </g>
+  </g>
+  <g transform="translate(918 330)" fill="#90a5c5" font-family="Inter,Segoe UI,sans-serif" font-size="15" letter-spacing="1.2">
+    <text x="0">MOUSE</text><text x="210">KEYBOARD</text><text x="436">AUDIO</text>
+  </g>
+  <rect x="92" y="365" width="61" height="4" rx="2" fill="url(#accent)"/>
+</svg>

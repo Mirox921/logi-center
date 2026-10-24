@@ -47,7 +47,7 @@ Limitations:
 - K7 LOD and performance-flag writes are unavailable. Other MCHOSE models and firmware revisions need their own hardware validation. Mouse RGB is not implemented through the mouse protocol.
 - Existing OpenRGB/OpenRazer cache provenance, ckb-next read-only discovery and other backend limits remain in `backend-support.md`.
 
-Next: validate persistence after a user-controlled restart/power cycle and the unavailable advanced-key formats before claiming a stable complete Ace68 editor. No release or GitHub publication is implied.
+Release boundary: this report documents the tested subset included in v0.4.0. Persistence after a user-controlled restart/power cycle and the unavailable advanced-key formats remain unverified; the release does not claim a complete Ace68 editor.
 
 ### Physical evidence (explicitly approved reversible writes)
 
