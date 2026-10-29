@@ -22,6 +22,10 @@ def main():
     import tomllib
     project=tomllib.loads((ROOT/'pyproject.toml').read_text())
     assert project['project']['scripts']['logi-center']=='logi_center.cli:main'
+    assert project['project']['license']=='GPL-3.0-only'
+    assert "license=('GPL-3.0-only')" in (ROOT/'packaging/arch/PKGBUILD').read_text()
+    assert 'Version 3, 29 June 2007' in (ROOT/'LICENSE').read_text()
+    assert (ROOT/'assets/LICENSE-MIT.txt').read_text().startswith('MIT License')
     required=('src/logi_center/cli.py','src/logi_center/resources.py',
               'src/logi_center/qml_ui/qml/Main.qml','assets/mice/models.json',
               'assets/fonts/SOURCES.md','assets/icons/logi-mark.svg')

@@ -19,6 +19,8 @@ if package_target.exists():shutil.rmtree(package_target)
 shutil.copytree(package_source,package_target,ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
 shutil.copytree(source/'assets',package_target/'assets',ignore=shutil.ignore_patterns('__pycache__','*.pyc'))
 shutil.copy2(source/'app.py',destination/'app.py')
+for notice in ('LICENSE','COPYRIGHT'):
+    shutil.copy2(source/notice,destination/notice)
 # Remove only known obsolete application files; never touch private preferences.
 for filename in ['ace68_adapter.py', 'ace68_advanced.py', 'ace68_bindings.py', 'ace68_protocol.py', 'audio_pipeline.py', 'audio_status.py', 'audio_ui.py', 'backend.py', 'backups.py', 'battery_presentation.py', 'battery_service.py', 'capability_backup.py', 'ckb_adapter.py', 'control_service.py', 'dashboard.py', 'device_artwork.py', 'device_presentation.py', 'device_service.py', 'device_status.py', 'device_ui.py', 'devices.py', 'diagnostics.py', 'discovery.py', 'drafts.py', 'eweadn_adapter.py', 'eweadn_protocol.py', 'execution.py', 'g515_adapter.py', 'g515_layout.py', 'i18n.py', 'k7_settings.py', 'keyboard_layouts.py', 'keyboard_ui.py', 'logitech_status.py', 'macro_library.py', 'mchose_adapter.py', 'microphone_ui.py', 'mouse_art.py', 'mouse_editor.py', 'mouse_models.py', 'openrazer_adapter.py', 'openrgb_adapter.py', 'operations.py', 'peripheral_ui.py', 'ratbag_dbus.py', 'reports.py', 'rivalcfg_adapter.py', 'sdk_worker.py', 'simulation.py', 'solaar_adapter.py', 'solaar_write.py', 'version.py']:
     (destination/filename).unlink(missing_ok=True)

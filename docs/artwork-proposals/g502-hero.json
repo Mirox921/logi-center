@@ -11,6 +11,6 @@
   "interactive_hitboxes": null,
   "dashboard_fit": "fit visual_bounds inside the existing scene; preserve SVG aspect ratio",
   "source": "Original Logi Center vector study adapted from qml_ui/assets/diagrams/g502.svg and mouse_art.py",
-  "license": "MIT (project LICENSE)",
+  "license": "MIT (assets/LICENSE-MIT.txt)",
   "reference_note": "Official Logitech G502 HERO imagery was consulted for model features only; no pixels, paths or logos were copied. Revision and exact per-button geometry still require physical comparison."
 }

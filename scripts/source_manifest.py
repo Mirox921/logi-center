@@ -28,5 +28,5 @@ def source_files():
             paths.add(relative)
     paths.update(Path(name) for name in (
         'setup.py', 'AGENTS.md', 'app.py', 'install.py', 'pyproject.toml', 'MANIFEST.in',
-        'LICENSE', 'README.md', 'README.ru.md', 'ROADMAP.md', 'START_HERE.ru.md'))
+        'LICENSE', 'COPYRIGHT', 'README.md', 'README.ru.md', 'ROADMAP.md', 'START_HERE.ru.md'))
     return sorted(paths)

@@ -12,3 +12,5 @@ Toolbar glyphs search.svg and refresh.svg: project-authored vector paths, MIT,
 Iteration5: logi-mark.svg is the project-authored chamfered LC monogram with a
 small amber status indicator (MIT). Candidate sheet is in header/iteration5/;
 no existing manufacturer mark or typeface outline was copied.
+
+The separate MIT license text is preserved in `assets/LICENSE-MIT.txt`.

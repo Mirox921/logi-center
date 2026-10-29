@@ -5,7 +5,7 @@ pkgrel=1
 pkgdesc='Capability-driven Linux peripheral manager using existing hardware backends'
 arch=('any')
 url='https://github.com/Mirox921/logi-center'
-license=('MIT')
+license=('GPL-3.0-only')
 depends=('python' 'python-gobject' 'python-yaml' 'pyside6' 'qt6-svg' 'qt6-declarative')
 # Offline artwork tests/build tools only; no Cairo/GTK renderer at runtime.
 makedepends=('python-cairo')
@@ -97,6 +97,7 @@ package() {
   install -Dm644 packaging/logi-center.desktop "$pkgdir/usr/share/applications/logi-center.desktop"
   install -Dm644 packaging/icons/logi-center.svg "$pkgdir/usr/share/icons/hicolor/scalable/apps/logi-center.svg"
   install -Dm644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -Dm644 COPYRIGHT "$pkgdir/usr/share/licenses/$pkgname/COPYRIGHT"
   install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
   install -Dm644 README.ru.md "$pkgdir/usr/share/doc/$pkgname/README.ru.md"
   # Example only: enabling hardware access remains an explicit administrator action.

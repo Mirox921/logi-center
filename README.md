@@ -7,7 +7,7 @@ Mice, keyboards and audio. One interface, existing Linux backends.</p>
 <p align="center">
   <a href="https://github.com/Mirox921/logi-center/releases/latest"><img src="https://img.shields.io/github/v/release/Mirox921/logi-center?style=flat-square&color=efad32" alt="Latest release"></a>
   <a href="https://github.com/Mirox921/logi-center/actions/workflows/checks.yml"><img src="https://github.com/Mirox921/logi-center/actions/workflows/checks.yml/badge.svg" alt="Checks"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8abd88?style=flat-square" alt="License: MIT"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPLv3-8abd88?style=flat-square" alt="License: GPLv3"></a>
   <a href="https://github.com/Mirox921/logi-center/stargazers"><img src="https://img.shields.io/github/stars/Mirox921/logi-center?style=flat-square" alt="GitHub stars"></a>
 </p>
 <p align="center"><a href="README.ru.md">Русский</a> · <a href="https://github.com/Mirox921/logi-center/releases/tag/v0.5.1">Download v0.5.1</a> · <a href="docs/backend-support.md">Device support</a> · <a href="https://github.com/Mirox921/logi-center/issues">Report an issue</a></p>
@@ -145,7 +145,9 @@ are archived locally, and prior published releases remain in Git history. [Scree
 
 ## License and feedback
 
-Logi Center is MIT licensed. Qt, fonts, artwork and backend projects retain
+Logi Center application code is licensed under GNU GPL v3.0 only
+(`GPL-3.0-only`); see [LICENSE](LICENSE) and [COPYRIGHT](COPYRIGHT).
+Qt, fonts, separately licensed artwork and backend projects retain
 applicable notices and licenses. See bundled `SOURCES.md` and license files.
 When reporting a device issue, include its model, firmware/backend version and
 a redacted diagnostic report. Do not publish serials, private macros, raw HID

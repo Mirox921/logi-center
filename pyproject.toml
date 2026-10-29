@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ dynamic = ["version"]
 description = "Capability-driven Linux peripheral manager with a Qt6/QML interface"
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "GPL-3.0-only"
+license-files = ["LICENSE", "COPYRIGHT"]
 dependencies = ["PySide6>=6.6", "PyYAML>=6"]
 
 [project.optional-dependencies]

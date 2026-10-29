@@ -19,3 +19,5 @@ separate in `k7_settings.py`; the underside DPI button is intentionally excluded
 On 2026-10-28 the narrow original drawing was widened by 1.45 about its center,
 with identical mapping applied to the five anchors. The body width/length is
 approximately 0.54; the original 400×600 frame and hardware button IDs remain.
+
+The separate MIT license text is preserved in `assets/LICENSE-MIT.txt`.

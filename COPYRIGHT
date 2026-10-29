@@ -1,0 +1,13 @@
+Logi Center
+Copyright (c) 2026 Logi Center contributors.
+
+Application source code is licensed under the GNU General Public License,
+version 3 only (SPDX-License-Identifier: GPL-3.0-only). See LICENSE.
+
+Project artwork explicitly marked MIT in its SOURCES.md remains under the
+separate MIT license in assets/LICENSE-MIT.txt. Bundled fonts, user-supplied
+artwork and third-party material retain their own licenses and notices.
+See assets/fonts/SOURCES.md, the artwork SOURCES.md files and docs/third-party/.
+
+Previously distributed versions retain the licenses under which they were
+published; this change does not rewrite those releases or Git history.

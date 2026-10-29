@@ -477,3 +477,19 @@ No runtime files were added: recursive installer/source/CI manifests already
 include the modified modules and new tests. Remaining physical check: reopen
 G515, choose an advertised brightness level and explicitly Apply; observe the
 physical lighting and readback. See g515-settings-fix.md and eweadn-s9.md.
+
+## 2026-10-29 — application license changed to GPLv3
+
+Replaced root LICENSE with the official GNU GPL v3 text from
+https://www.gnu.org/licenses/gpl-3.0.txt. Application licensing is
+GPL-3.0-only in pyproject, Arch metadata, README RU/EN and QML About.
+COPYRIGHT records project attribution and scope. Previously separate MIT
+artwork retains its license in assets/LICENSE-MIT.txt; font and third-party
+license texts are unchanged. Existing release tags/history remain untouched.
+
+Wheel/sdist and user-local/Arch packaging now include LICENSE/COPYRIGHT.
+Setuptools >=77 supplies SPDX License-Expression and license-files metadata.
+Verified 7 targeted launcher/install/localization tests, release checks, wheel
+built from sdist, SPDX metadata and license bytes in both distributions,
+unchanged third-party notices, fresh Arch source and PKGBUILD syntax. No runtime
+behavior changes, system installation or hardware operations.

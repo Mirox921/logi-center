@@ -2,7 +2,7 @@
 
 All PNGs in `generated/` and `fallback.png` / `fallback@2x.png` are original
 Logi Center layered 2D class illustrations. Author: Logi Center contributors.
-License: MIT (project LICENSE). Source: `illustrations/` in this repository;
+License: MIT (assets/LICENSE-MIT.txt). Source: `illustrations/` in this repository;
 no manufacturer photographs, store images, product textures or third-party
 meshes are copied. Transparent outputs are 512×320 / 1024×640. They are built
 offline and loaded as assets; the renderer is not installed as runtime code.
@@ -112,3 +112,5 @@ remain byte-identical supplied files. Reference PNGs in
 original supplied SVGs, used to validate contours and material colours, not
 production raster substitutes. `scripts/check_g502_svg.py` renders the actual
 SVGs in Qt and checks transparency, grayscale gradients and coloured details.
+
+The separate MIT license text is preserved in `assets/LICENSE-MIT.txt`.

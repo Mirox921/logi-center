@@ -11,11 +11,12 @@ The package, resource paths and development commands are documented in
 
 ## Runtime and licensing
 
-Application code and original generic PNG/SVG illustrations remain MIT licensed. The current offline layered 2D pipeline and asset manifest are documented in docs/illustration-pipeline.md; no renderer code is required at runtime.
+Application code is licensed under GNU GPL v3.0 only (`GPL-3.0-only`); see
+[LICENSE](../LICENSE). Original generic PNG/SVG illustrations keep their separate
+MIT license in [assets/LICENSE-MIT.txt](../assets/LICENSE-MIT.txt). The current offline layered 2D pipeline and asset manifest are documented in docs/illustration-pipeline.md; no renderer code is required at runtime.
 The required binding is PySide6; Qt Quick, Qt Quick Controls, Qt Quick Layouts
 and Qt QML are in Qt Declarative, while QML SVG rendering uses Qt SVG. These
-dependencies are not copied into the application tree and are not relicensed as
-MIT. Qt for Python and Qt modules are available under LGPLv3/GPLv3 or commercial
+dependencies are not copied into the application tree and retain their original licenses. Qt for Python and Qt modules are available under LGPLv3/GPLv3 or commercial
 terms depending on component/build; users and packagers must follow the license
 of the installed Qt build. Arch provides the `pyside6` runtime and the separate
 `qt6-svg` package. Refer to the official [Qt for Python licensing and

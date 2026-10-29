@@ -1,4 +1,4 @@
-include setup.py LICENSE README.md README.ru.md ROADMAP.md app.py install.py AGENTS.md START_HERE.ru.md
+include setup.py LICENSE COPYRIGHT README.md README.ru.md ROADMAP.md app.py install.py AGENTS.md START_HERE.ru.md
 recursive-include assets *
 recursive-include src *.py *.qml qmldir
 recursive-include scripts *.py *.qml

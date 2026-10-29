@@ -12,6 +12,6 @@ Item {
         StyledText { text: "LOGI / CENTER"; font.family: Theme.displayFont; font.bold: true; font.pixelSize: 32; color: Theme.text }
         StyledText { text: "v" + about.windowRef.bridge.appVersion + " · Qt6 / QML"; color: Theme.warning; font.family: Theme.dataFont; font.pixelSize: 14 }
         StyledText { text: about.windowRef.tr("Единый центр управления периферией Linux"); color: Theme.muted; font.family: Theme.dataFont; font.pixelSize: 12 }
-        StyledText { text: "MIT · Qt for Python / PySide6"; color: Theme.subtle; font.family: Theme.dataFont; font.pixelSize: 12 }
+        StyledText { text: "GPLv3 · Qt for Python / PySide6"; color: Theme.subtle; font.family: Theme.dataFont; font.pixelSize: 12 }
     }
 }
