@@ -113,6 +113,29 @@ def guard_reads(settings,rgb_power):
         rgb_power.cleanup=lambda device:rgb_power.stop(device)
 
 
+def guard_effect_write(templates):
+    """Refresh the prerequisite in the *same* process as the zone write.
+
+    Patched Solaar gates RGBEffectSetting.write on rgb_control._value.
+    A preceding CLI process cannot initialize that object's memory.
+    Never enable control here: the explicit application plan owns that write.
+    """
+    cls=getattr(templates,'RGBEffectSetting',None)
+    if cls is None:return
+    original=cls.write
+    def write(setting,value,*args,**kwargs):
+        control=next((s for s in setting._device.settings if s.name=='rgb_control'),None)
+        # Setting.read(cached=False) can still return old _value on an empty
+        # reply. Validate the actual getter response instead of that fallback.
+        reply=control._rw.read(setting._device) if control is not None else None
+        observed=control._validator.validate_read(reply) if reply else None
+        if observed is not True:
+            raise RuntimeError('LED Control is disabled or could not be read; effect was not sent')
+        control._value=observed
+        return original(setting,value,*args,**kwargs)
+    cls.write=write
+
+
 def main(args=None):
     args=list(sys.argv[1:] if args is None else args)
     readonly=args[:1]==['--read-only']
@@ -132,6 +155,9 @@ def main(args=None):
         if args[2]=='rgb_zone_1':expose_rgb_metadata(settings_templates)
         from solaar.cli import run
         return run(args)
+    if len(args)>=4 and args[0]=='config' and args[2]=='rgb_zone_1':
+        from logitech_receiver import settings_templates
+        guard_effect_write(settings_templates)
     from solaar.gtk import main as cli_main
     return cli_main()
 

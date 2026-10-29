@@ -43,10 +43,16 @@ def response(raw,page,encap=0):
     if len(raw)<6:raise ResponseError('short_header')
     if raw[0]!=0x50:raise ResponseError('command_type',0x50,raw[0])
     if raw[1]!=0:raise ResponseError('ack',0,raw[1])
-    if not 1<=raw[2]<=min(10,len(raw)-5):raise ResponseError('payload_length')
+    size=raw[2]
+    # The supplied S9 receiver reference documents 0x0b in ten-byte
+    # replies. Accept only its exact short wire shape (16 bytes with ID),
+    # never synthesize the eleventh byte from the allocated buffer padding.
+    if size==11 and len(raw)==15:size=10
+    if not 1<=size<=min(10,len(raw)-5):
+        raise ResponseError('payload_length',min(10,len(raw)-5),raw[2])
     if raw[3]!=encap:raise ResponseError('encapsulation',encap,raw[3])
     if raw[4]!=page:raise ResponseError('offset',page,raw[4])
-    return raw[5:5+raw[2]]
+    return raw[5:5+size]
 
 
 def model_identity(model):

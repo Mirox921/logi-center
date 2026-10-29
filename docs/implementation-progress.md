@@ -533,3 +533,19 @@ No physical writes, recordings, resets, firmware/pairing changes or system edits
 Physical S9 timeout cause and G515 LED animation/persistence remain pending
 remote traces/observation. The G515 is at the user's friend's machine. Commands,
 protocol evidence and remaining limits: [hardware-read-diagnostics.md](hardware-read-diagnostics.md).
+
+## 2026-10-29 — follow-up from three remote read traces
+
+S9 page128/chunk0 replies arrive promptly but fail length validation; added
+strict short-frame compatibility for the supplied reference's 0x0b length
+convention and useful numeric length rejection metadata. Exact remote header
+still needs renewed trace; no guessed payload padding or timeout increases.
+G515 read succeeds with RGB control enabled. Fixed process-local prerequisite
+initialization before zone writes, rejecting failed getters instead of using
+cached success. Installed Solaar packages remain unchanged.
+
+58 targeted tests passed, followed by 22 diagnostic tests after adding the
+worker-entry regression; compileall and diff checks passed. No physical writes.
+Existing recursive installer/CI includes these changed modules; no new runtime
+files or dependencies. Physical S9 read and G515 animation remain unverified.
+See hardware-read-diagnostics.md for exact evidence and remote verification.

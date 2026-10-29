@@ -11,6 +11,16 @@ from tests.unit.test_eweadn import Wire,ITEM
 
 
 class S9ReadDiagnostics(unittest.TestCase):
+    def test_receiver_0b_length_variant_keeps_exact_payload_and_header_checks(self):
+        payload=bytes(range(10))
+        raw=bytes([3,0x50,0,11,0,128])+payload
+        self.assertEqual(response(raw,128),payload)
+        for bad in (raw[:-1],raw+bytes(1),raw[:3]+bytes([12])+raw[4:]):
+            with self.assertRaises(ResponseError):response(bad,128)
+        with self.assertRaises(ResponseError):response(raw,129)
+        with self.assertRaises(ResponseError):response(raw,128,1)
+
+
     def test_documented_short_final_frames_stop_without_requesting_missing_data(self):
         for page,size in ((65,41),(0,12)):
             class Short(Transport):
@@ -103,6 +113,39 @@ RGB={'readable':False,'effects':[
 
 
 class G515Effects(unittest.TestCase):
+    def test_zone_cli_installs_guard_before_execution(self):
+        from logi_center.adapters.logitech.solaar_write import main
+        templates=SimpleNamespace()
+        events=[]
+        modules={'logitech_receiver':SimpleNamespace(settings_templates=templates),
+                 'solaar.gtk':SimpleNamespace(main=lambda:events.append('execute'))}
+        with patch.dict('sys.modules',modules),patch(
+                'logi_center.adapters.logitech.solaar_write.guard_effect_write',
+                side_effect=lambda value:events.append('guard')):
+            main(['config','G515 LS TKL','rgb_zone_1','!LEDEffectSetting {ID: 21}'])
+        self.assertEqual(events,['guard','execute'])
+
+
+    def test_effect_write_refreshes_process_local_control_and_rejects_cached_success(self):
+        from logi_center.adapters.logitech.solaar_write import guard_effect_write
+        sent=[]
+        control=SimpleNamespace(name='rgb_control',_value=None,
+            _rw=SimpleNamespace(read=Mock(return_value=b'\x03')),
+            _validator=SimpleNamespace(validate_read=lambda raw:raw==b'\x03'))
+        class Effect:
+            def __init__(self):self._device=SimpleNamespace(settings=[control])
+            def write(self,value,save=True):
+                if control._value:sent.append(value)
+                return value
+        guard_effect_write(SimpleNamespace(RGBEffectSetting=Effect))
+        effect=Effect();self.assertEqual(effect.write(21,save=False),21)
+        self.assertEqual(sent,[21]);self.assertIs(control._value,True)
+        for reply in (b'',None,b'\x00'):
+            control._rw.read.return_value=reply
+            with self.assertRaises(RuntimeError):effect.write(22)
+        self.assertEqual(sent,[21])
+
+
     def test_readonly_configuration_changes_remain_in_memory(self):
         from logi_center.adapters.logitech.solaar_write import freeze_configuration
         configuration=SimpleNamespace(save=Mock(side_effect=AssertionError('disk write')),

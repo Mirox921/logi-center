@@ -136,3 +136,43 @@ remain separate in advanced diagnostics. This is a known limitation, preferable
 to joining unrelated units. A scoped live selector can still reach the one
 unambiguous physical G515 editor. The new diagnostic commands and tests do not
 establish physical write verification.
+
+## Remote traces received 2026-10-29: page 128 and process-local RGB gate
+
+Both S9 traces fail on page 128/chunk 0, approximately 2.8 s, not the
+20 s worker deadline. Each request gets a 16-byte response rejected as
+`payload_length`, then 5-byte empty responses. The supplied reference driver
+explicitly documents data headers `[0x50, 0, 0x0b, seq, page, ...]`.
+The decoder previously rejected every length above 10. It now accepts exactly
+that 0x0b/10-actual-byte short frame, while retaining type, ACK, sequence, page,
+model identity and configuration checks. Padded/truncated variants are rejected.
+The old trace did not include the declared length: this is a reference-backed
+compatibility fix, not proof of the remote packet's contents. Rejections now
+include declared/available lengths; another read trace establishes whether this
+was the remaining incompatibility. No timeout increase or new hardware request.
+
+G515 trace: all six reads returned; live rgb_control=true, brightness=100;
+native IDs 0/1/10/21/22/23 advertised, zone readable=false. Saved effect ID 0
+cannot establish the visible effect. The locally inspected patched Solaar
+RGBEffectSetting.write checks another setting object's `rgb_control._value`
+and silently skips wire I/O if it is None/False. A preceding CLI invocation
+cannot populate that in-memory object. The scoped zone writer now reads and
+validates that prerequisite in the same process before calling Solaar's writer.
+It uses the actual getter response: Setting.read(cached=False) can return old
+_value after a failed getter. Missing/off control fails explicitly; the wrapper
+never enables it implicitly. The explicit existing Apply plan still owns that.
+This proves/fixes a code path, not that the friend's installed Solaar contains
+exactly the same customization or that LEDs now animate.
+
+Next remote checks, from the updated checkout (not an older installed copy):
+
+```bash
+python scripts/eweadn_read_diagnostics.py --output ~/s9-read-after.json
+python app.py --ui qml
+```
+
+For G515 explicitly Apply Cycle once and observe whether it animates. A
+sent-unconfirmed result remains correct because the zone has no getter.
+If it still fails, provide the Apply error/diagnostic report and installed
+Solaar RGBEffectSetting.write implementation; another unchanged read-only
+snapshot alone cannot determine whether an effect write reached hardware.
