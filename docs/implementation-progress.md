@@ -549,3 +549,30 @@ worker-entry regression; compileall and diff checks passed. No physical writes.
 Existing recursive installer/CI includes these changed modules; no new runtime
 files or dependencies. Physical S9 read and G515 animation remain unverified.
 See hardware-read-diagnostics.md for exact evidence and remote verification.
+
+## 2026-10-29 — G515 cable duplicates/charging and S9 zero-offset response
+
+Reviewed the supplied 100 s video and s9-read-after.json. G515 animations were
+physically confirmed by the user, without an exhaustive mode/persistence matrix.
+G515 input/HID collections are normalized; the matching auxiliary pointer is
+an interface; receiver c547 is wireless. Exact serial/unit aliases reconcile
+cable and receiver views, preserving unit selection without name/model merges.
+Battery association follows reconciliation, retains original USB parents and
+prefers the cable supply. Unknown status stays unknown; battery observations
+cannot replace the keyboard name or RGB faults. Guarded, async Solaar battery
+reads provide current charging data without settings initialization. Scoped CLI
+lookup recognizes exact unitId and prefers cable for a proven same-unit pair.
+
+S9 short framing now accepts the trace's reserved-zero offset consistently
+with the official codec's ACK/encapsulation checks. Five-page protocol fixtures
+pass; physical configuration reading remains pending updated remote evidence.
+G515 diagnostics now expose anonymous input identity relationships and live
+battery metadata, never raw identifiers/paths. No physical writes were made.
+
+Validation: full suite 550 tests passed (26.102 s); final battery-error scoping
+and battery-provider identity refinements passed 73 affected tests (0.038 s).
+Simulation smoke, QML navigation/qmllint, compileall and live read-only peripheral
+smoke passed. That live smoke covered local Ace68 only, not remote G515/S9.
+No QML layout changes or screenshot polishing. Existing recursive packaging
+and CI include the changed modules/script and new integration test file.
+Remaining physical checks/commands: hardware-read-diagnostics.md.

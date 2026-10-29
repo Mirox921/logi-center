@@ -52,7 +52,7 @@ class DeviceManager:
             except Exception as error:
                 from logi_center.core.services.diagnostics import fault_for
                 self.faults.append(fault_for(error,adapter.name))
-        for adapter in self.adapters:
+        for adapter in sorted(self.adapters,key=lambda a:getattr(a,'association_priority',0)):
             associate=getattr(adapter,'associate',None)
             if associate:associate(records)
         self.link_physical(records)
@@ -97,7 +97,7 @@ class DeviceManager:
             if key not in merged:merged[key]=item;continue
             current=merged[key]
             if current.kind=='input':current.kind=item.kind
-            if current.backend=='linux-input' and item.backend not in ('linux-input','solaar-local'):
+            if current.backend=='linux-input' and item.backend not in ('linux-input','solaar-local','kernel-battery'):
                 current.name=item.name;current.kind=item.kind;current.backend=item.backend;current.target=item.target
                 if item.connection!='unknown' or item.backend=='mchose':
                     # The input bus identifies a USB receiver, not necessarily
@@ -110,6 +110,8 @@ class DeviceManager:
             known={(c.name,c.backend) for c in current.capabilities}
             current.capabilities.extend(c for c in item.capabilities if (c.name,c.backend) not in known)
             current.faults.extend(item.faults)
+            for name,value in item.private_identity.items():
+                if name not in current.private_identity:current.private_identity[name]=value
         for device in merged.values():
             rgb=[c for c in device.capabilities if c.backend=='openrgb' and c.name in ['lighting','lighting_mode','brightness','lighting_speed','lighting_palette'] and c.writable]
             if rgb:

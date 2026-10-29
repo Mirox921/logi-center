@@ -8,6 +8,23 @@ READ_KEYS=('rgb_control','brightness_control','rgb_zone_1','per-key-lighting',
 LIVE_KEYS={'rgb_control','brightness_control'}
 
 
+def battery_from_text(text):
+    match=re.search(r'^#   logi-center-battery: (\{[^\n]+\})$',text,re.M)
+    if not match:return None
+    state=json.loads(match[1])
+    if not isinstance(state,dict) or type(state.get('charging')) not in (bool,type(None)):
+        raise ValueError('Invalid G515 charging state')
+    level=state.get('battery_status')
+    if level is not None and (type(level) is not int or not 0<=level<=100):raise ValueError('Invalid G515 battery level')
+    return {'battery_status':level,'charging':state.get('charging')}
+
+
+def read_battery(target,runner):
+    state=battery_from_text(runner(['solaar','config',target,'brightness_control'],timeout=5))
+    if state is None:raise Fault(FaultCode.UNSUPPORTED,'solaar-battery','Battery getter did not report state')
+    return state
+
+
 def rgb_capabilities(text):
     match=re.search(r'^#   logi-center-rgb: (\{[^\n]+\})$',text,re.M)
     if not match:return None

@@ -1,5 +1,6 @@
 """Scoped CLI adapter: an explicit setting must not play a shutdown animation on exit."""
 import sys
+import re
 
 
 def brightness_metadata(setting,templates):
@@ -34,8 +35,37 @@ def expose_brightness_metadata(templates):
         if info is not None:
             import json
             print('#   logi-center-brightness: '+json.dumps(info,sort_keys=True))
+        status=battery_metadata(setting,templates)
+        if status is not None:
+            import json
+            print('#   logi-center-battery: '+json.dumps(status,sort_keys=True))
         return value
     cls.read=read
+
+
+def battery_metadata(setting,templates):
+    """One supported HID++ battery getter; never apply or initialize settings."""
+    device=getattr(setting,'_device',None)
+    reader=getattr(templates,'_hidpp20',None)
+    features=getattr(templates,'_F',None)
+    if device is None or reader is None or features is None:return None
+    if not getattr(device,'online',False):return None
+    # Avoid Solaar's battery wrapper that may update LEDs on old protocols.
+    for name,method in (('UNIFIED_BATTERY','get_battery_unified'),
+                        ('BATTERY_STATUS','get_battery_status'),
+                        ('BATTERY_VOLTAGE','get_battery_voltage')):
+        feature=getattr(features,name,None)
+        if feature is None or feature not in device.features:continue
+        try:result=getattr(reader,method)(device)
+        except Exception:return None
+        if not isinstance(result,tuple) or len(result)!=2:return None
+        battery=result[1];status=getattr(getattr(battery,'status',None),'name',None)
+        charging=True if status in ('RECHARGING','ALMOST_FULL','SLOW_RECHARGE') else False if status in ('DISCHARGING','FULL') else None
+        level=getattr(battery,'level',None)
+        # Approximate enum levels must not become invented percentages.
+        return {'battery_status':level if type(level) is int and 0<=level<=100 else None,
+                'charging':charging}
+    return None
 
 
 def rgb_metadata(setting,templates):
@@ -136,6 +166,34 @@ def guard_effect_write(templates):
     cls.write=write
 
 
+def match_unit_devices(devices,target):
+    """Exact G515 unit IDs can differ from the receiver pairing serial."""
+    target=target.casefold();matches=[]
+    for device in devices:
+        serial=str(getattr(device,'serial','') or '').casefold()
+        g515='g515' in str(getattr(device,'name','')).casefold()
+        unit=str(getattr(device,'unitId','') or '').casefold() if g515 else ''
+        if not re.fullmatch('[0-9a-f]{8,32}',unit) or len(set(unit))<=1:unit=''
+        if serial==target or unit==target:matches.append((device,unit))
+    if len(matches)>1:
+        units={unit for _,unit in matches}
+        if len(units)!=1 or not next(iter(units)):
+            raise RuntimeError('Exact device identity is ambiguous')
+    # A live cable view of the same unit takes priority over its receiver view.
+    return [d for d,_ in sorted(matches,key=lambda pair:getattr(pair[0],'receiver',None) is not None)]
+
+
+def enable_unit_selector(cli):
+    original=cli._find_device
+    def find(receivers,name):
+        if not re.fullmatch('[0-9a-fA-F]{8,32}',name or ''):
+            yield from original(receivers,name);return
+        devices=list(original(receivers,''))
+        if len(devices)>16:raise RuntimeError('Too many device identity candidates')
+        yield from match_unit_devices(devices,name)
+    cli._find_device=find
+
+
 def main(args=None):
     args=list(sys.argv[1:] if args is None else args)
     readonly=args[:1]==['--read-only']
@@ -146,6 +204,8 @@ def main(args=None):
     except ImportError:rgb_power=None
     # Process-local only: never play a firmware shutdown animation on close.
     if rgb_power is not None:rgb_power.cleanup=lambda device:rgb_power.stop(device)
+    from solaar import cli
+    enable_unit_selector(cli)
     if readonly:
         from solaar import configuration
         freeze_configuration(configuration)

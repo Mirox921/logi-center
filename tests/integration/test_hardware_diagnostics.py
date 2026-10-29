@@ -20,6 +20,31 @@ class S9ReadDiagnostics(unittest.TestCase):
         with self.assertRaises(ResponseError):response(raw,129)
         with self.assertRaises(ResponseError):response(raw,128,1)
 
+    def test_receiver_zero_offset_variant_keeps_chunk_type_and_identity_validation(self):
+        payload=bytes(range(10))
+        raw=bytes([3,0x50,0,11,0,0])+payload
+        self.assertEqual(response(raw,128),payload)
+        with self.assertRaises(ResponseError):response(raw,128,1)
+        with self.assertRaises(ResponseError):response(raw[:1]+b'\x65'+raw[2:],128)
+        from logi_center.protocols.eweadn_protocol import model_identity
+        with self.assertRaises(ValueError):model_identity(response(raw,128))
+
+    def test_zero_offset_pages_reach_complete_validated_state_without_setters(self):
+        pages=Wire().pages
+        class Receiver(Transport):
+            def __init__(self):super().__init__('unused');self.requests=[]
+            def send(self,main,offset,data=b'',encap=0):
+                self.requests.append((main,offset,encap))
+            def get(self):
+                main,offset,index=self.requests[-1]
+                payload=bytes(pages[offset-index][index*10:(index+1)*10]).ljust(10,b'\0')
+                return bytes([3,0x50,0,11,index,0])+payload
+        receiver=Receiver()
+        with patch('logi_center.adapters.eweadn.eweadn_adapter.time.sleep'):
+            state=read_state(receiver,'wireless')
+        self.assertEqual(state['model_id'],Wire().state()['model_id'])
+        self.assertTrue(all(main==79 for main,_,_ in receiver.requests))
+
 
     def test_documented_short_final_frames_stop_without_requesting_missing_data(self):
         for page,size in ((65,41),(0,12)):
@@ -118,6 +143,7 @@ class G515Effects(unittest.TestCase):
         templates=SimpleNamespace()
         events=[]
         modules={'logitech_receiver':SimpleNamespace(settings_templates=templates),
+                 'solaar':SimpleNamespace(cli=SimpleNamespace(_find_device=lambda *args:())),
                  'solaar.gtk':SimpleNamespace(main=lambda:events.append('execute'))}
         with patch.dict('sys.modules',modules),patch(
                 'logi_center.adapters.logitech.solaar_write.guard_effect_write',

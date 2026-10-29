@@ -176,3 +176,60 @@ sent-unconfirmed result remains correct because the zone has no getter.
 If it still fails, provide the Apply error/diagnostic report and installed
 Solaar RGBEffectSetting.write implementation; another unchanged read-only
 snapshot alone cannot determine whether an effect write reached hardware.
+
+## Follow-up video and s9-read-after.json, 2026-10-29
+
+The user reports that G515 animations now work physically after e708bf3.
+The individual modes, parameters and persistence after exit were not enumerated
+in that confirmation, so this is not certification of every RGB configuration.
+
+The video shows a receiver G515 record, a wired G515 record and a wired
+`Logitech G515 LS TKL Mouse` pointer collection. Input discovery previously
+used evdev function paths as separate units and called every USB receiver USB.
+G515 evdev collections now share their exact HID parent. The keyboard's pointer
+collection is an interface only when its exact USB parent and full keyboard
+name match. Receiver 046d:c547 is wireless, not a wired keyboard identity.
+
+Cable/receiver G515 views merge only with exact non-placeholder kernel uniq or
+USB serial, optionally reconciled through a unique saved `_serial`/`_unitId`
+relationship. Ambiguous identities and independent keyboards stay separate.
+A stable unit key preserves selection across a cable transition. Cable metadata
+wins when both are present; receiver PID is never relabeled as keyboard WPID.
+Battery association runs after unit reconciliation, retains parent aliases and
+prefers the active cable supply. A battery provider cannot replace the keyboard
+name/backend with a generic battery name. Unknown kernel status stays unknown.
+
+Scoped Solaar CLI selection now accepts exact G515 unit IDs: stock CLI matches
+pairing serial but does not match unitId, which may differ over the cable.
+Matching same-unit endpoints prefer cable; ambiguous identities fail explicitly.
+This is process-local; installed Solaar code/configuration is not patched.
+
+The existing brightness getter also annotates one supported HID++ battery
+getter (1004/1000/1001 via Solaar APIs, no configuration setter). Shared async
+battery polling consumes only validated percentage/charging values and preserves
+Epoch/selector guards. Unknown/error/full status does not become active charging.
+Optional battery errors are isolated from Solaar RGB errors and observations.
+No recording, RGB change or LED initialization is performed by these reads.
+
+The S9 trace proves that each 16-byte response now passes the 0x0b length
+branch but carries offset 0 rather than page 128. The official codec only
+compares ACK and encapsulation. The strict short 0x0b frame now permits this
+reserved zero offset, retaining command/ACK/chunk, real byte count, model and
+full configuration validation. Other nonzero wrong offsets still fail. A
+protocol fixture reaches all five validated pages using this framing; the
+remote physical receiver has not yet been tested past page128 by this change.
+No new request type or timeout increase was introduced.
+
+Remote read-only confirmation after updating the checkout:
+
+```bash
+python scripts/eweadn_read_diagnostics.py --output ~/s9-read-final.json
+# Run once without keyboard cable, then again with cable connected:
+python scripts/g515_read_diagnostics.py --output ~/g515-wireless.json
+python scripts/g515_read_diagnostics.py --output ~/g515-wired.json
+```
+
+The G515 report now includes live battery metadata and ordinal input/HID/USB
+identity relationships. It exports no serials, raw paths or arbitrary device
+names. If the driver exposes no reliable unit identity, cross-transport merging
+is deliberately left unresolved; these two reports identify that limitation.

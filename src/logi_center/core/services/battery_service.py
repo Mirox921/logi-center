@@ -10,6 +10,23 @@ def collect(devices,runner=None,kernel_factory=KernelBatteryAdapter,headset_fact
     from logi_center.adapters.external.backend import run
     runner=runner or run
     results=[];headset_result=None;headset_error=None
+    keyboards=[d for d in devices if d.kind=='keyboard' and d.connected is not False
+               and not d.simulated and d.vid=='046d' and 'g515' in d.name.casefold()]
+    for device in keyboards:
+        targets=device.targets.get('solaar') or device.targets.get('solaar-local') or []
+        target=targets[0] if len(targets)==1 else device.private_identity.get('solaar_serial')
+        if not target and len(keyboards)==1:target='G515'
+        if not target:continue
+        try:
+            from logi_center.adapters.logitech.g515_adapter import read_battery
+            state=read_battery(target,runner)
+            results.append((device.id,'solaar-battery',target,state,None))
+        except Exception as error:
+            from logi_center.core.services.execution import Fault
+            fault=fault_for(error,'solaar-battery')
+            # Optional telemetry failure must not invalidate RGB observations.
+            results.append((device.id,'solaar-battery',target,None,
+                Fault(fault.code,'solaar-battery',fault.message)))
     for device in devices:
         if device.kind not in ('mouse','keyboard') or device.connected is False:continue
         if not any(c.name=='battery_status' and c.backend in ('mchose','openrazer','eweadn') for c in device.capabilities):continue
@@ -35,11 +52,19 @@ def apply(devices,outcome):
     results,kernel,headsets,headset_error=outcome
     failed=False;changed=False
     for ident,backend,target,state,error in results:
-        current=next((d for d in devices if d.id==ident and d.connected is not False and target in d.targets.get(backend,[])),None)
+        current=next((d for d in devices if d.id==ident and d.connected is not False and
+            (target in d.targets.get(backend,[]) or backend=='solaar-battery' and
+             (target in d.targets.get('solaar-local',[]) or target==d.private_identity.get('solaar_serial') or
+              target=='G515' and sum(p.kind=='keyboard' and p.vid=='046d' and 'g515' in p.name.casefold() and p.connected is not False for p in devices)==1))),None)
         if current is None:continue
         current.faults=[f for f in current.faults if f.component!=backend]
         if error:
             failed=True;current.faults.append(fault_for(error,backend));continue
+        if backend=='solaar-battery':
+            from logi_center.core.capabilities.model import Capability
+            changed|=_apply_caps(current,[Capability(name,backend,True,value is not None,
+                value=value,source='device' if value is not None else 'unavailable') for name,value in state.items()])
+            continue
         if backend=='mchose':
             mode=state.get('identity',{}).get('mode') if isinstance(state.get('identity'),dict) else None
             observed_connection='usb' if mode==0 else 'wireless' if mode in (1,2) else None

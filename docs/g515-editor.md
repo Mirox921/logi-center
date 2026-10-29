@@ -97,3 +97,10 @@ is a fallback. No additional hardware feature or physical confirmation is implie
 
 2026-10-29: scoped zone enumeration, Cycle saturation fix, LED Control verification,
 accurate unconfirmed states and receiver identity handling: [hardware-read-diagnostics.md](hardware-read-diagnostics.md).
+
+2026-10-29 follow-up: user confirms working physical animations (specific mode
+matrix/persistence unspecified). Cable/receiver unit reconciliation, auxiliary
+pointer suppression, wireless transport labeling, exact Solaar unit-ID selectors
+and live read-only battery polling are implemented. Cable transition/charging
+remain mock-tested pending the friend's physical check. Missing/ambiguous unit
+identifiers never justify a name-only merge. See hardware-read-diagnostics.md.

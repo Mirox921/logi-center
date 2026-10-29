@@ -51,7 +51,12 @@ def response(raw,page,encap=0):
     if not 1<=size<=min(10,len(raw)-5):
         raise ResponseError('payload_length',min(10,len(raw)-5),raw[2])
     if raw[3]!=encap:raise ResponseError('encapsulation',encap,raw[3])
-    if raw[4]!=page:raise ResponseError('offset',page,raw[4])
+    # The receiver's short 0x0b variant returns a reserved zero here.
+    # The official codec matches ACK + encapsulation, not a page echo.
+    # Restrict this exception to the observed frame shape; keep rejecting
+    # arbitrary nonzero stale offsets and wrong chunks.
+    legacy_zero=raw[2]==11 and len(raw)==15 and raw[4]==0
+    if raw[4]!=page and not legacy_zero:raise ResponseError('offset',page,raw[4])
     return raw[5:5+size]
 
 

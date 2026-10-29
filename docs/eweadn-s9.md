@@ -156,3 +156,9 @@ keyword fix; this development run used fake devices and did not perform new
 physical S9 writes. Existing transport/timeout and wake/retry behavior remains.
 
 Read-timeout instrumentation and remote collection commands: [hardware-read-diagnostics.md](hardware-read-diagnostics.md). Partial status reads never enable configuration writes.
+
+2026-10-29 follow-up: s9-read-after.json confirms short 0x0b frames carry a
+reserved zero offset. The official ACK/encapsulation matcher does not require a
+page echo. Exact short-frame support now permits zero while retaining all
+other header, model and configuration checks. A fixture reads all five pages;
+physical completion still needs s9-read-final.json from the updated version.
