@@ -33,3 +33,22 @@ class DiagnosticBridgeTests(unittest.TestCase):
         with patch('logi_center.core.services.diagnostics.collect',side_effect=AssertionError('real I/O')):
             self.controller.collect()
         self.assertEqual(self.controller.components[0]['component'],'simulation')
+
+    def test_sleeping_s9_discovery_fault_survives_qml_report_sync(self):
+        from unittest.mock import patch,Mock
+        from logi_center.adapters.eweadn.eweadn_adapter import EweadnAdapter
+        from logi_center.core.services.execution import Fault,FaultCode
+        from tests.unit.test_eweadn import ITEM
+        with tempfile.TemporaryDirectory() as folder:
+            node=Path(folder)/'usb';node.mkdir()
+            for name,value in [('idVendor','372e'),('idProduct','1026'),('product','EWEADN S9')]:
+                (node/name).write_text(value)
+            runner=Mock(side_effect=Fault(FaultCode.TIMEOUT,'eweadn','Wake the mouse'))
+            adapter=EweadnAdapter(folder,runner=runner)
+            with patch('logi_center.adapters.eweadn.eweadn_adapter.candidates',return_value=[{**ITEM,'physical':str(node)}]):
+                self.owner._manager=DeviceManager([adapter]);self.owner._manager.discover()
+            self.controller.sync()
+            device=json.loads(self.controller.reportText)['devices'][0]
+            self.assertIs(device['simulated'],False)
+            self.assertEqual(device['faults'],[{'component':'eweadn','code':'timeout'}])
+            self.assertEqual(len(self.controller.inventory),1)

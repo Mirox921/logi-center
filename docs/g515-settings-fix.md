@@ -45,8 +45,9 @@ rgb_control=False. В доступном текущему агенту sysfs с�
   парсинг. Ненулевой код вызывает Fault, а не успех по наличию stdout. Ошибки
   процесса относятся к Solaar, selector скрывается. Обработка процесса остаётся
   ограниченной по времени и отменяемой через существующий execution.command.
-- Яркость теперь поддерживает целые значения 0–100, включая 83, вместо пяти
-  произвольных ступеней; старые процентные черновики продолжают читаться.
+- Яркость использует диапазон/ступени initialized validator Solaar (см. уточнение
+  ниже). Старые процентные черновики продолжают читаться. Непрерывный диапазон
+  остаётся для backend без дискретных уровней.
 - Epoch/binding и проверка единственного подключённого G515 сохраняются. Перед
   фактической записью CLI сам проверяет доступность выбранного устройства;
   ложный name-only sysfs gate больше не запрещает путь через приёмник.
@@ -65,3 +66,32 @@ rgb_control=False. В доступном текущему агенту sysfs с�
 клавиатуры, увидеть управление RGB «Выключено» и остальные настройки. Ничего не
 применять; исходная подсветка должна сохраниться. Полнота поддержки G HUB этим
 исправлением не заявляется.
+
+
+## 2026-10-29 — brightness snapping in patched Solaar builds
+
+The supplied screenshots show G515 brightness requested as 45/54 with actual
+readback 50. The locally installed Solaar BrightnessControl.write explicitly
+snaps values using halving_marks(validator.max_value, validator.steps). Therefore
+comparing arbitrary slider values to the snapped readback produced a genuine
+numerical mismatch; it was not an S9 lighting error or proof of a failed write.
+
+The existing allowlisted read-only worker now annotates the single brightness
+getter with its already initialized validator limits and, when supported by the
+installed implementation, its native halving marks. No extra HID requests,
+settings writes, full enumeration, installed-library changes or inferred levels
+are introduced. For max=100/steps=5, the backend helper returns
+[0,13,25,50,100]; this example is not a fixed list assigned to every keyboard.
+Stock builds without snapping retain a range control.
+
+The adapter validates metadata and exposes native levels as a QML selector.
+Only supported levels can be applied. Exact device readback remains mandatory:
+true mismatches retain the draft and error; no tolerance or success masking is
+added. Metadata is transient and never stored as user hardware configuration.
+Old off-grid drafts remain editable but must be changed to an available level
+before Apply. User device confirmation of the new selector is still pending.
+
+Tests cover metadata extraction without I/O, continuous-backend compatibility,
+malformed metadata rejection, native-level validation, confirmed readback and
+mismatch/draft retention. G515 QML smoke covers RU/EN at 640/1280 with the native
+selector; commands go only to the existing fake runner.

@@ -15,6 +15,31 @@ OUTPUT={
 
 
 class G515Reads(unittest.TestCase):
+    def test_native_brightness_marks_replace_arbitrary_slider_values(self):
+        import json
+        from logi_center.core.services.control_service import g515_controls
+        metadata={'minimum':0,'maximum':100,'levels':[0,13,25,50,100]}
+        text='#   logi-center-brightness: '+json.dumps(metadata)+'\nbrightness_control = 50\n'
+        result=read_snapshot(runner=lambda args,**kw:text if args[-1]=='brightness_control' else OUTPUT[args[-1]],cache={})
+        brightness=next(f for f in g515_controls(result['settings'],result['saved'],sources=result['sources'])
+                        if f.id=='g515:brightness_control')
+        self.assertEqual(brightness.kind,'choice')
+        self.assertEqual(brightness.choices,[0,13,25,50,100])
+        self.assertEqual(brightness.observed,50)
+        self.assertEqual(brightness.source,'device')
+        self.assertEqual(brightness.decode('25%'),25)
+        for unsupported in (45,54):
+            with self.assertRaises(ValueError):brightness.plans(unsupported)
+        self.assertEqual(brightness.plans(25)[0].expected,25)
+
+    def test_invalid_native_brightness_metadata_cannot_define_choices(self):
+        import json
+        for info in ({'minimum':False,'maximum':100}, {'minimum':0,'maximum':100,'levels':[0,True]},
+                     {'minimum':0,'maximum':100,'levels':[0,50,101]},
+                     {'minimum':0,'maximum':100,'levels':[50,0]}):
+            text='#   logi-center-brightness: '+json.dumps(info)+'\nbrightness_control = 50\n'
+            with self.subTest(info=info),self.assertRaises(ValueError):parse_value('brightness_control',text)
+
     def test_detected_40b4_without_cache_false_control_keeps_all_other_settings(self):
         calls=[]
         def runner(args,**kwargs):
@@ -81,6 +106,24 @@ class G515Reads(unittest.TestCase):
 
 
 class ScopedProcess(unittest.TestCase):
+    def test_brightness_metadata_uses_loaded_validator_and_backend_marks_without_io(self):
+        import contextlib,io,json
+        from types import SimpleNamespace
+        from logi_center.adapters.logitech.solaar_write import brightness_metadata,expose_brightness_metadata
+        class Brightness:
+            _validator=SimpleNamespace(min_value=0,max_value=100,steps=5)
+            def read(self,cached=False):return 50
+        marks=Mock(return_value=[0,13,25,50,100])
+        templates=SimpleNamespace(BrightnessControl=Brightness,halving_marks=marks)
+        expose_brightness_metadata(templates)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            self.assertEqual(Brightness().read(cached=False),50)
+        info=json.loads(out.getvalue().split(': ',1)[1])
+        self.assertEqual(info,{'minimum':0,'maximum':100,'levels':[0,13,25,50,100]})
+        marks.assert_called_once_with(100,5)
+        # Stock builds without the snapping implementation retain a continuous range.
+        self.assertEqual(brightness_metadata(Brightness(),SimpleNamespace()),{'minimum':0,'maximum':100})
+
     def test_single_read_bypasses_name_only_root_gate_and_uses_readonly_process(self):
         from logi_center.adapters.external.backend import run
         with patch('logi_center.core.services.execution.command',return_value=OUTPUT['rgb_control']) as execute,patch('logi_center.adapters.external.backend.keyboard_online',return_value=False) as ping:

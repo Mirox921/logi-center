@@ -138,3 +138,19 @@ readback, проверка остальных полей и возврат ор�
 как первую тестовую кнопку. Reset и запись macro bank не входят в этот тест.
 Пока это не выполнено, поддержка имеет статус **реализовано / проверено mocks**,
 а не **физически подтверждено**.
+
+
+## 2026-10-29 — discovery and sleeping-device diagnostics fix
+
+`EweadnAdapter.discover()` passed its fault list as Device's positional
+`simulated` argument, even when that list was empty. Real S9 records were then
+filtered out; a timeout inserted Fault objects into the public `simulated`
+field and broke QML report JSON serialization. Connection, capabilities and
+faults now use explicit keywords, leaving `simulated=False`.
+
+Regression tests cover successful and timed-out discovery, real/simulation
+filtering, disabled writes when identity cannot be read, allowlisted fault
+serialization and DiagnosticController.sync/inventory. Discovery performs only
+existing read operations. The user reported a successful live S9 check with the
+keyword fix; this development run used fake devices and did not perform new
+physical S9 writes. Existing transport/timeout and wake/retry behavior remains.

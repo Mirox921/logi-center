@@ -173,6 +173,37 @@ class Hardware(unittest.TestCase):
 
 
 class Integration(unittest.TestCase):
+    def test_discovery_stays_real_and_diagnostics_serialize_when_mouse_sleeps(self):
+        from logi_center.adapters.eweadn.eweadn_adapter import EweadnAdapter
+        from logi_center.core.devices.devices import DeviceManager
+        from logi_center.core.services.execution import FaultCode
+        from logi_center.core.services.reports import build_report
+        for outcome in (json.dumps(Wire().state()), Fault(FaultCode.TIMEOUT,'eweadn','Wake the mouse')):
+            with self.subTest(timeout=isinstance(outcome,Fault)), tempfile.TemporaryDirectory() as folder:
+                node=Path(folder)/'usb';node.mkdir()
+                for key,value in [('idVendor','372e'),('idProduct','1026'),('product','EWEADN S9')]:
+                    (node/key).write_text(value)
+                item={**ITEM,'physical':str(node)}
+                def runner(args):
+                    self.assertEqual(args,['logi-sdk','eweadn','read',selector(item)])
+                    if isinstance(outcome,Fault):raise outcome
+                    return outcome
+                with patch('logi_center.adapters.eweadn.eweadn_adapter.candidates',return_value=[item]):
+                    manager=DeviceManager([EweadnAdapter(folder,runner=runner)])
+                    rows=manager.discover()
+                self.assertEqual(len(rows),1)
+                device=rows[0]
+                self.assertIs(device.simulated,False)
+                self.assertEqual(manager.active('mouse',False),rows)
+                self.assertEqual(manager.active('mouse',True),[])
+                report=json.loads(json.dumps(build_report(manager)))
+                self.assertIs(report['devices'][0]['simulated'],False)
+                if isinstance(outcome,Fault):
+                    self.assertEqual(device.faults,[outcome])
+                    self.assertEqual(report['devices'][0]['faults'],[{'component':'eweadn','code':'timeout'}])
+                    self.assertFalse(any(c.writable for c in device.capabilities))
+                else:self.assertEqual(device.faults,[])
+
     def test_two_units_remain_separate_and_aux_keyboard_requires_exact_physical_peer(self):
         from logi_center.core.devices.devices import Device
         from logi_center.adapters.eweadn.eweadn_adapter import EweadnAdapter

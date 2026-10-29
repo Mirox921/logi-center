@@ -62,6 +62,7 @@ def main():
         ('rgb_control','true',['true','false']),('brightness_control','100',None),
         ('rgb_idle_timeout','1 Minute',['Disabled','15 Seconds','30 Seconds','1 Minute','2 Minutes','5 Minutes']),
         ('rgb_sleep_timeout','5 Minutes',['Disabled','2 Minutes','5 Minutes','10 Minutes','15 Minutes','30 Minutes'])]]
+    settings[1]['native_brightness']={'minimum':0,'maximum':100,'levels':[0,13,25,50,100]}
     ed._g515=g515_controls(settings,saved,device.id);ed._build()
     from logi_center.resources import configure_engine
     engine=QQmlApplicationEngine();configure_engine(engine);engine.addImportPath(str(ROOT/'src/logi_center/qml_ui/qml'))
@@ -90,7 +91,10 @@ ApplicationWindow {
             set_language(lang);owner.languageChanged.emit();window.setWidth(width);window.setHeight(900 if width==1280 else 780)
             for section in ('lighting','freestyle','animations','assignments','keyboard_settings'):
                 ed.setSection(section);wait()
-                if section=='lighting':ed.edit('g515:effect',10);wait()
+                if section=='lighting':
+                    brightness=ed.g515Fields['g515:brightness_control']
+                    assert brightness['kind']=='choice' and brightness['choices']==[0,13,25,50,100]
+                    ed.edit('g515:effect',10);wait()
                 if section=='freestyle':
                     key=visual(window.contentItem(),'g515-key-23');assert key and key.isEnabled()
                     point=key.mapToScene(key.boundingRect().center()).toPoint()

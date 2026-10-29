@@ -1,5 +1,5 @@
 """Scoped G515 settings reads. No full Solaar enumeration or write recovery."""
-import re
+import json,re
 from copy import deepcopy
 from logi_center.core.services.execution import Fault,FaultCode,CURRENT_CANCEL
 
@@ -28,6 +28,20 @@ def parse_value(key,text):
     elif key=='brightness_control':
         value=int(raw)
         if not 0<=value<=100:raise ValueError('Invalid brightness')
+        metadata=re.search(r'^#   logi-center-brightness: (\{[^\n]+\})$',text,re.M)
+        if metadata:
+            info=json.loads(metadata[1])
+            if not isinstance(info,dict) or set(info)-{'minimum','maximum','levels'}:
+                raise ValueError('Invalid brightness metadata')
+            minimum=info.get('minimum');maximum=info.get('maximum')
+            if type(minimum) is not int or type(maximum) is not int or not 0<=minimum<=value<=maximum<=100:
+                raise ValueError('Invalid brightness range')
+            levels=info.get('levels')
+            if levels is not None and (not isinstance(levels,list) or not 1<=len(levels)<=128
+                    or any(type(v) is not int or not minimum<=v<=maximum for v in levels)
+                    or levels!=sorted(set(levels))):
+                raise ValueError('Invalid brightness levels')
+            setting['native_brightness']=info
     else:value=raw
     return value,setting
 

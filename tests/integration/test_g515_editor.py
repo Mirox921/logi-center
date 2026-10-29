@@ -140,5 +140,23 @@ class G515Editor(unittest.TestCase):
         self.assertEqual(len(self.editor.g515Keys),87)
         self.assertEqual(self.calls,[])
 
+    def test_native_brightness_apply_confirms_exact_mark_and_preserves_mismatched_draft(self):
+        metadata={'minimum':0,'maximum':100,'levels':[0,13,25,50,100]}
+        self.editor.keyboard_reader=lambda:dict(settings=[{'key':'brightness_control','value':'50',
+            'native_brightness':metadata}],saved=fixture(),sources={'brightness_control':'device'},
+            target='G515',reachable=True,errors=[])
+        self.editor.reload();self.wait();self.editor.setSection('lighting')
+        self.assertEqual(self.calls,[])
+        for requested,actual,state,dirty in ((25,25,'confirmed',0),(13,50,'mismatch',1)):
+            with self.subTest(requested=requested):
+                def runner(args,**kwargs):
+                    self.calls.append(args)
+                    return 'brightness_control = '+str(actual)+'\n' if len(args)==4 else ''
+                self.editor.runner=runner
+                self.editor.edit('g515:brightness_control',requested)
+                self.editor.applyGroup();self.wait()
+                self.assertEqual(self.editor.resultState,state)
+                self.assertEqual(self.editor.dirtyCount,dirty)
+
 
 if __name__=='__main__':unittest.main()

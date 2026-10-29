@@ -201,5 +201,6 @@ class EweadnAdapter:
             if not caps:caps=[Capability('onboard_configuration',self.name,None,False,False,False,None,'unavailable',
                 limitation='S9 model identity and vendor interface could not be read; configuration writes are disabled.')]
             records.append(Device('eweadn:'+identity(physical),name,'mouse',self.name,target,physical,vid,pid,
-                'wireless' if pid in WIRELESS else 'usb',True,caps,faults))
+                connection='wireless' if pid in WIRELESS else 'usb',connected=True,
+                capabilities=caps,faults=faults))
         return records

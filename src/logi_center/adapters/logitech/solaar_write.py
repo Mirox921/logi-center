@@ -2,6 +2,42 @@
 import sys
 
 
+def brightness_metadata(setting,templates):
+    """Inspect the initialized validator, without requesting additional HID data.
+
+    Some Solaar builds snap writes to firmware halving marks; stock builds
+    expose a continuous range. Use the installed implementation, not guessed
+    G515 levels or a version-number heuristic.
+    """
+    validator=getattr(setting,'_validator',None)
+    minimum=getattr(validator,'min_value',None);maximum=getattr(validator,'max_value',None)
+    if type(minimum) is not int or type(maximum) is not int or not 0<=minimum<=maximum<=100:
+        return None
+    info={'minimum':minimum,'maximum':maximum}
+    steps=getattr(validator,'steps',0);marks=getattr(templates,'halving_marks',None)
+    if type(steps) is int and 2<=steps<=15 and callable(marks):
+        levels=marks(maximum,steps)
+        if isinstance(levels,list) and all(type(v) is int for v in levels):
+            levels=sorted({v for v in levels if minimum<=v<=maximum})
+            if levels:info['levels']=levels
+    return info
+
+
+def expose_brightness_metadata(templates):
+    """Annotate the one scoped CLI getter in this short-lived process only."""
+    cls=getattr(templates,'BrightnessControl',None)
+    if cls is None:return
+    original=cls.read
+    def read(setting,*args,**kwargs):
+        value=original(setting,*args,**kwargs)
+        info=brightness_metadata(setting,templates)
+        if info is not None:
+            import json
+            print('#   logi-center-brightness: '+json.dumps(info,sort_keys=True))
+        return value
+    cls.read=read
+
+
 def read_only_args(args):
     from logi_center.adapters.logitech.g515_adapter import READ_KEYS
     if len(args)!=3 or args[0]!='config' or not args[1] or args[2] not in READ_KEYS:
@@ -40,6 +76,7 @@ def main(args=None):
     if readonly:
         from logitech_receiver import settings,settings_templates  # load overrides before guarding
         guard_reads(settings,rgb_power)
+        if args[2]=='brightness_control':expose_brightness_metadata(settings_templates)
         from solaar.cli import run
         return run(args)
     from solaar.gtk import main as cli_main

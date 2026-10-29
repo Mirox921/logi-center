@@ -452,3 +452,28 @@ and makepkg --nodeps --nocheck passed; full Python tests ran separately. No
 system installation, physical writes, recording, push or new release.
 
 Architecture and commands: [development/architecture.md](development/architecture.md).
+
+
+## 2026-10-29 — S9 discovery faults and G515 brightness levels
+
+Fixed the positional Device constructor bug in EweadnAdapter: faults now reach
+`faults`, while `simulated` remains False. Added discovery/filtering and public
+JSON/QML diagnostic regression scenarios, including sleeping-device TIMEOUT.
+The user's live S9 confirmation is recorded separately from our mock coverage.
+
+Investigated the supplied G515 screenshots: installed Solaar rounds brightness
+to firmware halving levels, explaining requested45/54 vs actual50. Scoped getter
+now exports already-read validator metadata; QML selects actual supported
+levels instead of arbitrary slider values on those builds. Continuous variants
+remain compatible. Exact readback, real mismatch errors, dirty drafts and all
+read-only process protections remain intact.
+
+Checks: 51 targeted + 66 related tests passed; compileall passed. G515/S9 QML
+smoke passed in RU/EN at 640/1280, with fake Apply/readback and no real writes.
+Reviewed the G515 lighting screenshot. Peripheral read-only smoke navigated the
+available Ace68 (0 live controls); it does not establish physical S9/G515
+validation. No full test-suite rerun, hardware writes or system changes.
+No runtime files were added: recursive installer/source/CI manifests already
+include the modified modules and new tests. Remaining physical check: reopen
+G515, choose an advertised brightness level and explicitly Apply; observe the
+physical lighting and readback. See g515-settings-fix.md and eweadn-s9.md.

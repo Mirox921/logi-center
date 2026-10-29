@@ -368,8 +368,17 @@ def g515_controls(settings,saved,identity='G515',target='G515',sources=None):
             try:value=int(setting['value'])
             except (ValueError,TypeError):continue
             if not 0<=value<=100:continue
+            info=setting.get('native_brightness',{})
+            levels=info.get('levels',[])
+            if levels:
+                result.append(Control('g515:'+key,labels[key],'lighting',value,'keyboard:G515/'+canonical_text(labels[key]),
+                    'solaar','choice',levels,['Выключена' if v==0 else str(v)+'%' for v in levels],
+                    source=sources.get(key,'local_saved_settings'),writable=True,
+                    factory=lambda v:plan_for(['solaar','config',target,'brightness_control',str(v)]),
+                    encode=lambda v:str(v)+'%',decode=lambda v:int(str(v).rstrip('%'))))
+                continue
             result.append(Control('g515:'+key,labels[key],'lighting',value,'keyboard:G515/'+canonical_text(labels[key]),
-                'solaar','number',minimum=0,maximum=100,step=1,source=sources.get(key,'local_saved_settings'),
+                'solaar','number',minimum=info.get('minimum',0),maximum=info.get('maximum',100),step=1,source=sources.get(key,'local_saved_settings'),
                 writable=True,factory=lambda v:plan_for(['solaar','config',target,'brightness_control',str(v)]),
                 encode=lambda v:str(v)+'%',decode=lambda v:int(str(v).rstrip('%'))))
             continue
