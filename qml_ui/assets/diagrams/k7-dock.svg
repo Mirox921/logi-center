@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="262" height="400" viewBox="0 0 262 400">
+  <!-- Original project vector, MIT. Outline informed by the user-provided dock reference. -->
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#3e3a31"/><stop offset=".35" stop-color="#292720"/><stop offset="1" stop-color="#211f1a"/>
+    </linearGradient>
+    <linearGradient id="plate" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#343129"/><stop offset=".6" stop-color="#211f1a"/><stop offset="1" stop-color="#171713"/>
+    </linearGradient>
+  </defs>
+  <rect x="17" y="13" width="230" height="376" rx="52" fill="#171713" stroke="#514c41" stroke-width="2"/>
+  <rect x="23" y="19" width="218" height="364" rx="47" fill="url(#shell)" stroke="#756d5d" stroke-opacity=".45"/>
+  <rect x="44" y="54" width="176" height="289" rx="24" fill="#171713"/>
+  <rect x="46" y="56" width="172" height="285" rx="22" fill="url(#plate)" stroke="#514c41"/>
+  <path d="M69 58H195Q216 58 216 79" fill="none" stroke="#c3bcad" stroke-opacity=".16"/>
+  <path d="M47 318Q47 340 70 340H194" fill="none" stroke="#171713" stroke-width="2"/>
+  <rect x="88" y="148" width="88" height="34" rx="3" fill="#211f1a" stroke="#514c41"/>
+  <path d="M74 304H190M95 311H169" stroke="#756d5d" stroke-opacity=".22"/>
+</svg>

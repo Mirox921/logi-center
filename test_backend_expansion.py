@@ -12,6 +12,81 @@ def config():
     return decode(body,{'mode':1,'battery':81,'vid':0x3837,'pid':0x1001})
 
 class MchoseTests(unittest.TestCase):
+    def test_prepared_write_refuses_changed_profile_or_dpi_stage_before_any_write(self):
+        from mchose_adapter import hardware
+        from devices import identity
+        item={'node':'fake','physical':'fake','vid':'3837','pid':'1001'}
+        state=config()
+        class T:
+            def __init__(self,node):pass
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read(self):return state
+            def exchange(self,*args,**kwargs):raise AssertionError('Stale setting must never write')
+        for profile,stage in ((1,0),(0,1)):
+            payload={'value':800,'expected_profile':profile,'expected_stage':stage}
+            with self.subTest(profile=profile,stage=stage),patch('mchose_adapter.candidates',return_value=[item]),patch('mchose_adapter.atomic_json') as snapshot:
+                with self.assertRaisesRegex(Fault,'Profile or DPI stage changed'):
+                    hardware('set',identity('fake'),'dpi',payload,transport=T)
+                snapshot.assert_not_called()
+
+    def test_discovered_write_and_refresh_capture_the_observed_context(self):
+        from mchose_adapter import update_observed
+        item={'node':'fake','physical':'fake','vid':'3837','pid':'1001','name':'K7'}
+        state=config()
+        with patch('mchose_adapter.candidates',return_value=[item]):
+            device=MchoseAdapter(lambda args:json.dumps(state)).discover()[0]
+        dpi=next(c for c in device.capabilities if c.name=='dpi')
+        self.assertEqual(json.loads(dpi.plan(800).command[-1]),
+                         {'value':800,'expected_profile':0,'expected_stage':0})
+        state['profiles']=1;state['stage']=2
+        update_observed(device,state)
+        self.assertEqual(json.loads(dpi.plan(800).command[-1]),
+                         {'value':800,'expected_profile':1,'expected_stage':2})
+        update_observed(device,{'dpi':900})
+        self.assertEqual(json.loads(dpi.plan(800).command[-1]),
+                         {'value':800,'expected_profile':1,'expected_stage':2})
+
+    def test_readback_from_another_context_cannot_confirm_the_write(self):
+        for profile,stage in ((1,0),(0,1)):
+            plan=setting_plan('fake','dpi',800,0,0)
+            def runner(args):return json.dumps({'dpi':800,'profiles':profile,'stage':stage})
+            result=perform(plan,runner)
+            self.assertEqual(result.state,State.SENT)
+            self.assertIsNotNone(result.fault)
+
+    def test_identity_telemetry_needs_one_report_instead_of_two(self):
+        import struct
+        raw=bytearray(11);struct.pack_into('<HH',raw,0,0x3837,0x1001)
+        raw[8:11]=bytes([9,46,1])
+        body=bytearray(63);body[1]=body[2]=0x20;body[16]=6
+        for index,dpi in enumerate([400,800,1600,3200,6400,12800]):body[4+index*2:6+index*2]=dpi.to_bytes(2,'little')
+        transport=Transport('fake');commands=[]
+        def exchange(report,command,*args,**kwargs):
+            commands.append(command);return bytes(raw if command==0x06 else body)
+        transport.exchange=exchange
+        self.assertEqual(transport.read_identity()['battery'],46)
+        self.assertEqual(commands,[0x06])
+        transport.read()
+        self.assertEqual(commands,[0x06,0x06,0x67])
+
+    def test_battery_reads_identity_only_and_rejects_wrong_mouse(self):
+        from mchose_adapter import hardware
+        from devices import identity
+        item={'node':'fake','physical':'fake','vid':'3837','pid':'1001'}
+        class T:
+            def __init__(self,node):pass
+            def __enter__(self):return self
+            def __exit__(self,*args):pass
+            def read_identity(self):return {'vid':0x3837,'pid':0x4150,'mode':1,'battery':46,'charging':True}
+            def read(self):raise AssertionError('Battery poll must not read settings')
+            def exchange(self,*args,**kwargs):raise AssertionError('Battery poll must not write')
+        with patch('mchose_adapter.candidates',return_value=[item]):
+            state=hardware('battery',identity('fake'),transport=T)
+            self.assertEqual((state['battery_status'],state['charging'],state['identity']['mode']),(46,True,1))
+            with self.assertRaises(Fault):hardware('battery','wrong-selector',transport=T)
+            T.read_identity=lambda self:{'vid':0x3837,'pid':0x9999,'mode':1,'battery':46,'charging':True}
+            with self.assertRaises(ValueError):hardware('battery',identity('fake'),transport=T)
     def test_rate_layout_not_generic_usb_table(self):
         self.assertEqual(RATES,[125,500,1000,2000,4000,8000]);self.assertEqual(config()['polling_rate'],1000)
     def test_empty_short_malformed_config(self):
@@ -26,7 +101,28 @@ class MchoseTests(unittest.TestCase):
         def denied(args):raise PermissionError()
         with patch('mchose_adapter.candidates',return_value=[item]):
             device=MchoseAdapter(denied).discover()[0]
-        self.assertEqual(device.faults[0].code,FaultCode.PERMISSION);self.assertFalse(device.capabilities)
+        self.assertEqual(device.faults[0].code,FaultCode.PERMISSION)
+        battery=next(c for c in device.capabilities if c.name=='battery_status')
+        self.assertIsNone(battery.value);self.assertEqual(battery.source,'unavailable')
+        self.assertEqual(device.connection,'unknown')
+    def test_unknown_battery_is_preserved_as_unknown_capability(self):
+        item={'node':'/dev/hidraw-test','physical':'/sys/fake','vid':'3837','pid':'1001','name':'K7'}
+        state=config();state['battery_status']=None
+        with patch('mchose_adapter.candidates',return_value=[item]):
+            device=MchoseAdapter(lambda args:json.dumps(state)).discover()[0]
+        battery=next(c for c in device.capabilities if c.name=='battery_status')
+        self.assertTrue(battery.readable);self.assertIsNone(battery.value)
+
+    def test_connection_comes_from_mouse_mode_not_usb_receiver(self):
+        item={'node':'/dev/hidraw-test','physical':'/sys/fake','vid':'3837','pid':'1001','name':'K7'}
+        for mode,expected in ((0,'usb'),(1,'wireless'),(2,'wireless')):
+            state=config();state['identity']['mode']=mode
+            with self.subTest(mode=mode),patch('mchose_adapter.candidates',return_value=[item]):
+                mouse=MchoseAdapter(lambda args:json.dumps(state)).discover()[0]
+                self.assertEqual(mouse.connection,expected)
+                input_mouse=__import__('devices').Device('input','K7','mouse','linux-input',physical='/sys/fake',vid='3837',pid='1001',connection='usb')
+                merged=__import__('devices').DeviceManager.merge([input_mouse,mouse])[0]
+                self.assertEqual(merged.connection,expected)
     def test_only_read_commands_retry(self):
         transport=Transport('fake');transport.fd=1
         with patch('mchose_adapter.fcntl.ioctl',return_value=0) as ioctl,patch('mchose_adapter.time.sleep'),patch.object(transport,'_drain'),patch.object(transport,'_wait_ready'):

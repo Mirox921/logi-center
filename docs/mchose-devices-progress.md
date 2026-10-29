@@ -70,3 +70,14 @@ Changed: `app.py`, `devices.py`, `device_ui.py`, `keyboard_ui.py`, `mchose_adapt
 Public-release blockers: unavailable advanced-key editing, incomplete all-profile/macro backup, power-cycle persistence not checked, and wider revision/model testing. The implemented subset on these two units is physically exercised as documented; the application is still a prerelease, not complete universal hardware support.
 
 Packaging note: the final makepkg run exited successfully but emitted `libfakeroot internal error: payload not recognized!` during tidying. Archive inspection found all owners/groups 0:0, correct launcher permissions, 31 modules and the rule only under documentation. No package was installed. A clean Arch build environment should reproduce packaging before publication.
+
+## Ace68-II source-validated controls, 2026-10-28
+
+The earlier blanket advanced-key editing limitation is superseded for firmware
+121 by [ace68-editor.md](ace68-editor.md): four native assignment layers and
+DKS/MT/TGL/RS/SOCD codecs now have guarded plans, QML editors and memory-transport
+tests. New physical evidence is **read-only**: all layers, advanced banks and
+68 RGB records. No new key/flag/color write test was performed. Existing
+physically verified trigger/RGB/profile settings above retain their narrower
+status. Complex macros, calibration/precision/switch changes, cloud effects,
+firmware and power-cycle persistence remain separate gates.

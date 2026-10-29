@@ -3,6 +3,7 @@ import json, os, re, subprocess, sys
 
 def run(args, timeout=20, cancel=None):
     from execution import command,Fault,FaultCode
+    solaar_target=None
     if args[:1]==['logi-sdk']:
         from pathlib import Path
         raw=command([sys.executable,str(Path(__file__).with_name('sdk_worker.py')),*args[1:]],timeout=timeout,cancel=cancel)
@@ -15,12 +16,18 @@ def run(args, timeout=20, cancel=None):
         if not matches:raise Fault(FaultCode.DISCONNECTED,'ratbagctl','Exact backend device selector is no longer present')
         if len(matches)!=1:raise Fault(FaultCode.CONFIG,'ratbagctl','Backend device selector is ambiguous; writing is disabled')
     if len(args)>3 and args[:2]==['solaar','config']:
-        if args[2]=='G515' and keyboard_online() is not True:raise Fault(FaultCode.DISCONNECTED,'solaar','Keyboard is not responding')
         from pathlib import Path
-        args=[sys.executable,str(Path(__file__).with_name('solaar_write.py')),*args[1:]]
+        solaar_target=args[2]
+        # Solaar discovers receiver slots itself. A name-only sysfs ROOT probe
+        # cannot veto a device that Solaar can reach, including RGB control Off.
+        from g515_adapter import READ_KEYS
+        mode=['--read-only'] if len(args)==4 and args[3] in READ_KEYS else []
+        args=[sys.executable,str(Path(__file__).with_name('solaar_write.py')),*mode,*args[1:]]
     try:return command(args,timeout=timeout,cancel=cancel)
     except Fault as fault:
-        if len(args)>4 and args[1].endswith('solaar_write.py'):fault.message=fault.message.replace(args[3],'[device]')
+        if solaar_target is not None:
+            fault.component='solaar';fault.message=fault.message.replace(solaar_target,'[device]')
+            if 'no supported device found' in fault.message.lower():fault.code=FaultCode.DISCONNECTED
         raise
 
 def mouse_list(text):
@@ -101,7 +108,7 @@ def save_preferences(value,path=None):
 def saved_solaar_devices(path=None):
     from pathlib import Path
     import yaml
-    path=Path(path) if path else Path.home()/'.config/solaar/config.yaml'
+    path=Path(path) if path else Path(os.environ.get('XDG_CONFIG_HOME',Path.home()/'.config'))/'solaar/config.yaml'
     try:
         if path.stat().st_size>2*1024*1024:return []
         records=yaml.load(path.read_text(),Loader=yaml.BaseLoader)
@@ -109,14 +116,8 @@ def saved_solaar_devices(path=None):
     except (OSError,ValueError,yaml.YAMLError,TypeError):return []
 
 def saved_keyboard(path=None):
-    from pathlib import Path
-    import yaml
-    path=Path(path) if path else Path.home()/'.config/solaar/config.yaml'
-    try:
-        # BaseLoader reads plain strings/maps, without constructing tagged objects.
-        devices=yaml.load(path.read_text(),Loader=yaml.BaseLoader)
-        return next((d for d in devices if isinstance(d,dict) and 'G515' in d.get('_NAME','')), {})
-    except (OSError,ValueError,yaml.YAMLError,TypeError):return {}
+    matches=[d for d in saved_solaar_devices(path) if re.search(r'\bg515\b',d['_NAME'],re.I)]
+    return matches[0] if len(matches)==1 else {}
 
 def import_preset(source,root=None):
     """Install a local EasyEffects JSON preset, without overwriting existing presets."""
@@ -166,9 +167,9 @@ def keyboard_online(root='/sys/class/hidraw', transport=None):
             if handle is not None:transport.close(handle)
     return None if unknown else False
 
-def keyboard_saved_settings():
+def keyboard_saved_settings(saved=None):
     """Build the supported UI from saved data, without opening the HID device."""
-    saved=saved_keyboard()
+    saved=saved_keyboard() if saved is None else saved
     choices={'rgb_control':['true','false'],
              'rgb_idle_timeout':['Disabled','15 Seconds','30 Seconds','1 Minute','2 Minutes','5 Minutes'],
              'rgb_sleep_timeout':['Disabled','2 Minutes','5 Minutes','10 Minutes','15 Minutes','30 Minutes']}
@@ -176,8 +177,8 @@ def keyboard_saved_settings():
     for key in ['rgb_control','brightness_control','rgb_idle_timeout','rgb_sleep_timeout','rgb_zone_1']:
         if key not in saved:continue
         value=saved[key]
-        if key=='rgb_idle_timeout':value={'0':'Disabled','15':'15 Seconds','30':'30 Seconds','60':'1 Minute','120':'2 Minutes','300':'5 Minutes'}.get(value,value)
-        if key=='rgb_sleep_timeout':value={'0':'Disabled','120':'2 Minutes','300':'5 Minutes','600':'10 Minutes','900':'15 Minutes','1800':'30 Minutes'}.get(value,value)
+        if key=='rgb_idle_timeout':value={'0':'Disabled','15':'15 Seconds','30':'30 Seconds','60':'1 Minute','120':'2 Minutes','300':'5 Minutes'}.get(str(value),value)
+        if key=='rgb_sleep_timeout':value={'0':'Disabled','120':'2 Minutes','300':'5 Minutes','600':'10 Minutes','900':'15 Minutes','1800':'30 Minutes'}.get(str(value),value)
         result.append(dict(key=key,value=str(value),label=key,choices=choices.get(key)))
     return result
 
@@ -199,10 +200,22 @@ def parse_mouse_info(text):
         profiles.append({'index':int(match[1]),'active':'(active)' in match[2],'rate':int(rate[1]) if rate else None,'resolutions':resolutions,'buttons':buttons,'leds':leds})
     return {'profiles':profiles,'active':next((p['index'] for p in profiles if p['active']),None)}
 
-def read_mouse(device,runner=None):
+def read_mouse(device,runner=None,live_reader=None):
     runner=runner or run
     text=runner(['ratbagctl',device,'info'])
     data=parse_mouse_info(text);data['text']=text
+    model=re.search(r'Model:\s*(usb:046d:c08b:[0-9a-fA-F]+)\b',text)
+    if model and (runner is run or live_reader):
+        try:
+            reader=live_reader or (lambda target:json.loads(run(['logi-sdk','logitech-status','read',target])))
+            live=reader(model[1])
+            data['live_profile']=live
+            if live.get('mode')=='onboard' and live.get('profile_count')==len(data['profiles']) and live.get('profile') in [p['index'] for p in data['profiles']]:
+                data['daemon_active']=data['active'];data['active']=live['profile']
+                data['profile_mismatch']=data['active']!=data['daemon_active']
+            elif live.get('mode')=='onboard':data['live_profile_error']=True
+        except Exception:
+            data['live_profile_error']=True
     for key,command in [('dpis',['dpi','get-all']),('rates',['rate','get-all'])]:
         try:data[key]=[int(x) for x in runner(['ratbagctl',device,*command]).split() if x.isdigit()]
         except Exception:data[key]=[]

@@ -28,6 +28,10 @@ class Verification(unittest.TestCase):
         runner=Mock(side_effect=['','LED: 0, depth: rgb, mode: on, color: ffdc00'])
         r=perform(plan_for(['ratbagctl','mouse','profile','3','led','0','set','color','ffffff']),runner)
         self.assertEqual(r.state,State.MISMATCH)
+    def test_led_effect_timing_is_numeric_and_cache_only(self):
+        runner=Mock(side_effect=['','LED: 0, depth: rgb, mode: cycle, duration: 8000, brightness: 255'])
+        result=perform(plan_for(['ratbagctl','mouse','profile','0','led','0','set','duration','8000']),runner)
+        self.assertEqual((result.state,result.requested,result.actual,result.source),(State.SENT,8000,8000,'backend_cache'))
     def test_cancel_before_command(self):
         event=Event();event.set();runner=Mock()
         self.assertEqual(perform(Plan(['writer']),runner,cancel=event).state,State.CANCELLED);runner.assert_not_called()

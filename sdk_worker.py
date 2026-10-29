@@ -3,6 +3,12 @@ import json,sys,os
 from execution import Fault,FaultCode
 
 def dispatch(backend,action,target=None,field=None,value=None):
+    if backend=='eweadn':
+        from eweadn_adapter import hardware
+        return hardware(action,target,field,value)
+    if backend=='logitech-status':
+        from logitech_status import hardware
+        return hardware(action,target)
     if action=='status':
         from importlib.metadata import version,PackageNotFoundError
         package={'openrgb':'openrgb-python','openrazer':'openrazer','rivalcfg':'rivalcfg'}.get(backend)

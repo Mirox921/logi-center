@@ -4,7 +4,8 @@ from datetime import datetime,timezone,timedelta
 from devices import Device,Capability,DeviceManager
 from execution import Fault,FaultCode
 from mchose_adapter import MchoseAdapter
-from device_status import battery_text,battery_icon
+from eweadn_adapter import EweadnAdapter
+from device_status import battery_text,battery_icon,status_text,user_fault_summary
 from i18n import set_language
 
 class Categories(unittest.TestCase):
@@ -30,6 +31,38 @@ class Categories(unittest.TestCase):
         auxiliary=Device('a','K7 Keyboard','keyboard','linux-input',physical='/usb/1|input1',vid='3837',pid='1001')
         ace=Device('ace','Ace68-II','keyboard','mchose-ace68',physical='/usb/2',vid='41e4',pid='2116')
         MchoseAdapter().associate([mouse,auxiliary,ace]);self.assertEqual(self.manager(mouse,auxiliary,ace).active('keyboard'),[ace])
+    def test_mouse_vendor_keyboard_collection_is_hidden_only_for_exact_usb_sibling(self):
+        mouse=Device('m','Gaming Mouse 8K EWEADN S9','mouse','linux-input',physical='/usb/1|input0',vid='3344',pid='5566')
+        auxiliary=Device('aux','Gaming Mouse 8K EWEADN S9 Keyboard','keyboard','linux-input',physical='/usb/1|input1',vid='3344',pid='5566')
+        separate=Device('real','Gaming Mouse 8K EWEADN S9 Keyboard','keyboard','linux-input',physical='/usb/2|input1',vid='3344',pid='5566')
+        merged=DeviceManager.merge([mouse,auxiliary,separate])
+        self.assertEqual(auxiliary.kind,'interface');self.assertEqual(separate.kind,'keyboard')
+        self.assertEqual([d.id for d in self.manager(*merged).active('keyboard')],['real'])
+    def test_shared_usb_parent_without_matching_model_does_not_hide_keyboard(self):
+        mouse=Device('m','Gaming Mouse','mouse','linux-input',physical='/usb/1|input0',vid='3344',pid='5566')
+        keyboard=Device('k','Compact Keyboard','keyboard','linux-input',physical='/usb/1|input1',vid='3344',pid='5566')
+        merged=DeviceManager.merge([mouse,keyboard])
+        self.assertEqual(next(d for d in merged if d.id=='k').kind,'keyboard')
+    def test_eweadn_archive_ids_join_exact_linux_mouse_without_duplicate(self):
+        from pathlib import Path
+        import tempfile
+        with tempfile.TemporaryDirectory() as root:
+            usb=Path(root)/'1-2';usb.mkdir()
+            (usb/'idVendor').write_text('372e');(usb/'idProduct').write_text('1026')
+            (usb/'product').write_text('Gaming Mouse 8K EWEADN S9')
+            vendor=EweadnAdapter(root).discover()[0]
+            event=Device('input','Gaming Mouse 8K EWEADN S9','mouse','linux-input',physical=str(usb.resolve())+'|usb-1-2/input0',vid='372e',pid='1026')
+            records=[event,vendor];DeviceManager.link_physical(records);merged=DeviceManager.merge(records)
+        self.assertEqual(len(merged),1);self.assertEqual(merged[0].kind,'mouse')
+        self.assertIn('eweadn',merged[0].backends);self.assertTrue(all(not c.writable for c in merged[0].capabilities))
+    def test_user_facing_status_does_not_expose_backend_names(self):
+        text=status_text(Device('m','MCHOSE','mouse','linux-input',connection='usb',connected=True,backends=['linux-input','mchose']))
+        self.assertNotIn('linux-input',text);self.assertNotIn('mchose',text);self.assertIn('USB',text)
+    def test_primary_fault_summary_hides_protocol_details(self):
+        set_language('en');self.addCleanup(set_language,'ru')
+        text=user_fault_summary(Fault(FaultCode.CONFIG,'mchose','Empty identity reply; profile recovery is never automatic'))
+        self.assertEqual(text,'Could not read device settings')
+        self.assertNotIn('mchose',text);self.assertNotIn('profile recovery',text)
     def test_other_receiver_keyboard_is_not_suppressed(self):
         keyboard=Device('k','Keyboard','keyboard','linux-input',physical='/usb/1|input1',vid='046d',pid='1234')
         MchoseAdapter().associate([keyboard]);self.assertEqual(keyboard.kind,'keyboard')
@@ -67,10 +100,10 @@ class Battery(unittest.TestCase):
         return Device('m','K7','mouse','mchose',capabilities=[Capability('battery_status','mchose',True,True,value=value,source=source)])
     def test_percent_and_zero_are_real_values(self):
         self.assertEqual(battery_text(self.device(54)),'54%');self.assertEqual(battery_text(self.device(0)),'0%')
-    def test_none_is_not_zero(self):self.assertEqual(battery_text(self.device()),'Заряд недоступен')
+    def test_none_is_not_zero(self):self.assertEqual(battery_text(self.device()),'Заряд: нет данных')
     def test_approximate_level_is_not_invented_percent(self):self.assertEqual(battery_text(self.device('low')),'low')
     def test_charge_status(self):
-        d=self.device(54);d.capabilities.append(Capability('charging','mchose',value=True));self.assertIn('заряжается',battery_text(d));self.assertEqual(battery_icon(d),'battery-good-charging-symbolic')
+        d=self.device(54);d.capabilities.append(Capability('charging','mchose',True,True,value=True,source='device'));self.assertIn('заряжается',battery_text(d));self.assertEqual(battery_icon(d),'battery-good-charging-symbolic')
     def test_charging_icon_requires_positive_backend_state(self):
         self.assertEqual(battery_icon(self.device(54)),'battery-good-symbolic')
         self.assertEqual(battery_icon(self.device()),'battery-missing-symbolic')
@@ -79,7 +112,7 @@ class Battery(unittest.TestCase):
         d=self.device(54);d.faults=[Fault(FaultCode.PERMISSION,'mchose','denied')];self.assertEqual(battery_text(d),'Нет доступа к заряду')
     def test_cached_and_stale_are_labeled(self):
         self.assertIn('Сохранённое значение',battery_text(self.device(54,'local')))
-        d=self.device(54);d.capabilities[0].observed_at=(datetime.now(timezone.utc)-timedelta(minutes=5)).isoformat();self.assertIn('Устаревшее значение',battery_text(d))
+        d=self.device(54);d.capabilities[0].observed_at=(datetime.now(timezone.utc)-timedelta(minutes=5)).isoformat();self.assertIn('Последнее значение: 54% · Устарело',battery_text(d))
     def test_offline_and_failed_read_are_not_live(self):
         d=self.device(54);d.connected=False;self.assertEqual(battery_text(d),'Не в сети')
         d.connected=True;d.faults=[Fault(FaultCode.CONNECTION,'mchose','failed')];self.assertIn('Последнее чтение не удалось',battery_text(d))

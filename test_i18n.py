@@ -5,7 +5,9 @@ from i18n import EN,tr,set_language
 class Translations(unittest.TestCase):
     def tearDown(self):set_language('ru')
     def test_every_russian_ui_literal_has_translation(self):
-        trees=[ast.parse(Path(__file__).with_name(name).read_text()) for name in ['app.py','mouse_editor.py','microphone_ui.py','diagnostics.py','device_ui.py','keyboard_ui.py','peripheral_ui.py','device_status.py']]
+        # GTK presentation sources were archived. Keep checking the surviving
+        # shared UI descriptions; QML literals have their own regression test.
+        trees=[ast.parse(Path(__file__).with_name(name).read_text()) for name in ['diagnostics.py','device_status.py']]
         tree=ast.Module(body=[node for tree in trees for node in tree.body],type_ignores=[])
         missing=[]
         for node in ast.walk(tree):

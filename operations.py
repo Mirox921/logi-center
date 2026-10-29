@@ -79,13 +79,14 @@ def plan_for(args):
             plan.reader=lambda runner:Observation(read_action(runner([*before,'get'])),'backend_cache')
         elif 'led' in before:
             field=after[0];raw=after[1] if len(after)>1 else None
-            plan.expected=raw.lower() if isinstance(raw,str) and field in ['color','mode'] else raw
+            plan.expected=int(raw) if field in ('duration','brightness') else raw.lower() if isinstance(raw,str) and field in ('color','mode') else raw
             base=before+['get']
             def led_read(runner):
                 text=runner(base)
                 match=re.search(r'\b'+re.escape(field)+r':\s*([^,\s]+)',text)
                 if not match:raise ValueError('LED property is not reported by this backend')
-                return Observation(match[1].lower(),'backend_cache')
+                value=int(match[1]) if field in ('duration','brightness') else match[1].lower()
+                return Observation(value,'backend_cache')
             plan.reader=led_read
         return plan
     if component=='pactl' and len(args)>=3:

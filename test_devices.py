@@ -20,7 +20,7 @@ class Devices(unittest.TestCase):
     def test_unknown_mouse_capabilities_are_not_assumed(self):
         self.assertEqual(mouse_capabilities({'profiles':[]}),[])
     def test_simulated_data_never_becomes_hardware_confirmation(self):
-        adapter=SimulationAdapter();self.assertEqual(len(adapter.discover()),14)
+        adapter=SimulationAdapter();self.assertEqual(len(adapter.discover()),15)
         self.assertEqual(adapter.apply('gaming-mouse','dpi',1600).state,State.SENT)
         self.assertEqual(adapter.apply('disconnect','dpi',1600).state,State.DISCONNECTED)
         self.assertEqual(adapter.apply('partial','dpi',1600).state,State.UNSUPPORTED)
@@ -38,6 +38,35 @@ class Devices(unittest.TestCase):
         from devices import RatbagAdapter
         runner=Mock(return_value='mouse: Generic vendor mouse')
         devices=RatbagAdapter(runner).discover();self.assertEqual(len(devices),1);runner.assert_called_once_with(['ratbagctl','list'])
+
+    def test_unique_ratbag_model_resolves_only_unique_kernel_unit(self):
+        from devices import RatbagAdapter
+        runner=Mock(return_value='mouse: Logitech G502 HERO Gaming Mouse')
+        lookup=Mock(return_value={'Logitech G502 HERO Gaming Mouse':('046d','c08b')})
+        ratbag=RatbagAdapter(runner,model_lookup=lookup).discover()[0]
+        input_mouse=Device('input','Logitech G502 HERO','mouse','linux-input',physical='/usb/1',vid='046d',pid='c08b',connection='usb')
+        records=[input_mouse,ratbag]
+        DeviceManager.link_physical(records)
+        merged=DeviceManager.merge(records)
+        self.assertEqual(len(merged),1)
+        self.assertEqual(merged[0].backends,['linux-input','ratbagctl'])
+        self.assertEqual(merged[0].connection,'usb')
+        runner.assert_called_once_with(['ratbagctl','list'])
+
+    def test_ratbag_duplicate_names_and_kernel_units_stay_distinct(self):
+        from devices import RatbagAdapter
+        lookup=lambda:{'Same Mouse':('046d','c08b')}
+        ratbag=RatbagAdapter(Mock(return_value='one: Same Mouse\ntwo: Same Mouse'),model_lookup=lookup).discover()
+        self.assertTrue(all(not d.vid for d in ratbag))
+        records=[Device('one','Same Mouse','mouse','linux-input',physical='/usb/1',vid='046d',pid='c08b'),Device('two','Same Mouse','mouse','linux-input',physical='/usb/2',vid='046d',pid='c08b'),*ratbag]
+        DeviceManager.link_physical(records)
+        self.assertEqual(len(DeviceManager.merge(records)),4)
+
+    def test_ratbag_metadata_failure_keeps_separate_records(self):
+        from devices import RatbagAdapter
+        def fail():raise RuntimeError('daemon unavailable')
+        device=RatbagAdapter(Mock(return_value='mouse: Same Mouse'),model_lookup=fail).discover()[0]
+        self.assertEqual((device.vid,device.pid),('',''))
 
     def test_merged_record_retains_each_backend_selector(self):
         a=Device('a','Sound','audio','pactl','sink-name',physical='/usb/1')
@@ -59,8 +88,23 @@ class Devices(unittest.TestCase):
         self.assertTrue(all(not d.capabilities for d in PulseAdapter(runner).discover()))
     def test_headset_unavailable_battery_is_not_a_negative_percentage(self):
         runner=Mock(return_value='{"devices":[{"id_vendor":"0x046d","id_product":"0x0aaa","capabilities":["CAP_BATTERY_STATUS"],"battery":{"status":"BATTERY_UNAVAILABLE","level":-1}}]}')
-        cap=HeadsetAdapter(runner).discover()[0].capabilities[0]
-        self.assertIsNone(cap.value);self.assertFalse(cap.readable)
+        device=HeadsetAdapter(runner).discover()[0]
+        marker=next(c for c in device.capabilities if c.name=='battery_present')
+        self.assertFalse(marker.value);self.assertEqual(marker.source,'model_spec')
+        self.assertFalse(any(c.name in ('battery_status','charging') for c in device.capabilities))
+
+    def test_unknown_wireless_headset_does_not_inherit_wired_exception(self):
+        runner=Mock(return_value='{"devices":[{"id_vendor":"0x046d","id_product":"0x0aba","capabilities":["CAP_BATTERY_STATUS"],"battery":{"status":"BATTERY_UNAVAILABLE","level":-1}}]}')
+        device=HeadsetAdapter(runner).discover()[0]
+        self.assertIsNone(next(c for c in device.capabilities if c.name=='battery_status').value)
+        self.assertFalse(any(c.name=='battery_present' for c in device.capabilities))
+
+    def test_headset_charging_is_reported_independently_of_percentage(self):
+        runner=Mock(return_value='{"devices":[{"id_vendor":"0x046d","id_product":"0x0aaa","capabilities":["CAP_BATTERY_STATUS"],"battery":{"status":"BATTERY_CHARGING","level":-1}}]}')
+        device=HeadsetAdapter(runner).discover()[0]
+        self.assertIsNone(next(c for c in device.capabilities if c.name=='battery_status').value)
+        charging=next(c for c in device.capabilities if c.name=='charging')
+        self.assertTrue(charging.readable);self.assertTrue(charging.value)
 
     def test_kernel_bitmask_preserves_word_boundaries(self):
         from devices import parse_key_mask
@@ -85,6 +129,21 @@ class Devices(unittest.TestCase):
                 (node/'capabilities/key').write_text(hex((1<<14)|(1<<30)|(1<<57))[2:])
                 event=root/'class'/('event'+str(index));event.mkdir(parents=True);(event/'device').symlink_to(node)
             self.assertEqual(len(InputAdapter(root/'class').discover()),2)
+
+    def test_i2c_and_i8042_input_ids_are_not_misreported_as_usb(self):
+        import tempfile
+        from pathlib import Path
+        from devices import InputAdapter
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);records=[]
+            for index,bus,name in [(1,'0018','MSNB0001:00 04F3:30AA Mouse'),(2,'0011','AT Translated Set 2 keyboard')]:
+                node=root/'devices'/('device'+str(index));(node/'capabilities').mkdir(parents=True);(node/'id').mkdir()
+                (node/'name').write_text(name);(node/'phys').write_text('');(node/'id'/'bustype').write_text(bus)
+                (node/'id'/'vendor').write_text('04f3');(node/'id'/'product').write_text('30aa')
+                (node/'capabilities'/'key').write_text(hex((1<<14)|(1<<30)|(1<<57) if 'keyboard' in name else (1<<272))[2:])
+                event=root/'class'/('event'+str(index));event.mkdir(parents=True);(event/'device').symlink_to(node)
+            devices=InputAdapter(root/'class').discover()
+            self.assertEqual({d.name:d.connection for d in devices},{'MSNB0001:00 04F3:30AA Mouse':'internal','AT Translated Set 2 keyboard':'internal'})
 
     def test_name_search_is_case_insensitive_and_normalizes_whitespace(self):
         from devices import matches_name

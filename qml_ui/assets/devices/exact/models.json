@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "models": [
+    {
+      "vid": "046d",
+      "pid": "c08b",
+      "file": "g502-top-wired-qt.svg",
+      "canvas": [
+        1103,
+        2048
+      ],
+      "bounds": [
+        0,
+        0,
+        1103,
+        2048
+      ],
+      "family": "mouse",
+      "anchors": "g502",
+      "editor_diagram": "g502-top-wired-qt.svg",
+      "variants": {
+        "wireless": "g502-top-wireless-qt.svg"
+      }
+    },
+    {
+      "vid": "046d",
+      "pid": "c08d",
+      "file": "g502-top-wired-qt.svg",
+      "canvas": [
+        1103,
+        2048
+      ],
+      "bounds": [
+        0,
+        0,
+        1103,
+        2048
+      ],
+      "family": "mouse",
+      "anchors": "g502",
+      "editor_diagram": "g502-top-wired-qt.svg",
+      "variants": {
+        "wireless": "g502-top-wireless-qt.svg"
+      }
+    },
+    {
+      "vid": "046d",
+      "pid": "407f",
+      "file": "g502-top-wired-qt.svg",
+      "canvas": [
+        1103,
+        2048
+      ],
+      "bounds": [
+        0,
+        0,
+        1103,
+        2048
+      ],
+      "family": "mouse",
+      "anchors": "g502",
+      "editor_diagram": "g502-top-wired-qt.svg",
+      "variants": {
+        "wireless": "g502-top-wireless-qt.svg"
+      }
+    },
+    {
+      "vid": "372e",
+      "pid": "1026",
+      "file": "eweadn-s9.svg",
+      "canvas": [
+        250,
+        485
+      ],
+      "bounds": [
+        0,
+        0,
+        250,
+        485
+      ],
+      "family": "mouse",
+      "editor_diagram": "eweadn-s9.svg",
+      "anchors": "eweadn-s9",
+      "model_ids": [
+        "s9max",
+        "s9pro",
+        "s9ultra",
+        "s9ultra+"
+      ]
+    },
+    {
+      "vid": "372e",
+      "pid": "1027",
+      "file": "eweadn-s9.svg",
+      "canvas": [
+        250,
+        485
+      ],
+      "bounds": [
+        0,
+        0,
+        250,
+        485
+      ],
+      "family": "mouse",
+      "editor_diagram": "eweadn-s9.svg",
+      "anchors": "eweadn-s9",
+      "model_ids": [
+        "s9max",
+        "s9pro",
+        "s9ultra",
+        "s9ultra+"
+      ]
+    },
+    {
+      "vid": "372e",
+      "pid": "103d",
+      "file": "eweadn-s9.svg",
+      "canvas": [
+        250,
+        485
+      ],
+      "bounds": [
+        0,
+        0,
+        250,
+        485
+      ],
+      "family": "mouse",
+      "editor_diagram": "eweadn-s9.svg",
+      "anchors": "eweadn-s9",
+      "model_ids": [
+        "s9max",
+        "s9pro",
+        "s9ultra",
+        "s9ultra+"
+      ]
+    },
+    {
+      "vid": "372e",
+      "pid": "105e",
+      "file": "eweadn-s9.svg",
+      "canvas": [
+        250,
+        485
+      ],
+      "bounds": [
+        0,
+        0,
+        250,
+        485
+      ],
+      "family": "mouse",
+      "editor_diagram": "eweadn-s9.svg",
+      "anchors": "eweadn-s9",
+      "model_ids": [
+        "s9max",
+        "s9pro",
+        "s9ultra",
+        "s9ultra+"
+      ]
+    },
+    {
+      "vid": "372e",
+      "pid": "1029",
+      "file": "eweadn-s9.svg",
+      "canvas": [
+        250,
+        485
+      ],
+      "bounds": [
+        0,
+        0,
+        250,
+        485
+      ],
+      "family": "mouse",
+      "editor_diagram": "eweadn-s9.svg",
+      "anchors": "eweadn-s9",
+      "model_ids": [
+        "s9max",
+        "s9pro",
+        "s9ultra",
+        "s9ultra+"
+      ]
+    },
+    {
+      "vid": "372e",
+      "pid": "108d",
+      "file": "eweadn-s9.svg",
+      "canvas": [
+        250,
+        485
+      ],
+      "bounds": [
+        0,
+        0,
+        250,
+        485
+      ],
+      "family": "mouse",
+      "editor_diagram": "eweadn-s9.svg",
+      "anchors": "eweadn-s9",
+      "model_ids": [
+        "s9max",
+        "s9pro",
+        "s9ultra",
+        "s9ultra+"
+      ]
+    }
+  ]
+}

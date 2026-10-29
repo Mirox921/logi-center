@@ -5,7 +5,7 @@ No factory reset, calibration, firmware or automatic profile repair.
 import os,time,select,fcntl
 from execution import Fault,FaultCode
 
-READ_COMMANDS={3,4,5,8,160}
+READ_COMMANDS={3,4,5,7,8,10,160,162,164,166}
 
 def packet(command,offset,size,data=None):
     if type(command) is not int or type(offset) is not int or not 0<=offset<=65535 or type(size) is not int or not 1<=size<=56:raise ValueError('Invalid keyboard request bounds')
@@ -53,7 +53,16 @@ class Transport:
 
 KEY_INDICES=[50,30,51,41,31,52,72,32,53,73,33,3,54,44,34,70,0,71,1,21,42,2,63,43,13,23,64,74,14,4,60,10,61,11,62,12,22,46,26,47,67,77,48,24,40,20,25,15,5,35,66,56,16,6,57,27,68,28,45,75,55,76,36,7,37,58,78,18]
 RATES={4:1000,3:2000,2:4000,1:8000}
-MODES={3:'Static',4:'Breathing',6:'Wave',255:'Off'}
+# Exact 41e4:2116 layout-ace68_pro inherits layout-ace68_i in official CZ.
+# Keep the original names for compatible saved drafts/backups.
+MODES={0:'Custom',6:'Wave',7:'Vertical wave',8:'Center spread',9:'Star twinkle',4:'Breathing',
+       1:'Color cycle',5:'Disco',3:'Static',2:'Linear gradient',11:'Bottom up',
+       12:'Reciprocal rebound',10:'Center spin',18:'Diagonal flow',19:'Laser rain',
+       20:'Dot twinkle',21:'Fireworks',22:'Triangle bounce',14:'Solid ripple',
+       13:'Key ripple',15:'Key trail',16:'Key firework',17:'Key beam',255:'Off'}
+NO_COLOR_EFFECTS={0,1,5,255}
+NO_SPEED_EFFECTS={0,2,3,255}
+DIRECTION_EFFECTS={6,7,8,10}
 KEY_FIELDS=['actuation','rapid_trigger','rt_press','rt_release','press_dead_zone','release_dead_zone']
 
 def decode_keys(raw):
@@ -80,7 +89,7 @@ def state(transport):
     if sorted(order)!=[0,1,2,3] or not 1<=count<=4 or not 0<=position<count:raise ValueError('Invalid profile table; no automatic repair')
     profile=order[position];config=transport.read(5,profile*64,64);keys=transport.read(160,profile*1024,1024)
     if len(config)!=64 or config[4]&15 not in RATES or not 0<=config[9]<=100 or not 0<=config[10]<=4:raise ValueError('Unsupported profile configuration')
-    result={'firmware_version':format(int.from_bytes(info[:2],'little'),'x'),'profiles':profile,'profile_choices':order[:count],'polling_rate':RATES[config[4]&15],'brightness':config[9],'lighting_speed':4-config[10],'lighting_mode':MODES.get(config[8],str(config[8])),'lighting_palette':{0:'Single color',1:'Random colors'}.get(config[12],str(config[12])),'lighting':list(config[14:17]),'raw_base':list(base),'raw_config':list(config),'raw_keys':list(keys)}
+    result={'firmware_version':format(int.from_bytes(info[:2],'little'),'x'),'profiles':profile,'profile_choices':order[:count],'polling_rate':RATES[config[4]&15],'brightness':config[9],'lighting_speed':4-config[10],'lighting_mode':MODES.get(config[8],str(config[8])),'lighting_direction':config[11],'lighting_palette':{0:'Single color',1:'Random colors'}.get(config[12],str(config[12])),'lighting':list(config[14:17]),'win_lock':bool(config[6]&1),'stability_mode':bool(config[7]&2),'adaptive_calibration':bool(config[7]&4),'key_debounce':bool(config[7]>>5) if config[7]>>5 in (0,7) else config[7]>>5,'keyboard_mode':'Mac' if config[1]&2 else 'Windows','raw_base':list(base),'raw_config':list(config),'raw_keys':list(keys)}
     result.update(decode_keys(keys));return result
 
 def validate_key_value(current,field,key,value):

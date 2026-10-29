@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <!-- Original vector diagram, drawn from the user-supplied K7 top-view reference.
+       No manufacturer bitmap or logo; interactive anchors live in k7_settings.py. -->
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#454641"/><stop offset=".48" stop-color="#30312f"/><stop offset="1" stop-color="#242523"/>
+    </linearGradient>
+    <linearGradient id="keys" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#464741"/><stop offset="1" stop-color="#34352f"/></linearGradient>
+    <linearGradient id="wheel" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#151614"/><stop offset=".5" stop-color="#55564e"/><stop offset="1" stop-color="#171816"/></linearGradient>
+  </defs>
+  <!-- Widen the original narrow sketch to a ~0.54 body width/length ratio.
+       Keep the 400x600 anchor frame; BUTTONS uses the same centered mapping. -->
+  <g transform="translate(-90 0) scale(1.45 1)">
+  <path d="M111 91 C117 64 155 40 200 39 C245 40 283 64 289 91 C299 157 285 234 287 286 C290 370 306 441 290 494 C278 537 246 559 200 561 C154 559 122 537 110 494 C94 441 110 370 113 286 C115 234 101 157 111 91Z" fill="url(#body)" stroke="#626258" stroke-width="1.5"/>
+  <path d="M113 93 C122 64 157 43 198 42 L198 277 L116 277 C114 224 104 157 113 93Z" fill="url(#keys)" stroke="#1b1c19" stroke-width="2"/>
+  <path d="M202 42 C243 43 278 64 287 93 C296 157 286 224 284 277 L202 277Z" fill="url(#keys)" stroke="#1b1c19" stroke-width="2"/>
+  <rect x="186" y="112" width="28" height="89" rx="13" fill="#11120f"/>
+  <rect x="190" y="119" width="20" height="75" rx="8" fill="url(#wheel)"/>
+  <path d="M193 129H207 M192 137H208 M192 145H208 M192 153H208 M192 161H208 M192 169H208 M193 177H207 M194 185H206" stroke="#818173" opacity=".28" stroke-width="1.3"/>
+  <path d="M108 214 Q103 214 103 222 L104 253 Q105 261 112 261 L113 219Z" fill="#999281" stroke="#3b3b34" stroke-width="1.5"/>
+  <path d="M111 278 Q104 278 103 286 L101 320 Q101 329 108 329 L112 286Z" fill="#999281" stroke="#3b3b34" stroke-width="1.5"/>
+  <path d="M190 321H210" stroke="#69695e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M116 92 C123 66 158 43 198 42 M203 42 C243 44 278 65 285 92" fill="none" stroke="#959587" opacity=".28"/>
+  </g>
+</svg>

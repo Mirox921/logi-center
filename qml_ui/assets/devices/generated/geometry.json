@@ -1,0 +1,447 @@
+{
+  "classes": {
+    "audio_unknown": {
+      "bounds": [
+        0.115234375,
+        0.196875,
+        0.884765625,
+        0.734375
+      ],
+      "family": "audio_unknown",
+      "family_height": 0.5375,
+      "family_width": 0.76953125,
+      "shadow_bounds": [
+        0.107421875,
+        0.190625,
+        0.916015625,
+        0.790625
+      ]
+    },
+    "bluetooth_audio": {
+      "bounds": [
+        0.27734375,
+        0.109375,
+        0.72265625,
+        0.821875
+      ],
+      "family": "bluetooth_audio",
+      "family_height": 0.7125,
+      "family_width": 0.4453125,
+      "shadow_bounds": [
+        0.26171875,
+        0.103125,
+        0.751953125,
+        0.890625
+      ]
+    },
+    "builtin_audio": {
+      "bounds": [
+        0.099609375,
+        0.378125,
+        0.900390625,
+        0.553125
+      ],
+      "family": "builtin_audio",
+      "family_height": 0.175,
+      "family_width": 0.80078125,
+      "shadow_bounds": [
+        0.09765625,
+        0.371875,
+        0.919921875,
+        0.571875
+      ]
+    },
+    "display_audio": {
+      "bounds": [
+        0.185546875,
+        0.109375,
+        0.814453125,
+        0.821875
+      ],
+      "family": "display_audio",
+      "family_height": 0.7125,
+      "family_width": 0.62890625,
+      "shadow_bounds": [
+        0.171875,
+        0.103125,
+        0.845703125,
+        0.890625
+      ]
+    },
+    "display_dp": {
+      "bounds": [
+        0.185546875,
+        0.109375,
+        0.814453125,
+        0.821875
+      ],
+      "family": "display_dp",
+      "family_height": 0.7125,
+      "family_width": 0.62890625,
+      "shadow_bounds": [
+        0.171875,
+        0.103125,
+        0.845703125,
+        0.890625
+      ]
+    },
+    "display_hdmi": {
+      "bounds": [
+        0.185546875,
+        0.109375,
+        0.814453125,
+        0.821875
+      ],
+      "family": "display_hdmi",
+      "family_height": 0.7125,
+      "family_width": 0.62890625,
+      "shadow_bounds": [
+        0.171875,
+        0.103125,
+        0.845703125,
+        0.890625
+      ]
+    },
+    "headphones": {
+      "bounds": [
+        0.244140625,
+        0.134375,
+        0.755859375,
+        0.796875
+      ],
+      "family": "headphones",
+      "family_height": 0.6625,
+      "family_width": 0.51171875,
+      "shadow_bounds": [
+        0.228515625,
+        0.128125,
+        0.787109375,
+        0.865625
+      ]
+    },
+    "headset": {
+      "bounds": [
+        0.28125,
+        0.11875,
+        0.71875,
+        0.8125
+      ],
+      "family": "headset",
+      "family_height": 0.69375,
+      "family_width": 0.4375,
+      "shadow_bounds": [
+        0.263671875,
+        0.1125,
+        0.748046875,
+        0.88125
+      ]
+    },
+    "keyboard": {
+      "bounds": [
+        0.21875,
+        0.315625,
+        0.78125,
+        0.615625
+      ],
+      "family": "keyboard",
+      "family_height": 0.4,
+      "family_width": 0.78515625,
+      "shadow_bounds": [
+        0.216796875,
+        0.309375,
+        0.80078125,
+        0.646875
+      ]
+    },
+    "keyboard_60": {
+      "bounds": [
+        0.236328125,
+        0.315625,
+        0.763671875,
+        0.615625
+      ],
+      "family": "keyboard",
+      "family_height": 0.4,
+      "family_width": 0.78515625,
+      "shadow_bounds": [
+        0.232421875,
+        0.309375,
+        0.783203125,
+        0.646875
+      ]
+    },
+    "keyboard_65": {
+      "bounds": [
+        0.21875,
+        0.315625,
+        0.78125,
+        0.615625
+      ],
+      "family": "keyboard",
+      "family_height": 0.4,
+      "family_width": 0.78515625,
+      "shadow_bounds": [
+        0.216796875,
+        0.309375,
+        0.80078125,
+        0.646875
+      ]
+    },
+    "keyboard_builtin": {
+      "bounds": [
+        0.23828125,
+        0.30625,
+        0.763671875,
+        0.625
+      ],
+      "family": "keyboard",
+      "family_height": 0.4,
+      "family_width": 0.78515625,
+      "shadow_bounds": [
+        0.232421875,
+        0.303125,
+        0.783203125,
+        0.659375
+      ]
+    },
+    "keyboard_full": {
+      "bounds": [
+        0.107421875,
+        0.265625,
+        0.892578125,
+        0.665625
+      ],
+      "family": "keyboard",
+      "family_height": 0.4,
+      "family_width": 0.78515625,
+      "shadow_bounds": [
+        0.103515625,
+        0.259375,
+        0.919921875,
+        0.70625
+      ]
+    },
+    "keyboard_tkl": {
+      "bounds": [
+        0.1796875,
+        0.265625,
+        0.8203125,
+        0.665625
+      ],
+      "family": "keyboard",
+      "family_height": 0.4,
+      "family_width": 0.78515625,
+      "shadow_bounds": [
+        0.173828125,
+        0.259375,
+        0.845703125,
+        0.70625
+      ]
+    },
+    "microphone": {
+      "bounds": [
+        0.365234375,
+        0.109375,
+        0.634765625,
+        0.821875
+      ],
+      "family": "microphone",
+      "family_height": 0.7125,
+      "family_width": 0.26953125,
+      "shadow_bounds": [
+        0.349609375,
+        0.103125,
+        0.66015625,
+        0.890625
+      ]
+    },
+    "mouse": {
+      "bounds": [
+        0.3828125,
+        0.121875,
+        0.6171875,
+        0.809375
+      ],
+      "family": "mouse",
+      "family_height": 0.7125,
+      "family_width": 0.25,
+      "shadow_bounds": [
+        0.361328125,
+        0.115625,
+        0.64453125,
+        0.878125
+      ]
+    },
+    "mouse_builtin": {
+      "bounds": [
+        0.244140625,
+        0.171875,
+        0.755859375,
+        0.759375
+      ],
+      "family": "mouse_builtin",
+      "family_height": 0.5875,
+      "family_width": 0.51171875,
+      "shadow_bounds": [
+        0.22265625,
+        0.165625,
+        0.787109375,
+        0.828125
+      ]
+    },
+    "mouse_compact": {
+      "bounds": [
+        0.40234375,
+        0.16875,
+        0.59765625,
+        0.759375
+      ],
+      "family": "mouse",
+      "family_height": 0.7125,
+      "family_width": 0.25,
+      "shadow_bounds": [
+        0.384765625,
+        0.165625,
+        0.62109375,
+        0.81875
+      ]
+    },
+    "mouse_gaming": {
+      "bounds": [
+        0.375,
+        0.109375,
+        0.625,
+        0.821875
+      ],
+      "family": "mouse",
+      "family_height": 0.7125,
+      "family_width": 0.25,
+      "shadow_bounds": [
+        0.35546875,
+        0.103125,
+        0.65234375,
+        0.890625
+      ]
+    },
+    "mouse_wireless": {
+      "bounds": [
+        0.3828125,
+        0.121875,
+        0.6171875,
+        0.809375
+      ],
+      "family": "mouse",
+      "family_height": 0.7125,
+      "family_width": 0.25,
+      "shadow_bounds": [
+        0.361328125,
+        0.115625,
+        0.64453125,
+        0.878125
+      ]
+    },
+    "pointer_generic": {
+      "bounds": [
+        0.244140625,
+        0.171875,
+        0.755859375,
+        0.759375
+      ],
+      "family": "pointer_generic",
+      "family_height": 0.5875,
+      "family_width": 0.51171875,
+      "shadow_bounds": [
+        0.22265625,
+        0.165625,
+        0.787109375,
+        0.828125
+      ]
+    },
+    "receiver": {
+      "bounds": [
+        0.404296875,
+        0.109375,
+        0.595703125,
+        0.821875
+      ],
+      "family": "receiver",
+      "family_height": 0.7125,
+      "family_width": 0.19140625,
+      "shadow_bounds": [
+        0.384765625,
+        0.103125,
+        0.623046875,
+        0.890625
+      ]
+    },
+    "speakers": {
+      "bounds": [
+        0.248046875,
+        0.109375,
+        0.751953125,
+        0.821875
+      ],
+      "family": "speakers",
+      "family_height": 0.7125,
+      "family_width": 0.50390625,
+      "shadow_bounds": [
+        0.232421875,
+        0.103125,
+        0.783203125,
+        0.890625
+      ]
+    },
+    "touchpad": {
+      "bounds": [
+        0.21875,
+        0.171875,
+        0.78125,
+        0.759375
+      ],
+      "family": "touchpad",
+      "family_height": 0.5875,
+      "family_width": 0.5625,
+      "shadow_bounds": [
+        0.1953125,
+        0.165625,
+        0.814453125,
+        0.828125
+      ]
+    },
+    "unknown": {
+      "bounds": [
+        0.287109375,
+        0.109375,
+        0.712890625,
+        0.821875
+      ],
+      "family": "unknown",
+      "family_height": 0.7125,
+      "family_width": 0.42578125,
+      "shadow_bounds": [
+        0.26953125,
+        0.103125,
+        0.744140625,
+        0.890625
+      ]
+    },
+    "usb_audio": {
+      "bounds": [
+        0.119140625,
+        0.14375,
+        0.880859375,
+        0.7875
+      ],
+      "family": "usb_audio",
+      "family_height": 0.64375,
+      "family_width": 0.76171875,
+      "shadow_bounds": [
+        0.109375,
+        0.1375,
+        0.9140625,
+        0.85
+      ]
+    }
+  },
+  "version": 1
+}

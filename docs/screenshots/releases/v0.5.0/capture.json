@@ -1,0 +1,53 @@
+{
+  "language": "en",
+  "workspace": 9,
+  "platform": "wayland",
+  "source": "live read-only devices; no mock values",
+  "captures": [
+    {
+      "file": "dashboard.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "mouse-buttons.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "mouse-side.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "mouse-lighting.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "keyboard.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "keyboard-lighting.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "audio.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "settings.png",
+      "width": 1890,
+      "height": 1018
+    },
+    {
+      "file": "diagnostics.png",
+      "width": 1890,
+      "height": 1018
+    }
+  ]
+}

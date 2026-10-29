@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="480" height="440" viewBox="0 0 480 440">
+<defs>
+<linearGradient id="linear-pattern-0" gradientUnits="userSpaceOnUse" x1="190" y1="40" x2="300" y2="360">
+<stop offset="0" stop-color="rgb(28.333333%,28.333333%,28.333333%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(9.333333%,9.333333%,9.333333%)" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="linear-pattern-1" gradientUnits="userSpaceOnUse" x1="190" y1="40" x2="300" y2="360">
+<stop offset="0" stop-color="rgb(34.333333%,34.333333%,34.333333%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(15.333333%,15.333333%,15.333333%)" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="linear-pattern-2" gradientUnits="userSpaceOnUse" x1="190" y1="40" x2="300" y2="360">
+<stop offset="0" stop-color="rgb(34.333333%,34.333333%,34.333333%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(15.333333%,15.333333%,15.333333%)" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="linear-pattern-3" gradientUnits="userSpaceOnUse" x1="190" y1="40" x2="300" y2="360">
+<stop offset="0" stop-color="rgb(30.000000%,30.000000%,30.000000%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(12.333333%,12.333333%,12.333333%)" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="linear-pattern-4" gradientUnits="userSpaceOnUse" x1="190" y1="40" x2="300" y2="360">
+<stop offset="0" stop-color="rgb(30.000000%,30.000000%,30.000000%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(12.333333%,12.333333%,12.333333%)" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="linear-pattern-5" gradientUnits="userSpaceOnUse" x1="246" y1="0" x2="264" y2="0">
+<stop offset="0" stop-color="rgb(23.500000%,23.500000%,23.500000%)" stop-opacity="1"/>
+<stop offset="0.3" stop-color="rgb(66.500000%,66.500000%,66.500000%)" stop-opacity="1"/>
+<stop offset="0.55" stop-color="rgb(74.500000%,74.500000%,74.500000%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(25.500000%,25.500000%,25.500000%)" stop-opacity="1"/>
+</linearGradient>
+<linearGradient id="linear-pattern-6" gradientUnits="userSpaceOnUse" x1="190" y1="40" x2="300" y2="360">
+<stop offset="0" stop-color="rgb(29.000000%,29.000000%,29.000000%)" stop-opacity="1"/>
+<stop offset="1" stop-color="rgb(12.333333%,12.333333%,12.333333%)" stop-opacity="1"/>
+</linearGradient>
+</defs>
+<path fill-rule="nonzero" fill="url(#linear-pattern-0)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(33.666667%,33.666667%,33.666667%)" stroke-opacity="1" stroke-miterlimit="10" d="M 198 49 C 219 31 282 31 300 54 C 328 98 330 265 311 335 C 293 404 210 405 186 346 C 158 273 165 111 198 49 Z M 198 49 "/>
+<path fill-rule="nonzero" fill="url(#linear-pattern-1)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(33.666667%,33.666667%,33.666667%)" stroke-opacity="1" stroke-miterlimit="10" d="M 193 64 C 201 45 236 44 242 57 L 242 177 L 193 184 Z M 193 64 "/>
+<path fill-rule="nonzero" fill="url(#linear-pattern-2)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(33.666667%,33.666667%,33.666667%)" stroke-opacity="1" stroke-miterlimit="10" d="M 268 64 C 276 45 301 44 307 57 L 307 177 L 268 184 Z M 268 64 "/>
+<path fill-rule="nonzero" fill="url(#linear-pattern-3)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(33.666667%,33.666667%,33.666667%)" stroke-opacity="1" stroke-miterlimit="10" d="M 174 194 L 186 189 L 184 218 L 172 221 Z M 174 194 "/>
+<path fill-rule="nonzero" fill="url(#linear-pattern-4)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(33.666667%,33.666667%,33.666667%)" stroke-opacity="1" stroke-miterlimit="10" d="M 174 233 L 186 228 L 184 257 L 172 260 Z M 174 233 "/>
+<path fill-rule="nonzero" fill="rgb(4.666667%,4.666667%,4.666667%)" fill-opacity="1" d="M 242 73 L 268 73 L 268 163 L 242 163 Z M 242 73 "/>
+<path fill-rule="nonzero" fill="url(#linear-pattern-5)" d="M 247 82 L 263 82 L 263 144 L 247 144 Z M 247 82 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 85 L 263 85 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 90 L 263 90 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 95 L 263 95 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 100 L 263 100 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 105 L 263 105 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 110 L 263 110 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 115 L 263 115 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 120 L 263 120 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 125 L 263 125 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 130 L 263 130 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 135 L 263 135 "/>
+<path fill="none" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(4.333333%,4.333333%,4.333333%)" stroke-opacity="0.8" stroke-miterlimit="10" d="M 247 140 L 263 140 "/>
+<path fill-rule="nonzero" fill="url(#linear-pattern-6)" stroke-width="1" stroke-linecap="butt" stroke-linejoin="miter" stroke="rgb(33.666667%,33.666667%,33.666667%)" stroke-opacity="1" stroke-miterlimit="10" d="M 246 179 L 264 179 L 266 193 L 244 193 Z M 246 179 "/>
+</svg>

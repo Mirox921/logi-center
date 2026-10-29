@@ -3,3 +3,16 @@ __pycache__/
 *.log
 *.before-*
 .venv/
+
+# Local agent tooling and generated review material.
+.agents/
+.codex/
+.pytest_cache/
+build/
+dist/
+*.pkg.tar.*
+logi-center-*.tar.gz
+# Publish only the curated release gallery; keep local review captures offline.
+/docs/screenshots/*
+!/docs/screenshots/README.md
+!/docs/screenshots/releases/

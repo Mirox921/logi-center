@@ -23,14 +23,15 @@ def panel(cr,points,top,bottom,stroke=(.30,.33,.38)):
     gradient=cairo.LinearGradient(190,40,300,360);gradient.add_color_stop_rgb(0,*top);gradient.add_color_stop_rgb(1,*bottom)
     cr.set_source(gradient);cr.fill_preserve();cr.set_source_rgb(*stroke);cr.set_line_width(1);cr.stroke()
 
-def render(cr,width,height,name,selected=None,count=11):
+def render(cr,width,height,name,selected=None,count=11,studio=True):
     cr.save();scale=min(width/WIDTH,height/HEIGHT);cr.translate((width-WIDTH*scale)/2,(height-HEIGHT*scale)/2);cr.scale(scale,scale)
-    # A soft studio halo and contact shadow keep the silhouette legible.
-    halo=cairo.RadialGradient(252,205,25,252,205,240)
-    halo.add_color_stop_rgba(0,.12,.36,.43,.24);halo.add_color_stop_rgba(1,.09,.13,.18,0)
-    cr.set_source(halo);cr.rectangle(0,0,WIDTH,HEIGHT);cr.fill()
-    for radius in range(14,0,-1):
-        cr.save();cr.translate(248,375);cr.scale(1,.2);cr.arc(0,0,90+radius*2,0,math.tau);cr.set_source_rgba(0,0,0,.012);cr.fill();cr.restore()
+    if studio:
+        # A soft studio halo and contact shadow keep the silhouette legible.
+        halo=cairo.RadialGradient(252,205,25,252,205,240)
+        halo.add_color_stop_rgba(0,.12,.36,.43,.24);halo.add_color_stop_rgba(1,.09,.13,.18,0)
+        cr.set_source(halo);cr.rectangle(0,0,WIDTH,HEIGHT);cr.fill()
+        for radius in range(14,0,-1):
+            cr.save();cr.translate(248,375);cr.scale(1,.2);cr.arc(0,0,90+radius*2,0,math.tau);cr.set_source_rgba(0,0,0,.012);cr.fill();cr.restore()
     g502='G502' in name
     if g502:
         cr.set_source_rgb(.12,.14,.17);cr.set_line_width(8);cr.move_to(250,0);cr.curve_to(250,18,259,24,258,41);cr.stroke()

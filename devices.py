@@ -95,6 +95,21 @@ class DeviceManager:
             if len(candidates)==1 and len(same_backend)==1:item.physical=next(iter(candidates))
     @staticmethod
     def merge(records):
+        # Some gaming mice expose a keyboard-like HID collection for vendor
+        # buttons. Suppress only a sibling input node with the same USB parent,
+        # VID/PID and exact model name after the conventional " Keyboard" suffix.
+        # A shared product name or VID/PID without a shared physical parent is
+        # never enough to hide a real keyboard.
+        mice=[d for d in records if d.backend=='linux-input' and d.kind=='mouse' and d.physical and d.vid and d.pid]
+        for candidate in records:
+            if candidate.backend!='linux-input' or candidate.kind!='keyboard' or not candidate.physical or not candidate.vid or not candidate.pid:
+                continue
+            normalized=' '.join(candidate.name.casefold().split())
+            suffix=' keyboard'
+            if not normalized.endswith(suffix):continue
+            model=normalized[:-len(suffix)]
+            peers=[d for d in mice if d.vid==candidate.vid and d.pid==candidate.pid and d.physical.split('|',1)[0]==candidate.physical.split('|',1)[0] and ' '.join(d.name.casefold().split())==model]
+            if len(peers)==1:candidate.kind='interface'
         merged={}
         for item in records:
             # Exact physical path only. VID/PID or model alone never merge units.
@@ -104,6 +119,10 @@ class DeviceManager:
             if current.kind=='input':current.kind=item.kind
             if current.backend=='linux-input' and item.backend!='linux-input':
                 current.name=item.name;current.kind=item.kind;current.backend=item.backend;current.target=item.target
+                if item.connection!='unknown' or item.backend=='mchose':
+                    # The input bus identifies a USB receiver, not necessarily
+                    # the link between receiver and mouse.
+                    current.connection=item.connection
             if item.backend!='linux-input' and item.connected is False:current.connected=False
             elif current.connected is None and item.connected is True:current.connected=True
             current.backends=list(dict.fromkeys([*current.backends,*item.backends]))
@@ -197,6 +216,7 @@ class InputAdapter:
             if touchpad:continue
             if not keyboard and not mouse:continue
             physical,vid,pid=usb_identity(node)
+            usb_parent=bool(physical)
             # Receiver slots/interface paths stay intact; stripping /inputN:slot
             # would incorrectly merge two devices behind one receiver.
             try:input_phys=(node/'phys').read_text().strip()
@@ -213,8 +233,13 @@ class InputAdapter:
             ident=physical or str(node.resolve())
             try:bus=(node/'id/bustype').read_text().strip()
             except OSError:bus=''
+            if bus=='0005' or '/bluetooth' in str(node.resolve()):connection='bluetooth'
+            elif bus=='0003' or usb_parent:connection='usb'
+            elif bus in ['0011','0018','0019'] or any(marker in str(node.resolve()).casefold() for marker in ['/i2c-','/serio','/serial']):connection='internal'
+            elif not vid:connection='internal'
+            else:connection='unknown'
             cap=Capability('standard_input',self.name,True,True,False,False,'keyboard' if keyboard else 'mouse','kernel',limitation='Kernel input detection does not imply RGB or remapping support.',evidence=['software_detected','read_observed'])
-            records.append(Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection='bluetooth' if bus=='0005' or '/bluetooth' in str(node.resolve()) else 'usb' if vid else 'internal',capabilities=[cap]))
+            records.append(Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection=connection,capabilities=[cap]))
         return DeviceManager.merge(records)
 
 class KernelBatteryAdapter:
@@ -246,19 +271,25 @@ class KernelBatteryAdapter:
 
 class RatbagAdapter:
     name='ratbagctl'
-    def __init__(self,runner=None,detailed=False):
+    def __init__(self,runner=None,detailed=False,model_lookup=None):
         from backend import run
-        self.run=runner or run;self.detailed=detailed
+        self.run=runner or run;self.detailed=detailed;self.model_lookup=model_lookup
     def discover(self):
         from backend import mouse_list,read_mouse
         records=[]
         inventory=mouse_list(self.run(['ratbagctl','list']))
+        models={}
+        if inventory and self.model_lookup:
+            try:models=self.model_lookup()
+            except Exception:pass  # Optional daemon metadata; keep records distinct.
         for index,(target,name) in enumerate(inventory):
             if sum(item[0]==target for item in inventory)>1:
                 records.append(Device('ratbag:ambiguous:'+target+':'+str(index),name,'mouse',self.name,target,connected=None,faults=[Fault(FaultCode.CONFIG,self.name,'Backend selector collision; writes disabled')]))
                 continue
             if not self.detailed:
-                records.append(Device('ratbag:'+target,name,'mouse',self.name,target));continue
+                unique_name=sum(item[1]==name for item in inventory)==1
+                vid,pid=models.get(name,('','')) if unique_name else ('','')
+                records.append(Device('ratbag:'+target,name,'mouse',self.name,target,vid=vid,pid=pid));continue
             try:
                 data=read_mouse(target,runner=self.run);caps=mouse_capabilities(data,target)
                 model=re.search(r'Model:\s*(\S+)',data['text']);parts=model[1].split(':') if model else []
@@ -338,13 +369,26 @@ class HeadsetAdapter:
         for index,item in enumerate(doc.get('devices',[])):
             vid=usb_id(item.get('id_vendor'));pid=usb_id(item.get('id_product'))
             target=vid+':'+pid;capabilities=[]
+            # PRO X USB sound card (the wired headset) is reported by some
+            # HeadsetControl versions with CAP_BATTERY_STATUS but no battery.
+            # A positive hardware reading always takes precedence over this
+            # narrow product exception.
+            battery=item.get('battery',{})
+            wired_pro_x=(vid,pid)==('046d','0aaa') and battery.get('status')=='BATTERY_UNAVAILABLE'
+            if wired_pro_x:
+                capabilities.append(Capability('battery_present',self.name,True,False,False,False,False,'model_spec'))
             for cap in item.get('capabilities',[]):
                 if not isinstance(cap,str):continue
                 name=cap.removeprefix('CAP_').lower()
+                if wired_pro_x and name=='battery_status':continue
                 battery=item.get('battery',{}) if name=='battery_status' else {}
                 level=battery.get('level');readable=type(level) is int and 0<=level<=100 and battery.get('status') in ['BATTERY_AVAILABLE','BATTERY_CHARGING']
                 source='device' if readable else 'unavailable'
                 capabilities.append(Capability(name,self.name,True,readable,name=='sidetone' and bool(vid and pid),False,level if readable else None,source,minimum=0 if name=='sidetone' else None,maximum=128 if name=='sidetone' else None,limitation='Other reported features are diagnostic-only until a parameter-specific adapter is implemented.',evidence=['software_detected']))
+                if name=='battery_status':
+                    status=battery.get('status')
+                    charging_known=status in ['BATTERY_AVAILABLE','BATTERY_CHARGING']
+                    capabilities.append(Capability('charging',self.name,True,charging_known,False,False,status=='BATTERY_CHARGING' if charging_known else None,'device' if charging_known else 'unavailable',limitation='Charging state is reported separately from percentage.'))
             result.append(Device('headset:'+target+':'+str(index),item.get('device','USB headset'),'audio',self.name,target,vid=vid,pid=pid,connection='usb',connected=True if item.get('status','success')=='success' else None,capabilities=capabilities))
         from operations import plan_for
         for device in result:

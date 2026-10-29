@@ -1,13 +1,16 @@
 # Local source package. scripts/prepare-arch.py supplies archive and exact checksum.
 pkgname=logi-center
-pkgver=0.4.0
+pkgver=0.5.0
 pkgrel=1
 pkgdesc='Capability-driven Linux peripheral manager using existing hardware backends'
 arch=('any')
 url='https://github.com/Mirox921/logi-center'
 license=('MIT')
-depends=('python' 'python-gobject' 'python-cairo' 'python-yaml' 'gtk4>=4.10' 'libadwaita>=1.5')
+depends=('python' 'python-gobject' 'python-yaml' 'pyside6' 'qt6-svg' 'qt6-declarative')
+# Offline artwork tests/build tools only; no Cairo/GTK renderer at runtime.
+makedepends=('python-cairo')
 optdepends=(
+  'qt6-wayland: native Wayland platform plugin for the QML interface'
   'libratbag: supported gaming mouse settings'
   'openrgb: optional local RGB SDK server'
   'python-openrgb: optional OpenRGB Python SDK binding (AUR)'
@@ -30,13 +33,62 @@ check() {
   cd "$srcdir/logi-center-$pkgver"
   python -m unittest -q
   python -m compileall -q .
+  # Required presentation files are copied recursively by package().
+  for component in AppHeader SettingsPage AboutPage BackupsPage DisclosureItem DashboardToolbar DeviceImage StyledText DeviceEditor ControlEditor MouseButtons KeyboardEditor AudioPage AudioEndpoint CutInput CutCombo CutSlider; do
+    test -f "qml_ui/qml/$component.qml"
+  done
+  test ! -f qml_ui/gtk_backups.py
+  test -f qml_ui/bridge/backups.py
+  test -f qml_ui/bridge/backup_simulation.py
+  test -f qml_ui/bridge/preferences.py
+  test -f qml_ui/text_debug.py
+  test -f macro_library.py
+  test -f logitech_status.py
+  test -f qml_ui/assets/devices/exact/g502_transparent_wired.svg
+  test -f qml_ui/assets/devices/exact/g502_wireless.svg
+  test -f qml_ui/assets/devices/exact/g502_hero_side_wired_fixed.svg
+  test -f qml_ui/assets/devices/exact/g502_hero_side_wireless.svg
+  test -f qml_ui/assets/devices/exact/g502-top-wired-qt.svg
+  test -f qml_ui/assets/devices/exact/g502-top-wireless-qt.svg
+  test -f qml_ui/assets/devices/exact/g502-hero-side.svg
+  test -f qml_ui/assets/devices/exact/g502-hero-legacy.svg
+  test -f control_service.py
+  test -f keyboard_layouts.py
+  test -f g515_layout.py
+  test -f g515_adapter.py
+  test -f qml_ui/bridge/editor.py
+  test -f qml_ui/bridge/audio.py
+  test -f qml_ui/bridge/diagnostics.py
+  test -f battery_service.py
+  test -f battery_presentation.py
+  test -f qml_ui/assets/devices/generated/geometry.json
+  test -f qml_ui/assets/devices/exact/models.json
+  test -f qml_ui/assets/devices/exact/g502-hero.svg
+  test -f qml_ui/qml/K7DockPanel.qml
+  test -f k7_settings.py
+  test -f eweadn_protocol.py
+  test -f qml_ui/assets/devices/exact/eweadn-s9.svg
+  test -f qml_ui/assets/devices/exact/eweadn-s9-original.svg
+  test -f ace68_bindings.py
+  test -f ace68_advanced.py
+  for component in G502ButtonPanel GenericMouseButtons MacroWindow K7DpiPanel K7ButtonPanel K7PerformancePanel NumberInput EweadnPanel G515Panel Ace68Panel Ace68Keyboard Ace68Assignments Ace68Advanced; do
+    test -f "qml_ui/qml/$component.qml"
+  done
+  for key in display-hdmi display-dp pointer-generic; do
+    test -f "qml_ui/assets/devices/generated/$key@1x.png"
+    test -f "qml_ui/assets/devices/generated/$key@2x.png"
+  done
+  test -f qml_ui/assets/brand/SOURCES.md
+  for asset in g502.svg generic.svg k7-dock.svg k7-buttons.svg SOURCES.md; do
+    test -f "qml_ui/assets/diagrams/$asset"
+  done
 }
 
 package() {
   cd "$srcdir/logi-center-$pkgver"
   install -dm755 "$pkgdir/usr/lib/logi-center" "$pkgdir/usr/bin"
   for module in *.py; do
-    case "$module" in test_*|install.py) continue;; esac
+    case "$module" in test_*|install.py|mouse_art.py) continue;; esac
     install -m644 "$module" "$pkgdir/usr/lib/logi-center/"
   done
   printf '#!/bin/sh\nexec /usr/bin/python /usr/lib/logi-center/app.py "$@"\n' > "$pkgdir/usr/bin/logi-center"
@@ -50,4 +102,12 @@ package() {
   install -Dm644 packaging/udev/70-logi-center-mchose.rules "$pkgdir/usr/share/doc/$pkgname/udev/70-logi-center-mchose.rules"
   cp -r docs "$pkgdir/usr/share/doc/$pkgname/"
   install -Dm644 packaging/arch/README.md "$pkgdir/usr/share/doc/$pkgname/packaging/arch/README.md"
+  if [[ -d qml_ui ]]; then
+    # Includes prebuilt 512x320 / 1024x640 PNG art and license manifests.
+    # The offline illustrations/ developer package is deliberately not copied.
+    cp -r qml_ui "$pkgdir/usr/lib/logi-center/"
+    # check() imports QML bridge modules; do not ship interpreter-specific caches.
+    find "$pkgdir/usr/lib/logi-center/qml_ui" -type f -name '*.pyc' -delete
+    find "$pkgdir/usr/lib/logi-center/qml_ui" -type d -name '__pycache__' -empty -delete
+  fi
 }

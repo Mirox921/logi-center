@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="440" viewBox="0 0 480 440">
+  <title>Logitech G502 HERO — proposed Logi Center illustration</title>
+  <desc>Original editable vector study based on the project's existing G502 editor schematic. No manufacturer logo or photograph.</desc>
+  <defs>
+    <linearGradient id="shell" x1=".12" y1=".04" x2=".88" y2=".96" objectBoundingBox="true">
+      <stop offset="0" stop-color="#484b49"/><stop offset=".48" stop-color="#303331"/><stop offset="1" stop-color="#171918"/>
+    </linearGradient>
+    <linearGradient id="leftClick" x1="0" y1="0" x2="1" y2="1" objectBoundingBox="true">
+      <stop offset="0" stop-color="#525552"/><stop offset=".52" stop-color="#373a38"/><stop offset="1" stop-color="#272a28"/>
+    </linearGradient>
+    <linearGradient id="rightClick" x1="0" y1="0" x2="1" y2="1" objectBoundingBox="true">
+      <stop offset="0" stop-color="#454845"/><stop offset=".55" stop-color="#303330"/><stop offset="1" stop-color="#202321"/>
+    </linearGradient>
+    <linearGradient id="spine" x1="0" y1="0" x2=".8" y2="1" objectBoundingBox="true">
+      <stop offset="0" stop-color="#363936"/><stop offset=".6" stop-color="#282b29"/><stop offset="1" stop-color="#1d201e"/>
+    </linearGradient>
+    <linearGradient id="wheel" x1="0" y1="0" x2="1" y2="0" objectBoundingBox="true">
+      <stop offset="0" stop-color="#333634"/><stop offset=".23" stop-color="#888c88"/><stop offset=".52" stop-color="#afb2ad"/><stop offset=".78" stop-color="#6a6d69"/><stop offset="1" stop-color="#292c2a"/>
+    </linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2=".8" y2="1" objectBoundingBox="true">
+      <stop offset="0" stop-color="#777b76"/><stop offset=".35" stop-color="#565a56"/><stop offset="1" stop-color="#303431"/>
+    </linearGradient>
+  </defs>
+
+  <!-- The viewBox and shell location retain the established 480 x 440 editor anchor frame. -->
+  <path id="cable" d="M251 0 C250 17 258 23 256 40" fill="none" stroke="#242624" stroke-width="7" stroke-linecap="round"/>
+  <path id="shell-outline" d="M192 45 C214 33 272 33 300 48 C307 65 320 104 324 127 L331 204 C344 234 347 274 337 309 C328 346 308 374 281 390 C259 402 222 399 197 384 C178 373 169 354 151 340 L139 328 L134 286 C132 272 142 254 158 238 L167 135 C170 97 180 61 192 45 Z"
+        fill="url(#shell)" stroke="#626660" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M192 48 C170 98 169 162 160 237 C141 258 134 278 137 324 L151 339" fill="none" stroke="#838780" stroke-opacity=".24" stroke-width="2"/>
+  <path d="M301 51 C319 104 325 163 328 205 C342 264 335 323 302 367" fill="none" stroke="#0b0e0c" stroke-opacity=".7" stroke-width="3"/>
+
+  <!-- Continuous flared thumb shelf and recessed rubber grip. -->
+  <path id="thumb-rest" d="M158 238 C144 255 139 269 140 287 L146 326 L161 340 L181 340 L181 310 L174 274 L183 242 L176 205 Z"
+        fill="#242725" stroke="#4a4e49" stroke-width="1.3"/>
+  <path id="thumb-grip" d="M164 246 L178 252 L174 321 L157 325 L150 283 Z" fill="#1b1e1c" stroke="#383c38" stroke-width="1"/>
+  <path d="M152 292 L173 300 M153 302 L173 309 M155 312 L172 319" fill="none" stroke="#666b65" stroke-opacity=".24" stroke-width="1.2"/>
+
+  <!-- Main switches remain part of the body; their seams follow the silhouette. -->
+  <path id="left-click" d="M193 49 C208 41 231 39 245 41 L243 158 L211 182 L178 161 L183 97 Z"
+        fill="url(#leftClick)" stroke="#1c201d" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M192 52 C208 44 228 43 241 44 M181 96 L179 155 L210 178" fill="none" stroke="#a1a59f" stroke-opacity=".31" stroke-width="1.3"/>
+  <path id="right-click" d="M268 41 C284 41 295 45 300 52 L319 121 L316 174 L275 185 L264 159 Z"
+        fill="url(#rightClick)" stroke="#1b1f1c" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M269 44 C281 44 295 47 297 54 L315 120" fill="none" stroke="#969a94" stroke-opacity=".25" stroke-width="1.2"/>
+  <path d="M248 42 L250 163" fill="none" stroke="#151815" stroke-width="3"/>
+
+  <!-- Wheel well, metal wheel, low-contrast machined ribs and mode switch. -->
+  <path id="wheel-well" d="M241 75 Q242 70 248 70 L263 70 Q269 70 270 76 L270 159 Q269 165 263 165 L247 165 Q241 165 240 159 Z"
+        fill="#101310" stroke="#343834" stroke-width="1"/>
+  <rect id="scroll-wheel" x="247" y="79" width="17" height="69" rx="7" fill="url(#wheel)" stroke="#202321" stroke-width="1"/>
+  <path d="M249 87 H262 M249 94 H262 M249 101 H262 M249 108 H262 M249 115 H262 M249 122 H262 M249 129 H262 M249 136 H262"
+        fill="none" stroke="#2b2e2b" stroke-opacity=".68" stroke-width="1.2"/>
+  <path id="wheel-mode" d="M246 178 H263 L266 192 H243 Z" fill="url(#button)" stroke="#202421" stroke-width="1.3"/>
+
+  <!-- Two upper DPI switches and three thumb-side switches from the existing schematic. -->
+  <path id="dpi-up" d="M184 78 L198 72 L195 102 L181 107 Z" fill="url(#button)" stroke="#222623" stroke-width="1.1"/>
+  <path id="dpi-down" d="M180 113 L194 107 L191 137 L177 142 Z" fill="url(#button)" stroke="#222623" stroke-width="1.1"/>
+  <path id="thumb-forward" d="M163 174 L181 165 L183 193 L161 202 Z" fill="url(#button)" stroke="#1d211e" stroke-width="1.4"/>
+  <path id="thumb-back" d="M162 211 L181 202 L183 231 L161 240 Z" fill="url(#button)" stroke="#1d211e" stroke-width="1.4"/>
+  <path id="dpi-shift" d="M147 261 L166 245 L174 266 L153 286 Z" fill="url(#button)" stroke="#1c211d" stroke-width="1.3"/>
+
+  <!-- Three real DPI indicators; neutral because the live LED state is unknown. -->
+  <path d="M200 218 H204 V224 H200 Z M200 229 H204 V235 H200 Z M200 240 H204 V246 H200 Z" fill="#777d76" fill-opacity=".75"/>
+
+  <!-- Angled palm panel with narrow highlight and no guessed brand mark. -->
+  <path id="palm-panel" d="M215 201 L270 201 L312 184 L322 257 C326 313 307 360 279 382 C247 400 211 379 195 351 L186 283 Z"
+        fill="url(#spine)" stroke="#50544f" stroke-width="1.5" stroke-linejoin="round"/>
+  <path d="M217 205 H269 L310 188 M189 283 L198 351 C215 379 248 393 277 378" fill="none" stroke="#777b74" stroke-opacity=".25" stroke-width="1.2"/>
+</svg>

@@ -25,6 +25,17 @@ class Discovery(unittest.TestCase):
         monitor.stop();monitor._udev_event(Mock(subsystem='hidraw',action='add'))
         self.assertEqual(callback.call_count,1)
 
+    def test_upower_battery_property_events_trigger_indicator_refresh(self):
+        from unittest.mock import Mock
+        callback=Mock();monitor=DeviceMonitor(callback)
+        parameters=Mock();parameters.unpack.return_value=('org.freedesktop.UPower.Device',{'State':2},[])
+        monitor._upower_event(None,None,'/org/freedesktop/UPower/devices/mouse',None,None,parameters)
+        callback.assert_called_once_with('battery')
+        parameters.unpack.return_value=('org.freedesktop.UPower.Device',{'NativePath':'x'},[])
+        monitor._upower_event(None,None,'/device',None,None,parameters)
+        self.assertEqual(callback.call_count,1)
+        monitor.stop()
+
     def test_unplug_does_not_reuse_model_name_as_presence(self):
         from discovery import MousePresence
         state=MousePresence();state.update([('mouse','Logitech G502 HERO')])

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="360" viewBox="0 0 600 360">
+  <title>G502 HERO left-side button diagram</title>
+  <desc>Original editable vector drawing from the user-supplied side reference. No photo or brand logo.</desc>
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2=".6" y2="1"><stop stop-color="#555953"/><stop offset=".5" stop-color="#30352f"/><stop offset="1" stop-color="#171d18"/></linearGradient>
+    <linearGradient id="side" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#42493e"/><stop offset="1" stop-color="#1b211b"/></linearGradient>
+    <linearGradient id="button" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#858d7c"/><stop offset=".3" stop-color="#525c4c"/><stop offset="1" stop-color="#2b3429"/></linearGradient>
+  </defs>
+  <path d="M0 239 L95 241" stroke="#242a23" stroke-width="8" fill="none"/>
+  <path d="M99 244 L124 191 Q155 138 217 114 Q268 81 343 98 Q419 103 467 155 Q513 192 526 252 L499 280 L138 280 L94 264 Z" fill="url(#shell)" stroke="#60695a" stroke-width="1.8"/>
+  <path d="M125 194 Q164 141 226 123 L247 144 L196 194 L144 223 L103 240 Z" fill="#414a3c" stroke="#1a2119" stroke-width="2"/>
+  <path d="M246 145 L350 119 Q433 116 477 176 L458 216 L301 211 Z" fill="#343c30" stroke="#626e59"/>
+  <path d="M153 215 L296 163 L449 187 L491 259 L453 281 L171 280 L141 252 Z" fill="url(#side)" stroke="#1c251b" stroke-width="2"/>
+  <path d="M169 251 L225 234 L274 259 L260 281 L172 278 Z" fill="#161e15"/>
+  <path d="M268 234 L344 221 L440 238 L451 271 L287 278 Z" fill="#1c251a"/>
+  <path d="M275 244 L438 255 M279 253 L441 264 M297 265 L432 273" fill="none" stroke="#48543e" opacity=".4" stroke-width="1.1"/>
+  <path d="M122 260 L172 282 L450 283 L496 267 L488 285 L156 291 L105 273 Z" fill="#20291c" stroke="#616d55" stroke-width="1.5"/>
+  <path id="thumb-forward" d="M192 184 L273 159 L295 175 L207 208 Z" fill="url(#button)" stroke="#121b11" stroke-width="2.5"/>
+  <path id="thumb-back" d="M283 156 L375 153 L400 172 L305 181 Z" fill="url(#button)" stroke="#121b11" stroke-width="2.5"/>
+  <path id="dpi-shift" d="M154 222 L190 204 L221 240 L186 258 Z" fill="url(#button)" stroke="#131d12" stroke-width="2.5"/>
+  <path d="M218 128 L230 115 L250 111 L243 136 Z" fill="#5c6855" stroke="#1c2419"/>
+  <path d="M252 110 L268 105 L281 106 L276 123 Z" fill="#5c6855" stroke="#1c2419"/>
+  <path d="M225 139 L237 135 L245 144 L235 149 Z M239 134 L251 130 L259 139 L249 144 Z M253 129 L265 125 L273 134 L263 139 Z" fill="#727f66"/>
+  <path d="M107 239 L141 221 M299 107 Q399 107 463 161" stroke="#9ba68e" opacity=".25" fill="none" stroke-width="2"/>
+</svg>
