@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 
-def fixture_snapshot(simulation=False, **unused):
+def fixture_snapshot(simulation=False, simulation_adapter=None, **unused):
     if not simulation:
         raise RuntimeError('Artwork screenshots require --simulate')
     from devices import Capability, Device, DeviceManager

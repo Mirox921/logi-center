@@ -10,9 +10,9 @@ Mice, keyboards and audio. One interface, existing Linux backends.</p>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8abd88?style=flat-square" alt="License: MIT"></a>
   <a href="https://github.com/Mirox921/logi-center/stargazers"><img src="https://img.shields.io/github/stars/Mirox921/logi-center?style=flat-square" alt="GitHub stars"></a>
 </p>
-<p align="center"><a href="README.ru.md">Русский</a> · <a href="https://github.com/Mirox921/logi-center/releases/tag/v0.5.0">Download v0.5.0</a> · <a href="docs/backend-support.md">Device support</a> · <a href="https://github.com/Mirox921/logi-center/issues">Report an issue</a></p>
+<p align="center"><a href="README.ru.md">Русский</a> · <a href="https://github.com/Mirox921/logi-center/releases/tag/v0.5.1">Download v0.5.1</a> · <a href="docs/backend-support.md">Device support</a> · <a href="https://github.com/Mirox921/logi-center/issues">Report an issue</a></p>
 
-![Logi Center QML dashboard with connected Linux peripherals](docs/screenshots/releases/v0.5.0/dashboard.png)
+![Logi Center QML dashboard with connected Linux peripherals](docs/screenshots/releases/v0.5.1/dashboard.png)
 
 ## A new foundation
 
@@ -32,12 +32,12 @@ working Linux implementation.
 
 <table>
 <tr>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/mouse-side.png"><img src="docs/screenshots/releases/v0.5.0/mouse-side.png" alt="G502 HERO interactive side-view button editor" width="100%"></a><br><sub>Mouse buttons — accurate SVG artwork, selectable buttons and assignment drafts.</sub></td>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/keyboard.png"><img src="docs/screenshots/releases/v0.5.0/keyboard.png" alt="Ace68-II key selection and actuation editor" width="100%"></a><br><sub>Keyboard — selectable keys and firmware-scoped actuation/Rapid Trigger controls.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/mouse-side.png"><img src="docs/screenshots/releases/v0.5.1/mouse-side.png" alt="G502 HERO interactive side-view button editor" width="100%"></a><br><sub>Mouse buttons — accurate SVG artwork, selectable buttons and assignment drafts.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/keyboard.png"><img src="docs/screenshots/releases/v0.5.1/keyboard.png" alt="Ace68-II key selection and actuation editor" width="100%"></a><br><sub>Keyboard — selectable keys and firmware-scoped actuation/Rapid Trigger controls.</sub></td>
 </tr>
 <tr>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/mouse-lighting.png"><img src="docs/screenshots/releases/v0.5.0/mouse-lighting.png" alt="G502 native lighting modes and animation parameters" width="100%"></a><br><sub>Lighting — native effects and effect-specific settings where supported.</sub></td>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/audio.png"><img src="docs/screenshots/releases/v0.5.0/audio.png" alt="Linux audio output selector, volume and mute controls" width="100%"></a><br><sub>Audio — server endpoints, defaults, volume, mute and optional effects.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/mouse-lighting.png"><img src="docs/screenshots/releases/v0.5.1/mouse-lighting.png" alt="G502 native lighting modes and animation parameters" width="100%"></a><br><sub>Lighting — native effects and effect-specific settings where supported.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/audio.png"><img src="docs/screenshots/releases/v0.5.1/audio.png" alt="Linux audio output selector, volume and mute controls" width="100%"></a><br><sub>Audio — server endpoints, defaults, volume, mute and optional effects.</sub></td>
 </tr>
 </table>
 
@@ -85,7 +85,7 @@ See the [action-level matrix](docs/qml-parity.md) for remaining limits.
 
 ## Download and run
 
-Download the source archive or Arch package from [v0.5.0](https://github.com/Mirox921/logi-center/releases/tag/v0.5.0).
+Download the source archive or Arch package from [v0.5.1](https://github.com/Mirox921/logi-center/releases/tag/v0.5.1).
 Check `SHA256SUMS` before using the release assets. This is a Python/Qt application,
 not a self-contained AppImage; the runtime dependencies must be installed.
 

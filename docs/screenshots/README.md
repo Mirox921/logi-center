@@ -1,21 +1,21 @@
 # Release screenshots
 
-The current gallery is [v0.5.0](releases/v0.5.0/): nine English screenshots of
+The current gallery is [v0.5.1](releases/v0.5.1/): nine English screenshots of
 the actual Qt6/QML application on Hyprland/Wayland workspace 9. The capture
 script checks its own window's workspace before each image, queries live data
 with a write/capture/playback guard, and restores the original workspace.
 Language changes are not persisted. No synthetic device values are inserted.
 `capture.json` records only image dimensions, language, workspace and platform.
 
-- [Dashboard](releases/v0.5.0/dashboard.png)
-- [G502 top view](releases/v0.5.0/mouse-buttons.png)
-- [G502 side view](releases/v0.5.0/mouse-side.png)
-- [Native mouse lighting](releases/v0.5.0/mouse-lighting.png)
-- [Keyboard trigger editor](releases/v0.5.0/keyboard.png)
-- [Keyboard lighting](releases/v0.5.0/keyboard-lighting.png)
-- [Audio](releases/v0.5.0/audio.png)
-- [Settings](releases/v0.5.0/settings.png)
-- [Diagnostics](releases/v0.5.0/diagnostics.png)
+- [Dashboard](releases/v0.5.1/dashboard.png)
+- [G502 top view](releases/v0.5.1/mouse-buttons.png)
+- [G502 side view](releases/v0.5.1/mouse-side.png)
+- [Native mouse lighting](releases/v0.5.1/mouse-lighting.png)
+- [Keyboard trigger editor](releases/v0.5.1/keyboard.png)
+- [Keyboard lighting](releases/v0.5.1/keyboard-lighting.png)
+- [Audio](releases/v0.5.1/audio.png)
+- [Settings](releases/v0.5.1/settings.png)
+- [Diagnostics](releases/v0.5.1/diagnostics.png)
 
 Reproduce intentionally in a live Hyprland 0.55+ Lua session:
 
@@ -33,7 +33,7 @@ reference renders in `tests/fixtures/artwork/g502`, not review output.
 ## Historical reviews
 
 The 2241 development-review screenshots were removed from the current Git
-snapshot for v0.5.0 and preserved in an external local archive. They are not
+snapshot for v0.5.1 and preserved in an external local archive. They are not
 required to run the app or reproduce the tests. Links in historical progress
 notes refer here rather than to unavailable development-only GitHub commits.
 

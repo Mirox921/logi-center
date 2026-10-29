@@ -62,7 +62,7 @@ def exercise(app,root,bridge,finish):
 
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--output',default=str(ROOT/'docs/screenshots/releases/v0.5.0'))
+    parser.add_argument('--output',default=str(ROOT/'docs/screenshots/releases/v0.5.1'))
     options=parser.parse_args()
     previous=json.loads(subprocess.check_output(['hyprctl','-j','activeworkspace'],text=True))['id']
     os.environ.update(QT_QPA_PLATFORM='wayland',QT_QPA_PLATFORMTHEME='generic',

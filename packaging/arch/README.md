@@ -13,7 +13,7 @@ Use a new empty directory for another build. The preparation script writes an ex
 After reviewing the built package, installation is an explicit user action:
 
 ```sh
-sudo pacman -U ./logi-center-0.5.0-1-any.pkg.tar.zst
+sudo pacman -U ./logi-center-0.5.1-1-any.pkg.tar.zst
 ```
 
 Update by preparing/building the new checkout and installing its package. Remove with `sudo pacman -R logi-center`. Preferences, drafts, backups and EasyEffects presets in the home directory are preserved.

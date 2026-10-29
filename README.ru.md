@@ -2,9 +2,9 @@
 <h1 align="center">LOGI / CENTER</h1>
 <p align="center"><strong>Центр управления периферией Linux на Qt6/QML.</strong><br>
 Мыши, клавиатуры и аудио — один интерфейс поверх существующих Linux-backend.</p>
-<p align="center"><a href="README.md">English</a> · <a href="https://github.com/Mirox921/logi-center/releases/tag/v0.5.0">Скачать v0.5.0</a> · <a href="docs/backend-support.md">Поддержка устройств</a> · <a href="https://github.com/Mirox921/logi-center/issues">Сообщить о проблеме</a></p>
+<p align="center"><a href="README.md">English</a> · <a href="https://github.com/Mirox921/logi-center/releases/tag/v0.5.1">Скачать v0.5.1</a> · <a href="docs/backend-support.md">Поддержка устройств</a> · <a href="https://github.com/Mirox921/logi-center/issues">Сообщить о проблеме</a></p>
 
-![Новый Dashboard Logi Center на Qt6/QML](docs/screenshots/releases/v0.5.0/dashboard.png)
+![Новый Dashboard Logi Center на Qt6/QML](docs/screenshots/releases/v0.5.1/dashboard.png)
 
 ## Новая основа
 
@@ -23,12 +23,12 @@ capabilities устройства, прошивки и backend. Наличие �
 
 <table>
 <tr>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/mouse-side.png"><img src="docs/screenshots/releases/v0.5.0/mouse-side.png" alt="Назначения кнопок G502 HERO" width="100%"></a><br><sub>Мышь: SVG, интерактивные кнопки и черновики назначений.</sub></td>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/keyboard.png"><img src="docs/screenshots/releases/v0.5.0/keyboard.png" alt="Выбор клавиш Ace68-II" width="100%"></a><br><sub>Клавиатура: выбор клавиш, срабатывание и Rapid Trigger.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/mouse-side.png"><img src="docs/screenshots/releases/v0.5.1/mouse-side.png" alt="Назначения кнопок G502 HERO" width="100%"></a><br><sub>Мышь: SVG, интерактивные кнопки и черновики назначений.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/keyboard.png"><img src="docs/screenshots/releases/v0.5.1/keyboard.png" alt="Выбор клавиш Ace68-II" width="100%"></a><br><sub>Клавиатура: выбор клавиш, срабатывание и Rapid Trigger.</sub></td>
 </tr>
 <tr>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/mouse-lighting.png"><img src="docs/screenshots/releases/v0.5.0/mouse-lighting.png" alt="Подсветка мыши" width="100%"></a><br><sub>Подсветка: штатные эффекты устройства и параметры, доступные через backend.</sub></td>
-<td width="50%"><a href="docs/screenshots/releases/v0.5.0/audio.png"><img src="docs/screenshots/releases/v0.5.0/audio.png" alt="Настройки аудио Linux" width="100%"></a><br><sub>Аудио: маршруты звукового сервера, громкость и mute.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/mouse-lighting.png"><img src="docs/screenshots/releases/v0.5.1/mouse-lighting.png" alt="Подсветка мыши" width="100%"></a><br><sub>Подсветка: штатные эффекты устройства и параметры, доступные через backend.</sub></td>
+<td width="50%"><a href="docs/screenshots/releases/v0.5.1/audio.png"><img src="docs/screenshots/releases/v0.5.1/audio.png" alt="Настройки аудио Linux" width="100%"></a><br><sub>Аудио: маршруты звукового сервера, громкость и mute.</sub></td>
 </tr>
 </table>
 
@@ -76,7 +76,7 @@ capabilities устройства, прошивки и backend. Наличие �
 
 ## Скачать и запустить
 
-В [релизе v0.5.0](https://github.com/Mirox921/logi-center/releases/tag/v0.5.0)
+В [релизе v0.5.1](https://github.com/Mirox921/logi-center/releases/tag/v0.5.1)
 доступны исходный архив и пакет Arch. Проверьте `SHA256SUMS` перед использованием.
 Это приложение Python/Qt, а не автономный AppImage: зависимости нужны отдельно.
 

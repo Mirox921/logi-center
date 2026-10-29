@@ -4,6 +4,13 @@ from device_service import collect_device_snapshot
 
 
 class DeviceServiceTests(unittest.TestCase):
+    def test_dashboard_fixture_accepts_discovery_callback_arguments(self):
+        from scripts.illustration_dashboard import fixture_snapshot
+        from simulation import SimulationAdapter
+        snapshot=fixture_snapshot(True,SimulationAdapter())
+        self.assertEqual(len(snapshot['manager'].devices),10)
+        self.assertTrue(all(d.simulated for d in snapshot['manager'].devices))
+
     def test_simulation_never_calls_real_command_runner(self):
         class OfflineSimulation:
             def discover(self):
