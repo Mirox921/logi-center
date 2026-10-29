@@ -6,11 +6,19 @@ on:
 jobs:
   tests:
     runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+      QT_QPA_PLATFORMTHEME: generic
+      QT_QUICK_BACKEND: software
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
+      - name: Install Cairo build and Qt runtime dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libcairo2-dev pkg-config libegl1 libopengl0 libgl1 libxkbcommon0
       - run: python -m pip install PyYAML PySide6 pycairo
       - run: python -m unittest -v
       - run: python -m compileall -q .
