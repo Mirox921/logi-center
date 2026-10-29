@@ -39,7 +39,7 @@ def run(argv=None):
     qml_dir = Path(os.environ.get('LOGI_CENTER_QML_ROOT', Path(__file__).resolve().parent / 'qml')).resolve()
     from logi_center.resources import assets_dir as resource_assets, configure_engine
     assets_dir = resource_assets()
-    app.setWindowIcon(QIcon(str(assets_dir/'brand/logi-mark.svg')))
+    app.setWindowIcon(QIcon(str(assets_dir/'icons/logi-mark.svg')))
     app.setDesktopFileName('logi-center')
     loaded_families = []
     for font_path in (assets_dir / 'fonts' / 'NotoSans-Regular.ttf',
