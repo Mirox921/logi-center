@@ -23,6 +23,8 @@ jobs:
       - run: python -m unittest -v
       - run: python -m compileall -q .
       - run: python scripts/check_release.py
+      - run: python scripts/eweadn_read_diagnostics.py --help
+      - run: python scripts/g515_read_diagnostics.py --help
       - run: python -m build --wheel --outdir /tmp/logi-wheel
       - run: python scripts/check_package.py /tmp/logi-wheel/*.whl
       - run: test -f assets/mice/g502_transparent_wired.svg && test -f assets/mice/g502_wireless.svg && test -f assets/mice/g502_hero_side_wired_fixed.svg && test -f assets/mice/g502_hero_side_wireless.svg

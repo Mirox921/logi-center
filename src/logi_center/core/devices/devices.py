@@ -34,6 +34,7 @@ class Device:
     faults:list=field(default_factory=list)
     backends:list=field(default_factory=list)
     targets:dict=field(default_factory=dict)
+    private_identity:dict=field(default_factory=dict,repr=False)
     def __post_init__(self):
         if not self.backends:self.backends=[self.backend]
         if not self.targets:self.targets={self.backend:[self.target]}
@@ -96,7 +97,7 @@ class DeviceManager:
             if key not in merged:merged[key]=item;continue
             current=merged[key]
             if current.kind=='input':current.kind=item.kind
-            if current.backend=='linux-input' and item.backend!='linux-input':
+            if current.backend=='linux-input' and item.backend not in ('linux-input','solaar-local'):
                 current.name=item.name;current.kind=item.kind;current.backend=item.backend;current.target=item.target
                 if item.connection!='unknown' or item.backend=='mchose':
                     # The input bus identifies a USB receiver, not necessarily

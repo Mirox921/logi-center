@@ -32,7 +32,7 @@ CutCard {
         RowLayout {
             Layout.fillWidth: true
             StyledText { text: root.currentField.label; font.family: Theme.displayFont; font.pixelSize: 15; color: Theme.text; wrapMode: Text.Wrap; Layout.fillWidth: true }
-            StyledText { text: root.currentField.conflict ? root.windowRef.tr("Конфликт черновика") : root.currentField.dirty ? root.windowRef.tr("Не сохранено") : ""; color: root.currentField.conflict ? Theme.error : Theme.warning; font.family: Theme.dataFont; font.pixelSize: 12 }
+            StyledText { text: root.currentField.conflict ? root.windowRef.tr("Конфликт черновика") : root.currentField.dirty ? root.windowRef.tr(root.currentField.state === "sent_unverified" ? "Отправлено, не подтверждено" : "Не сохранено") : ""; color: root.currentField.conflict ? Theme.error : Theme.warning; font.family: Theme.dataFont; font.pixelSize: 12; wrapMode: Text.Wrap; Layout.maximumWidth: 160 }
         }
         StyledText { visible: root.currentField.mixed===true; text: root.windowRef.tr("Разные значения"); color: Theme.warning; font.family: Theme.dataFont; font.pixelSize: 12 }
         RowLayout {

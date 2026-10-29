@@ -289,6 +289,23 @@ class Editor(unittest.TestCase):
         end=time.monotonic()+4
         while self.ed.busy and time.monotonic()<end:self.app.processEvents();time.sleep(.002)
         self.app.processEvents();self.assertFalse(self.ed.busy)
+
+    def test_partial_read_keeps_identity_but_disables_configuration_and_preserves_draft(self):
+        self.ed.edit('eweadn:sensor_config:debounce',7)
+        original=self.wire.read_page
+        def read(page):
+            if page==64:
+                from logi_center.core.services.execution import FaultCode
+                raise Fault(FaultCode.TIMEOUT,'eweadn','Page 64 timed out')
+            return original(page)
+        self.wire.read_page=read
+        self.ed.reload();self.wait()
+        self.assertTrue(self.ed.eweadnState['partial'])
+        self.assertEqual(self.ed.eweadnContext,'')
+        self.assertEqual(self.ed.eweadnDpi,[])
+        self.assertFalse(any(c.writable for c in self.device.capabilities))
+        self.assertTrue(self.ed._pending)
+        self.assertEqual(self.writes,[])
     def tearDown(self):
         self.ed.shutdown();self.pool.shutdown(wait=True);self.owner._preferences_pool.shutdown(wait=True);self.tmp.cleanup()
     def test_draft_cancel_apply_and_native_confirmation(self):

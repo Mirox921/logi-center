@@ -63,6 +63,9 @@ def main():
         ('rgb_idle_timeout','1 Minute',['Disabled','15 Seconds','30 Seconds','1 Minute','2 Minutes','5 Minutes']),
         ('rgb_sleep_timeout','5 Minutes',['Disabled','2 Minutes','5 Minutes','10 Minutes','15 Minutes','30 Minutes'])]]
     settings[1]['native_brightness']={'minimum':0,'maximum':100,'levels':[0,13,25,50,100]}
+    from tests.integration.test_hardware_diagnostics import RGB
+    settings.append({'key':'rgb_zone_1','native_rgb':RGB})
+    ed._g515_rgb_info=RGB
     ed._g515=g515_controls(settings,saved,device.id);ed._build()
     from logi_center.resources import configure_engine
     engine=QQmlApplicationEngine();configure_engine(engine);engine.addImportPath(str(ROOT/'src/logi_center/qml_ui/qml'))
@@ -94,7 +97,9 @@ ApplicationWindow {
                 if section=='lighting':
                     brightness=ed.g515Fields['g515:brightness_control']
                     assert brightness['kind']=='choice' and brightness['choices']==[0,13,25,50,100]
-                    ed.edit('g515:effect',10);wait()
+                    ed.edit('g515:effect',22 if lang=='ru' else 23);wait()
+                    selected=ed.g515Fields['g515:effect']['choices']
+                    assert selected==[1,10,21,22,23]
                 if section=='freestyle':
                     key=visual(window.contentItem(),'g515-key-23');assert key and key.isEnabled()
                     point=key.mapToScene(key.boundingRect().center()).toPoint()
@@ -115,8 +120,9 @@ ApplicationWindow {
         deadline=time.monotonic()+3
         while ed.busy and time.monotonic()<deadline:wait(10)
         assert not ed.busy and ed.resultState=='sent_unverified'
-        assert len(owner.calls)==6 and all(c[0]=='solaar' for c in owner.calls)
+        assert len(owner.calls)==7 and all(c[0]=='solaar' for c in owner.calls)
         assert ed.dirtyCount==4,'Unverified drafts were lost'
+        assert window.grabWindow().save(str(folder/'freestyle-sent-unverified.png'))
         assert not errors,errors
         print('PASS: G515 RU/EN 640/1280, key click, four drafts, guarded fake Apply; 10 screenshots; no hardware I/O.')
     finally:

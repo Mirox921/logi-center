@@ -154,3 +154,5 @@ serialization and DiagnosticController.sync/inventory. Discovery performs only
 existing read operations. The user reported a successful live S9 check with the
 keyword fix; this development run used fake devices and did not perform new
 physical S9 writes. Existing transport/timeout and wake/retry behavior remains.
+
+Read-timeout instrumentation and remote collection commands: [hardware-read-diagnostics.md](hardware-read-diagnostics.md). Partial status reads never enable configuration writes.

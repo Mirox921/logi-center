@@ -45,7 +45,8 @@ are not bundled as application assets. GTK remains default.
 | Fixed, off, breathing, cycle | Service-backed existing native effect IDs; local metadata; target Solaar validates actual zone support on Apply. Physical G515 operation remains unverified. |
 | Effect timing/intensity, overall brightness | Backend ranges; explicit Apply. No claim about persistence after closing the application. |
 | Freestyle, groups and color counts | Implemented via saved known zones and existing 0x8081 setting; mock-tested. Requires a Solaar build providing `per-key-lighting` and an existing saved zone map. |
-| Wave, Ripple, Pulsar Point, Starlight, Echo Press | No verified G515-specific effect enumeration in current application snapshot; not exposed as working presets. A global protocol effect enum is not device capability evidence. |
+| Wave, Ripple | Exposed only when the initialized device-zone validator enumerates their IDs and parameters. Physical behavior remains pending remote verification. |
+| Pulsar Point, Starlight, Echo Press | No verified device-specific implementation; not exposed as working presets. |
 | Screen sampler, audio visualizer, custom animations / playback modes | Host effects/editor not implemented. Animation tab explains this; no decorative playback/speed controls. |
 | BASE/FN/G-SHIFT; press/hold/release; action/command/key/macro/system assignment | No verified G515 mapping API in existing adapter. Clearly unavailable; LED zone IDs are never used to remap keys. |
 | Onboard slot, startup/PC-state behavior, reset, firmware updates | No verified safe service in current G515 adapter. Saved startup/shutdown fields alone do not establish write support; installed persistent-animation allowlist does not establish G515 support. |
@@ -93,3 +94,6 @@ The original ROOT-ping-only gate and cache-only G515 loader above are superseded
 by [g515-settings-fix.md](g515-settings-fix.md). Scoped read-only Solaar getters
 now take precedence, False RGB control does not hide settings, and local config
 is a fallback. No additional hardware feature or physical confirmation is implied.
+
+2026-10-29: scoped zone enumeration, Cycle saturation fix, LED Control verification,
+accurate unconfirmed states and receiver identity handling: [hardware-read-diagnostics.md](hardware-read-diagnostics.md).

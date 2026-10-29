@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from copy import deepcopy
 import math, re
-from logi_center.core.services.operations import plan_for, same
+from logi_center.core.services.operations import plan_for, same, Observation
 from logi_center.core.services.execution import Fault, FaultCode
 from logi_center.i18n import tr as _, canonical_text
 
@@ -392,21 +392,37 @@ def g515_controls(settings,saved,identity='G515',target='G515',sources=None):
             encode=lambda v,choices=values,displayed=text:canonical_text(displayed[choices.index(v)])))
         result[-1].decode=lambda v,choices=values,displayed=text:next((c for c,t in zip(choices,displayed) if canonical_text(t)==v),v)
     rgb=saved.get('rgb_zone_1')
-    if isinstance(rgb,dict):
-        try:effect=int(rgb.get('ID',1));color=int(str(rgb.get('color','0xffffff')),0)
-        except (ValueError,TypeError):return result
-        result.append(Control('g515:effect','Режим подсветки','lighting',effect,'keyboard:G515/effect','solaar','choice',[1,10,21,0],['Статичный цвет','Дыхание','Цикл цветов','Выключено'],source=sources.get('rgb_zone_1','local_saved_settings'),writable=True,factory=lambda v:None))
-        result.append(Control('g515:color','Цвет','lighting',[(color>>shift)&255 for shift in (16,8,0)],'keyboard:G515/color','solaar','color',source=sources.get('rgb_zone_1','local_saved_settings'),writable=True,factory=lambda v:None,encode=lambda v:'rgb('+','.join(str(x) for x in v)+')',decode=rgb_value))
-        for key,label,low,high,default in [('period','Период эффекта, мс',1000,20000,3000),('intensity','Интенсивность эффекта, %',0,100,100)]:
-            try:value=int(rgb[key])
-            except (ValueError,TypeError,KeyError):value=None
-            valid=value is not None and low<=value<=high
-            # Static/Off omit timing in Solaar's saved record. Keep animation
-            # controls available, explicitly labeling their initial values.
-            for mode in (10,21):
-                known=valid and effect==mode
+    metadata=next((entry.get('native_rgb') for entry in settings if entry.get('key')=='rgb_zone_1'),None)
+    if isinstance(rgb,dict) or metadata:
+        rgb=rgb if isinstance(rgb,dict) else {}
+        try:effect=int(rgb['ID']) if 'ID' in rgb else (None if metadata else 1);color=int(str(rgb.get('color','0xffffff')),0)
+        except (ValueError,TypeError):
+            if not metadata:return result
+            effect=None;color=0xffffff
+        specs=metadata['effects'] if metadata else [
+            {'id':v,'parameters':{p:{'minimum':lo,'maximum':hi,'default':default} for p,lo,hi,default in
+                [('period',1000,20000,3000),('intensity',0,100,100)]} if v in (10,21) else {}}
+            for v in (1,10,21,0)]
+        modes=[entry['id'] for entry in specs]
+        captions={0:'Выключено',1:'Статичный цвет',3:'Цикл цветов',4:'Волна',10:'Дыхание',11:'Рябь',21:'Цикл цветов',22:'Волна',23:'Рябь'}
+        result.append(Control('g515:effect','Режим подсветки','lighting',effect,'keyboard:G515/effect','solaar','choice',modes,[captions[v] for v in modes],source=sources.get('rgb_zone_1','unavailable' if not rgb else 'local_saved_settings'),writable=bool(modes),factory=lambda v:None))
+        result.append(Control('g515:color','Цвет','lighting',[(color>>shift)&255 for shift in (16,8,0)],'keyboard:G515/color','solaar','color',source=sources.get('rgb_zone_1','local_saved_settings') if 'color' in rgb else 'unavailable',writable=True,factory=lambda v:None,encode=lambda v:'rgb('+','.join(str(x) for x in v)+')',decode=rgb_value))
+        labels={'period':'Период эффекта, мс','intensity':'Интенсивность эффекта, %',
+                'saturation':'Насыщенность','direction':'Направление','speed':'Скорость эффекта'}
+        for spec in specs:
+            mode=spec['id']
+            for key,limits in spec['parameters'].items():
+                if key=='color':continue
+                choices=limits.get('choices',[])
+                low=limits.get('minimum',0);high=limits.get('maximum',255)
+                default=limits.get('default',choices[0] if choices else low)
+                try:value=int(rgb[key])
+                except (ValueError,TypeError,KeyError):value=None
+                known=effect==mode and value is not None and low<=value<=high and (not choices or value in choices)
+                label='Период эффекта' if key=='period' and mode in (11,23) else labels[key]
                 result.append(Control(f'g515:{key}:{mode}',label,'lighting',value if known else default,
-                    f'keyboard:{identity}/effect:{mode}/{key}','solaar','number',minimum=low,maximum=high,step=1,
+                    f'keyboard:{identity}/effect:{mode}/{key}','solaar','choice' if choices else 'number',choices,
+                    [str(v) for v in choices],minimum=low,maximum=high,step=1,
                     source=sources.get('rgb_zone_1','local_saved_settings') if known else 'unavailable',writable=True,factory=lambda v:None,
                     note='' if known else 'Начальное значение эффекта; аппаратное считывание недоступно.'))
         from logi_center.adapters.logitech.g515_layout import saved_colors
@@ -418,16 +434,41 @@ def g515_controls(settings,saved,identity='G515',target='G515',sources=None):
     return result
 
 
-def g515_lighting_plans(effect,color,period=3000,intensity=100,target='G515'):
-    if type(effect) is not int or effect not in (1,10,21,0) or len(color)!=3 or any(type(v) is not int or not 0<=v<=255 for v in color):raise ValueError('Invalid lighting setting')
-    if type(period) is not int or not 1000<=period<=20000 or type(intensity) is not int or not 0<=intensity<=100:raise ValueError('Invalid animation parameters')
-    # Static and Off do not accept animation parameters. Solaar validates the
-    # effect against the actual zone's capability list before any effect write.
+def g515_lighting_plans(effect,color,period=3000,intensity=100,target='G515',effect_info=None,parameters=None):
+    if type(effect) is not int or len(color)!=3 or any(type(v) is not int or not 0<=v<=255 for v in color):raise ValueError('Invalid lighting setting')
+    supported={entry['id']:entry['parameters'] for entry in effect_info['effects']} if effect_info else None
+    if supported is not None and effect not in supported or supported is None and effect not in (1,10,21,0):
+        raise ValueError('Effect is not exposed by this device/backend')
     params=['ID: '+str(effect)]
-    if effect in (1,10):params.append('color: 0x'+''.join(f'{v:02x}' for v in color))
-    if effect in (10,21):params.extend(['period: '+str(period),'intensity: '+str(intensity)])
+    if supported is None:
+        if type(period) is not int or not 1000<=period<=20000 or type(intensity) is not int or not 0<=intensity<=100:raise ValueError('Invalid animation parameters')
+        if effect in (1,10):params.append('color: 0x'+''.join(f'{v:02x}' for v in color))
+        if effect in (10,21):params.extend(['period: '+str(period),'intensity: '+str(intensity)])
+        # 0x15 has a saturation byte. Solaar's serializer zero-fills omitted
+        # parameters: omission produces a desaturated, apparently static cycle.
+        if effect==21:params.append('saturation: 255')
+    else:
+        values={'period':period,'intensity':intensity,**(parameters or {})}
+        for name,limits in supported[effect].items():
+            if name=='color':params.append('color: 0x'+''.join(f'{v:02x}' for v in color));continue
+            value=values.get(name,limits.get('default'))
+            if value is None and limits.get('choices'):value=limits['choices'][0]
+            if type(value) is not int or not limits.get('minimum',0)<=value<=limits.get('maximum',255):raise ValueError('Invalid native effect parameter')
+            if limits.get('choices') and value not in limits['choices']:raise ValueError('Unsupported native effect choice')
+            params.append(name+': '+str(value))
     value='!LEDEffectSetting {'+', '.join(params)+'}'
-    return [plan_for(['solaar','config',target,'rgb_control','true']),plan_for(['solaar','config',target,'rgb_zone_1',value])]
+    effect_plan=plan_for(['solaar','config',target,'rgb_zone_1',value])
+    if effect_info and effect_info['readable']:
+        import yaml
+        wanted=yaml.load(value,Loader=yaml.BaseLoader)
+        effect_plan.expected={k:int(v,0) for k,v in wanted.items()}
+        def reader(run):
+            from logi_center.adapters.logitech.g515_adapter import parse_value
+            actual,_=parse_value('rgb_zone_1',run(effect_plan.command[:4]))
+            return Observation(
+                {k:int(str(actual[k]),0) for k in wanted},'device')
+        effect_plan.reader=reader
+    return [plan_for(['solaar','config',target,'rgb_control','true']),effect_plan]
 
 
 def operation_message(result):

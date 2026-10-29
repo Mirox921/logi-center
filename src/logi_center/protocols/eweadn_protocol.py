@@ -28,14 +28,33 @@ def packet(main,sub=0,data=b'',encap=0):
     return bytes([REPORT_ID])+result
 
 
+class ResponseError(ValueError):
+    def __init__(self,reason,expected=None,actual=None):
+        self.reason=reason;self.expected=expected;self.actual=actual
+        super().__init__('Invalid EWEADN response: '+reason)
+
+
 def response(raw,page,encap=0):
     raw=bytes(raw)
     if len(raw)==64:
-        if raw[0]!=REPORT_ID:raise ValueError('Wrong feature report')
+        if raw[0]!=REPORT_ID:raise ResponseError('report_id',REPORT_ID,raw[0])
         raw=raw[1:]
-    if len(raw)<6 or raw[0] not in (0x50,0x65) or raw[1]!=0 or not 1<=raw[2]<=len(raw)-5 or raw[3]!=encap or raw[4]!=page:
-        raise ValueError('Stale, acknowledgement or unrelated response')
+    elif raw[:1]==bytes([REPORT_ID]):raw=raw[1:]
+    if len(raw)<6:raise ResponseError('short_header')
+    if raw[0]!=0x50:raise ResponseError('command_type',0x50,raw[0])
+    if raw[1]!=0:raise ResponseError('ack',0,raw[1])
+    if not 1<=raw[2]<=min(10,len(raw)-5):raise ResponseError('payload_length')
+    if raw[3]!=encap:raise ResponseError('encapsulation',encap,raw[3])
+    if raw[4]!=page:raise ResponseError('offset',page,raw[4])
     return raw[5:5+raw[2]]
+
+
+def model_identity(model):
+    if len(model)<8:raise ValueError('Short EWEADN model reply')
+    model_id=MODELS.get(int.from_bytes(model[2:8],'big'))
+    if model_id is None:raise ValueError('Receiver model is not a verified S9 revision')
+    return {'model_id':model_id,'name':NAMES[model_id],
+            'firmware_version':f'0x{int.from_bytes(model[:2],"little"):04x}'}
 
 
 def basics(raw):

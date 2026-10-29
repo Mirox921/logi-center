@@ -10,7 +10,7 @@ from logi_center.core.capabilities.model import Capability
 from logi_center.core.discovery.identity import identity, usb_identity
 from logi_center.core.services.execution import Fault,FaultCode
 from logi_center.core.services.operations import Plan,Observation
-from logi_center.protocols.eweadn_protocol import REPORT_ID,PACKET_SIZE,FIELDS,RATES,decode,basics,packet,response,prepare
+from logi_center.protocols.eweadn_protocol import REPORT_ID,PACKET_SIZE,FIELDS,RATES,decode,basics,packet,response,prepare,model_identity,ResponseError
 
 # Official Hub lists both shared receivers and model-specific wired products.
 SUPPORTED_IDS={('372e',p) for p in ('1026','1027','103d','105e','1029','108d')}
@@ -37,8 +37,19 @@ def candidates(root='/sys/class/hidraw'):
 def selector(item):return identity(item['physical']+'|'+item['generation']+'|'+item['descriptor'])
 
 
+class ReadTrace:
+    """Protocol/timing metadata only: never reports, selectors or setting values."""
+    def __init__(self,sink=None):self.started=time.monotonic();self.events=[];self.sink=sink
+    def record(self,event,**fields):
+        row={'event':event,'elapsed_ms':round((time.monotonic()-self.started)*1000,1),**fields}
+        if len(self.events)<1024:self.events.append(row)
+        if self.sink:self.sink(row)
+
+
 class Transport:
-    def __init__(self,node):self.node=node
+    def __init__(self,node,trace=None):self.node=node;self.trace=trace
+    def record(self,event,**fields):
+        if self.trace:self.trace.record(event,**fields)
     def __enter__(self):
         self.fd=os.open(self.node,os.O_RDWR|os.O_NONBLOCK)
         try:fcntl.flock(self.fd,fcntl.LOCK_EX|fcntl.LOCK_NB)
@@ -48,40 +59,73 @@ class Transport:
     def __exit__(self,*args):os.close(self.fd)
     def send(self,main,sub,data=b'',encap=0):
         buf=packet(main,sub,data,encap);request=(3<<30)|(len(buf)<<16)|(ord('H')<<8)|6
-        fcntl.ioctl(self.fd,request,buf)
+        self.record('set_feature_start')
+        result=fcntl.ioctl(self.fd,request,buf)
+        self.record('set_feature_end',count=result if type(result) is int else None)
     def get(self):
         buf=bytearray(64);buf[0]=REPORT_ID
-        fcntl.ioctl(self.fd,(3<<30)|(64<<16)|(ord('H')<<8)|7,buf,True)
-        return bytes(buf)
+        self.record('get_feature_start')
+        result=fcntl.ioctl(self.fd,(3<<30)|(64<<16)|(ord('H')<<8)|7,buf,True)
+        self.record('get_feature_end',count=result if type(result) is int else None)
+        # HIDIOCGFEATURE returns the actual byte count including report ID.
+        # The allocated buffer's zero-filled tail is not device data.
+        if type(result) is not int or not 1<=result<=len(buf):raise ResponseError('feature_length')
+        return bytes(buf[:result])
     def read_page(self,page):
         # No background reader threads, lost replies, unbounded wake loops or
         # configuration retries. A stalled ioctl dies with the SDK deadline.
         needed={0:20,64:10,65:57,128:8,129:7}.get(page)
         if needed is None:raise ValueError('Page is not allowlisted')
         data=b''
+        self.record('page_start',page=page,required=needed)
         for index in range((needed+9)//10):
             chunk=None
             for attempt in range(3):
+                self.record('request',page=page,chunk=index,offset=page+index,attempt=attempt+1)
                 self.send(79,page+index,encap=index)
                 until=time.monotonic()+.85
                 while time.monotonic()<until:
                     time.sleep(.08)
-                    try:chunk=response(self.get(),page+index,index);break
-                    except ValueError:continue
+                    try:
+                        chunk=response(self.get(),page+index,index)
+                        if len(chunk)<min(10,needed-len(data)):
+                            total=len(data)+len(chunk)
+                            if page==65 and total==41 or page==0 and total in (12,16):
+                                # A real short final frame can end a documented
+                                # single-axis/short-key page. decode still checks
+                                # axis availability and every complete key slot.
+                                self.record('response',page=page,chunk=index,size=len(chunk))
+                                self.record('page_partial',page=page,size=total)
+                                return data+chunk
+                            raise ResponseError('short_chunk')
+                        self.record('response',page=page,chunk=index,size=len(chunk));break
+                    except ValueError as error:
+                        chunk=None
+                        self.record('response_rejected',page=page,chunk=index,reason=getattr(error,'reason','invalid_response'),
+                                    expected=getattr(error,'expected',None),actual=getattr(error,'actual',None))
                 if chunk is not None:break
             if chunk is None:
-                if page==0 and len(data)>=12:return data  # base S9 exposes three slots
-                if page==65 and len(data)>=41:return data  # independent Y may be absent
-                raise Fault(FaultCode.TIMEOUT,'eweadn','No matching page response; move the mouse to wake it and retry')
+                if page in (0,65) and len(data)>={0:12,65:41}[page]:
+                    self.record('page_partial',page=page,size=len(data));return data
+                self.record('protocol_timeout',page=page,chunk=index)
+                raise Fault(FaultCode.TIMEOUT,'eweadn',f'No matching page response (page {page}, chunk {index}); move the mouse to wake it and retry')
             data+=chunk
-            if len(data)>=needed:return data[:needed]
+            if len(data)>=needed:
+                self.record('page_complete',page=page,size=needed);return data[:needed]
         return data
 
 
-def read_state(device,connection):
+def read_state(device,connection,allow_partial=False):
     model=device.read_page(128)
+    info=model_identity(model)  # Shared receiver VID/PID alone never validates S9.
     pages={128:model}
-    for page in (129,64,65,0):pages[page]=device.read_page(page)
+    for page in (129,64,65,0):
+        try:pages[page]=device.read_page(page)
+        except Fault as error:
+            if not allow_partial:raise
+            return dict(info,connection=connection,partial=True,
+                **(basics(pages[129]) if 129 in pages else {}),
+                read_error={'code':error.code.value,'page':page,'message':error.message})
     return decode(pages,connection)
 
 
@@ -93,6 +137,29 @@ def hardware(action,target,field=None,value=None,transport=Transport):
     matches=[item for item in candidates() if selector(item)==target]
     if len(matches)!=1:raise Fault(FaultCode.DISCONNECTED,'eweadn','Exact validated HID interface is absent or ambiguous')
     item=matches[0];connection='wireless' if item['pid'] in WIRELESS else 'usb'
+    if action=='diagnose':
+        import sys
+        trace=ReadTrace(lambda row:print('LOGI_EWEADN_TRACE '+json.dumps(row),file=sys.stderr,flush=True))
+        try:
+            # Only existing allowlisted page reads, never setters or reset paths.
+            trace.record('open_start')
+            with transport(item['node']) as device:
+                trace.record('open_complete')
+                if isinstance(device,Transport):device.trace=trace
+                pages={}
+                for page in (128,129,64,65,0):
+                    trace.record('diagnostic_page',page=page)
+                    payload=device.read_page(page)
+                    if page==128:model_identity(payload)
+                    pages[page]=payload
+                trace.record('decode_start')
+                decode(pages,connection)
+                trace.record('decode_complete')
+            return {'state':'complete','events':trace.events}
+        except Exception as error:
+            from logi_center.core.services.diagnostics import fault_for
+            trace.record('diagnostic_failed',code=fault_for(error,'eweadn').code.value)
+            return {'state':'failed','events':trace.events}
     with transport(item['node']) as device:
         if action=='status':
             from logi_center.protocols.eweadn_protocol import MODELS
@@ -100,7 +167,7 @@ def hardware(action,target,field=None,value=None,transport=Transport):
             if len(model)<8 or int.from_bytes(model[2:8],'big') not in MODELS:
                 raise Fault(FaultCode.DEVICE_UNSUPPORTED,'eweadn','Receiver is no longer paired with a verified S9 model')
             return basics(device.read_page(129))
-        state=read_state(device,connection)
+        state=read_state(device,connection,allow_partial=action=='read')
         if item['pid'] in ('103d','1029'):state['max_report']=0  # 1 kHz receiver / wired S9 Pro
         if action=='read':return state
         if action!='set' or field not in (*FIELDS,'factory_reset'):raise Fault(FaultCode.BACKEND_UNSUPPORTED,'eweadn','Unknown or unsafe operation')
@@ -155,7 +222,11 @@ def reset_plan(target,state,confirmed):
 def capabilities(target,state):
     caps=[]
     for name in ('model_id','firmware_version','battery_status','charging','profiles','max_dpi','max_report','writable_buttons'):
-        caps.append(Capability(name,'eweadn',True,True,False,False,state.get(name),'device'))
+        if name in state:caps.append(Capability(name,'eweadn',True,True,False,False,state[name],'device'))
+    if state.get('partial'):
+        caps.append(Capability('onboard_configuration','eweadn',True,False,False,False,None,'unavailable',
+            limitation='Only partial device data was read; full configuration is required before writing.'))
+        return caps
     for field in FIELDS:
         cap=Capability(field,'eweadn',True,True,True,True,state[field],'device')
         cap.plan=lambda changes,f=field:setting_plan(target,f,changes,state)
@@ -195,6 +266,8 @@ class EweadnAdapter:
             if len(matches)==1:
                 try:
                     state=json.loads(self.run(['logi-sdk','eweadn','read',target]));name=state['name'];caps=capabilities(target,state)
+                    if state.get('partial'):
+                        error=state['read_error'];faults.append(Fault(FaultCode(error['code']),self.name,error['message']))
                 except Exception as error:
                     from logi_center.core.services.diagnostics import fault_for
                     faults.append(fault_for(error,self.name))

@@ -85,10 +85,10 @@ class G515Editor(unittest.TestCase):
         self.editor.setSection('assignments');self.editor.setSection('freestyle');self.assertEqual(self.editor.dirtyCount,4)
         self.editor.discardGroup();self.assertEqual(self.editor.dirtyCount,0)
         self.paint();self.editor.applyGroup();self.wait()
-        self.assertEqual(len(self.calls),6);self.assertEqual(self.calls[0],['solaar','config','G515','rgb_control','true'])
-        self.assertIn('ID: 1',self.calls[1][-1])
-        self.assertEqual({c[-2] for c in self.calls[2:]},group_ids('wasd'))
-        self.assertTrue(all(c[-1]=='660510' for c in self.calls[2:]))
+        self.assertEqual(len(self.calls),7);self.assertEqual(self.calls[0],['solaar','config','G515','rgb_control','true'])
+        self.assertIn('ID: 1',self.calls[2][-1])
+        self.assertEqual({c[-2] for c in self.calls[3:]},group_ids('wasd'))
+        self.assertTrue(all(c[-1]=='660510' for c in self.calls[3:]))
         self.assertEqual(self.editor.resultState,'sent_unverified');self.assertEqual(self.editor.dirtyCount,4)
     def test_effect_drafts_and_period_are_applied_together(self):
         self.editor.setSection('lighting');self.editor.edit('g515:effect',21);self.editor.edit('g515:period:21',8000)
@@ -97,7 +97,7 @@ class G515Editor(unittest.TestCase):
         self.editor.edit('g515:effect',21)
         self.assertEqual(self.editor.g515Fields['g515:period:21']['value'],8000)
         self.assertNotIn('g515:period:10',self.editor.g515Fields)
-        self.editor.applyGroup();self.wait();self.assertEqual(len(self.calls),2)
+        self.editor.applyGroup();self.wait();self.assertEqual(len(self.calls),3)
         self.assertIn('period: 8000',self.calls[-1][-1]);self.assertIn('intensity: 55',self.calls[-1][-1])
     def test_no_writes_to_ambiguous_alias_or_after_disconnect(self):
         self.paint()
@@ -120,7 +120,7 @@ class G515Editor(unittest.TestCase):
             if 'per-key-lighting' in args:raise RuntimeError('fixture failure')
             return ''
         self.editor.runner=fail;self.editor.applyGroup();self.wait()
-        self.assertEqual(len(self.calls),3);self.assertEqual(self.editor.dirtyCount,4)
+        self.assertEqual(len(self.calls),4);self.assertEqual(self.editor.dirtyCount,4)
         self.assertNotEqual(self.editor.resultState,'confirmed')
     def test_selection_is_device_scoped_and_reload_never_writes(self):
         structural=[]
@@ -139,6 +139,37 @@ class G515Editor(unittest.TestCase):
         self.assertIn('g515:effect',[f.id for f in self.editor._g515])
         self.assertEqual(len(self.editor.g515Keys),87)
         self.assertEqual(self.calls,[])
+
+    def test_exact_paired_identity_routes_two_keyboards_without_name_matching(self):
+        self.device.private_identity={'solaar_serial':'abcd1234'}
+        other=Device('other','G515 LS TKL','keyboard','linux-input',physical='/test/other',
+                     private_identity={'solaar_serial':'1234abcd'})
+        self.manager.devices.append(other)
+        self.editor.keyboard_reader=lambda:dict(settings=[],saved=fixture(),sources={},target='abcd1234',reachable=True,errors=[])
+        self.editor.reload();self.wait()
+        self.assertEqual(self.editor._g515_target,'abcd1234')
+        self.assertEqual(self.editor._guard_g515(self.editor._binding,self.editor.epoch.token()),self.device)
+        other.private_identity={'solaar_serial':'abcd1234'}
+        from logi_center.core.services.execution import Fault
+        with self.assertRaises(Fault):self.editor._guard_g515(self.editor._binding,self.editor.epoch.token())
+
+    def test_readable_zone_confirms_each_control_as_a_scalar_not_a_cached_map(self):
+        from copy import deepcopy
+        from tests.integration.test_hardware_diagnostics import RGB
+        info=deepcopy(RGB);info['readable']=True
+        self.editor.keyboard_reader=lambda:dict(settings=[{'key':'rgb_zone_1','native_rgb':info}],
+            saved=fixture(),sources={'rgb_zone_1':'device'},target='G515',reachable=True,errors=[],rgb_capabilities=info)
+        self.editor.reload();self.wait();self.editor.setSection('lighting')
+        def runner(args,**kwargs):
+            self.calls.append(args)
+            if len(args)==4 and args[-1]=='rgb_control':return 'rgb_control = True\n'
+            if len(args)==4:return 'rgb_zone_1 = !LEDEffectSetting {ID: 21, saturation: 255, period: 5000, intensity: 100}\n'
+            return ''
+        self.editor.runner=runner;self.editor.edit('g515:effect',21)
+        self.editor.applyGroup();self.wait()
+        self.assertEqual(self.editor.resultState,'confirmed')
+        self.assertEqual(self.editor.g515Fields['g515:effect']['value'],21)
+        self.assertEqual(self.editor.dirtyCount,0)
 
     def test_native_brightness_apply_confirms_exact_mark_and_preserves_mismatched_draft(self):
         metadata={'minimum':0,'maximum':100,'levels':[0,13,25,50,100]}

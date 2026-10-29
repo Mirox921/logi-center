@@ -16,10 +16,16 @@ def public_name(text):
 def build_report(manager,components=()):
     devices=[]
     for index,device in enumerate(manager.devices):
-        caps=[]
+        caps=[];audio_routes={}
         for cap in device.capabilities:
             # Never export values, endpoint names, arbitrary choices, macros or drafts.
+            name=cap.name.rsplit(':',1)[-1]
+            setting=name if re.fullmatch(r'(?:rgb|led)_zone_[0-9]{1,2}',name) else public_name(name)
             choices=[v for v in cap.choices if type(v) in [int,float,bool] or v in ['off','on','cycle','breathing']][:128]
-            caps.append({'setting':cap.name.rsplit(':',1)[-1] if ':' in cap.name else public_name(cap.name),'backend':cap.backend,'supported':cap.supported,'readable':cap.readable,'writable':cap.writable,'verifiable':cap.verifiable,'source':cap.source,'observed_at':cap.observed_at,'minimum':cap.minimum,'maximum':cap.maximum,'step':cap.step,'choices':choices,'evidence':list(cap.evidence),'last_operation':{k:v for k,v in cap.last_operation.items() if k in ['state','source','at']},'limitation':public_name(cap.limitation)})
+            caps.append({'setting':setting,'backend':cap.backend,'supported':cap.supported,'readable':cap.readable,'writable':cap.writable,'verifiable':cap.verifiable,'source':cap.source,'observed_at':cap.observed_at,'minimum':cap.minimum,'maximum':cap.maximum,'step':cap.step,'choices':choices,'evidence':list(cap.evidence),'last_operation':{k:v for k,v in cap.last_operation.items() if k in ['state','source','at']},'limitation':public_name(cap.limitation)})
+            if cap.backend=='pactl' and cap.name.startswith(('output:','microphone:')):
+                route=cap.name.rsplit(':',1)[0]
+                audio_routes.setdefault(route,len(audio_routes)+1)
+                caps[-1].update(scope=route.split(':',1)[0],endpoint_id=audio_routes[route])
         devices.append({'report_id':index+1,'model':public_name(device.name) if device.kind!='audio' or device.backend=='headsetcontrol' else 'Audio endpoint','kind':device.kind,'vid':device.vid if re.fullmatch('[0-9a-fA-F]{4}',device.vid) else '', 'pid':device.pid if re.fullmatch('[0-9a-fA-F]{4}',device.pid) else '', 'connection':device.connection,'connected':device.connected,'backends':device.backends,'simulated':device.simulated,'capabilities':caps,'faults':[{'component':f.component,'code':f.code.value} for f in device.faults]})
     return {'format':'logi-center-public-diagnostics','version':1,'created_at':datetime.now(timezone.utc).isoformat(),'devices':devices,'components':[{'component':public_name(c['component']),'state':c['state'],'description':public_name(c['description'])} for c in components],'discovery_faults':[{'component':f.component,'code':f.code.value} for f in manager.faults],'privacy':'No serials, bus paths, endpoint identifiers, user IDs, setting values, macros, drafts or recordings are included. Review before sharing.'}

@@ -40,7 +40,7 @@ class EditorController(QObject):
         self._ace_remaps=[];self._ace_layer=0;self._ace_binding_cap=None;self._ace_binding_profile=None
         self._ace_advanced_cap=None;self._ace_advanced_profile=None;self._ace_advanced_controls=[]
         self._ace_color_cap=None;self._ace_color_profile=None
-        self._g515=[]
+        self._g515=[];self._g515_rgb_info=None
         self._ewe_state=None
         self._g515_target='G515'
         self.keyboard_reader=None
@@ -135,7 +135,7 @@ class EditorController(QObject):
 
     @Property(str,notify=changed)
     def eweadnContext(self):
-        if not self.eweadnEditor or not self._ewe_state:return ''
+        if not self.eweadnEditor or not self._ewe_state or self._ewe_state.get('partial'):return ''
         from logi_center.adapters.eweadn.eweadn_adapter import fingerprint
         from logi_center.core.discovery.identity import identity
         return identity(repr(self._binding))+':'+fingerprint(self._ewe_state)
@@ -764,7 +764,7 @@ class EditorController(QObject):
             self._ace_advanced_cap=None;self._ace_advanced_profile=None;self._ace_advanced_controls=[]
             self._ace_color_cap=None;self._ace_color_profile=None
             self._state_error=''
-            self._ratbag=None;self._buttons=[];self._controls=[];self._key_controls=[];self._g515=[]
+            self._ratbag=None;self._buttons=[];self._controls=[];self._key_controls=[];self._g515=[];self._g515_rgb_info=None
             self._g515_target='G515'
             self._ewe_state=None
             if device:
@@ -810,6 +810,7 @@ class EditorController(QObject):
             for cap in self.device.capabilities:
                 if cap.backend=='mchose-ace68' and cap.name in ('lighting','lighting_mode','brightness','lighting_speed','lighting_palette','lighting_direction','key_lighting'):cap.writable=False
         self._controls=capability_controls(self.device)
+        if self.g515Editor:self._controls=[f for f in self._controls if f.backend not in ('solaar','solaar-local')]
         if self.aceEditor and self._ace_color_cap:
             from logi_center.core.services.control_service import Control
             cap=self._ace_color_cap;profile=self._ace_color_profile
@@ -855,15 +856,15 @@ class EditorController(QObject):
             self._submit('mchose-read',lambda:self._read_mchose(target,expected,token));return
         if self.g515Editor:
             if self.simulation and self.keyboard_reader is None:return
-            peers=[d for d in self._manager.devices if d.kind=='keyboard' and d.connected is True and 'G515' in d.name]
-            if len(peers)!=1:self._message=self.tr('Устройство сейчас недоступно');self.changed.emit();return
-            name=self.device.name
+            peers=self._g515_peers(self.device)
+            if len(peers)!=1 or peers[0].id!=self.device.id:self._message=self.tr('Устройство сейчас недоступно');self.changed.emit();return
+            name=self.device.name;serial=self.device.private_identity.get('solaar_serial')
             def read_keyboard():
                 if self.keyboard_reader:return self.keyboard_reader()
                 from logi_center.adapters.external.backend import saved_keyboard
                 from logi_center.adapters.logitech.g515_adapter import read_snapshot
-                cached=saved_keyboard()
-                target=cached.get('_NAME') or ('G515 LS TKL' if 'LS TKL' in name else 'G515')
+                cached=saved_keyboard(selector=serial) if serial else saved_keyboard()
+                target=serial or cached.get('_NAME') or ('G515 LS TKL' if 'LS TKL' in name else 'G515')
                 return read_snapshot(target,runner=self.runner,cache=cached)
             self._submit('g515',read_keyboard);return
         if 'ratbagctl' not in self.device.backends:self.owner.refresh();return
@@ -1024,8 +1025,11 @@ class EditorController(QObject):
         if field.id.startswith('g515:'):
             mode=self._field('g515:effect')
             effect=self._desired(mode)[0] if mode else None
-            if field.id=='g515:color':return effect in (1,10)
-            if field.id.startswith(('g515:period:','g515:intensity:')):return effect==int(field.id.rsplit(':',1)[1])
+            if field.id=='g515:color':
+                if self._g515_rgb_info:
+                    return any(e['id']==effect and 'color' in e['parameters'] for e in self._g515_rgb_info['effects'])
+                return effect in (1,10)
+            if field.id.startswith(('g515:period:','g515:intensity:','g515:saturation:','g515:direction:','g515:speed:')):return effect==int(field.id.rsplit(':',1)[1])
         if field.backend=='mchose-ace68' and field.group=='lighting':
             if field.capability=='key_lighting':
                 mode=self._field('mchose-ace68:lighting_mode')
@@ -1220,9 +1224,14 @@ class EditorController(QObject):
         if device is None or device.connected is not True or binding(device)!=expected:raise Fault(FaultCode.DISCONNECTED,'editor','Device binding changed')
         return device
 
+    def _g515_peers(self,device):
+        peers=[d for d in self._manager.devices if d.kind=='keyboard' and d.connected is True and 'G515' in d.name]
+        serial=device.private_identity.get('solaar_serial')
+        return [d for d in peers if d.private_identity.get('solaar_serial')==serial] if serial else peers
+
     def _guard_g515(self,expected,token):
         device=self._guard(expected,token)
-        peers=[d for d in self._manager.devices if d.kind=='keyboard' and d.connected is True and 'G515' in d.name]
+        peers=self._g515_peers(device)
         if len(peers)!=1 or peers[0].id!=device.id:
             raise Fault(FaultCode.DISCONNECTED,'solaar','G515 target is unavailable or ambiguous')
         return device
@@ -1341,7 +1350,7 @@ class EditorController(QObject):
                     results.extend((field,value,result) for field,value in batch)
                     if not result.accepted:return results
                 lighting=[(f,v) for f,v in pending if f.id in ('g515:effect','g515:color')]
-                lighting+=[(f,v) for f,v in pending if f.id.startswith(('g515:period:','g515:intensity:'))]
+                lighting+=[(f,v) for f,v in pending if f.id.startswith(('g515:period:','g515:intensity:','g515:saturation:','g515:direction:','g515:speed:'))]
                 perkey=[(f,v) for f,v in pending if f.id.startswith('g515:key:')]
                 if lighting or perkey:
                     from logi_center.core.services.control_service import g515_lighting_plans
@@ -1355,7 +1364,9 @@ class EditorController(QObject):
                     # Freestyle explicitly claims static RGB on Apply only.
                     # No key painting or page navigation sends hardware writes.
                     for plan in g515_lighting_plans(1 if perkey else effect,color,
-                            self._desired(period)[0] if period else 3000,self._desired(intensity)[0] if intensity else 100,target=self._g515_target):
+                            self._desired(period)[0] if period else 3000,self._desired(intensity)[0] if intensity else 100,target=self._g515_target,
+                            effect_info=self._g515_rgb_info,parameters={name:self._desired(f)[0] for name in ('saturation','direction','speed')
+                                if (f:=self._field('g515:'+name+':'+str(effect))) is not None}):
                         result=perform(plan,run_g515,token)
                         results.append((None,None,result))
                         if not result.accepted:return results
@@ -1445,8 +1456,18 @@ class EditorController(QObject):
             self._build();return
         if action=='g515':
             from logi_center.core.services.control_service import g515_controls,fault_message
-            self._g515_target=value['target']
+            self._g515_target=value['target'];self._g515_rgb_info=value.get('rgb_capabilities')
             self._g515=g515_controls(value['settings'],value['saved'],self.device.id,value['target'],value['sources'])
+            from logi_center.adapters.logitech.g515_adapter import observed_capabilities
+            observed=observed_capabilities(value)
+            names={c.name for c in observed}
+            self.device.capabilities=[c for c in self.device.capabilities if not (c.backend in ('solaar','solaar-local') and c.name in names)]+observed
+            if value['reachable']:
+                self.device.targets['solaar']=[value['target']]
+                self.device.backends=list(dict.fromkeys([*self.device.backends,'solaar']))
+                self._binding=binding(self.device)
+                if hasattr(self.owner,'_refresh_artwork_row'):self.owner._refresh_artwork_row(self.device)
+
             if value['errors']:
                 self._message=self.tr('Часть настроек Solaar недоступна; показаны доступные данные.')+' '+fault_message(value['errors'][0])
             elif value['reachable']:self._message=self.tr('Настройки получены через Solaar. Цвета и таймеры могут быть кэшированными.')
@@ -1457,7 +1478,7 @@ class EditorController(QObject):
             self._ewe_state=value;self.device.name=value['name']
             self.device.capabilities=[c for c in self.device.capabilities if c.backend!='eweadn']+capabilities(self.device.targets['eweadn'][0],value)
             if hasattr(self.owner,'_refresh_artwork_row'):self.owner._refresh_artwork_row(self.device)
-            self._message=self.tr('Настройки прочитаны с устройства.');self._build();return
+            self._message=self.tr('Не удалось прочитать настройки устройства') if value.get('partial') else self.tr('Настройки прочитаны с устройства.');self._build();return
         if action in ('ace-bindings-read','ace-advanced-read','ace-colors-read'):
             from logi_center.adapters.mchose.ace68_adapter import binding_capability,advanced_capability,color_capability,setting_plan
             from logi_center.core.devices.devices import now
@@ -1489,6 +1510,11 @@ class EditorController(QObject):
                     self._states[field.draft_key]=result.state.value
                     if result.actual is not None:
                         observed=deepcopy(result.actual.get(field.key_index,field.observed) if field.key_index and isinstance(result.actual,dict) else result.actual)
+                        if field.id.startswith('g515:') and isinstance(result.actual,dict):
+                            parameter='ID' if field.id=='g515:effect' else field.id.split(':')[1]
+                            observed=deepcopy(result.actual.get(parameter,field.observed))
+                            if field.kind=='color' and type(observed) is int:
+                                observed=[(observed>>shift)&255 for shift in (16,8,0)]
                         if field.kind=='color':
                             from logi_center.core.services.control_service import rgb_value
                             observed=rgb_value(observed)

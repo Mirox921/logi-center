@@ -115,8 +115,9 @@ def saved_solaar_devices(path=None):
         return [record for record in records if isinstance(record,dict) and isinstance(record.get('_NAME'),str)] if isinstance(records,list) else []
     except (OSError,ValueError,yaml.YAMLError,TypeError):return []
 
-def saved_keyboard(path=None):
+def saved_keyboard(path=None,selector=None):
     matches=[d for d in saved_solaar_devices(path) if re.search(r'\bg515\b',d['_NAME'],re.I)]
+    if selector:matches=[d for d in matches if str(d.get('_serial','')).casefold()==selector.casefold()]
     return matches[0] if len(matches)==1 else {}
 
 def import_preset(source,root=None):

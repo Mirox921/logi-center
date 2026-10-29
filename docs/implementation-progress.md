@@ -493,3 +493,43 @@ Verified 7 targeted launcher/install/localization tests, release checks, wheel
 built from sdist, SPDX metadata and license bytes in both distributions,
 unchanged third-party notices, fresh Arch source and PKGBUILD syntax. No runtime
 behavior changes, system installation or hardware operations.
+
+
+## 2026-10-29 — remote S9/G515 hardware investigation
+
+Used the supplied redacted log.json without committing it. S9 inner timeout
+lacked page/chunk/latency evidence. Added bounded read-only trace collection,
+ioctl start/end/count and frame validation reasons, preserving the 20 s worker
+deadline and existing retries. Corrected actual feature byte-count handling
+(no padded bytes as data) and documented short terminal page handling. Valid
+model/status can survive a later page timeout; partial state never enables
+writes, reset, configuration fingerprints or interactive editing.
+
+G515 0x8071 zone has no actual getter in the inspected Solaar build; cache is
+not firmware readback. Fixed Cycle 0x15 omitted saturation (serializer defaulted
+the byte to zero), added per-device zone option/parameter metadata, adaptive
+Wave/Ripple controls, exact LED Control readback before effects and honest
+sent-unverified labels while retaining drafts. A truly readable backend can
+confirm per-control scalar results; cache-only results cannot. Read-only Solaar
+workers also freeze configuration persistence. No installed backend was edited.
+
+Paired serial/input uniq uniquely associate Solaar cache and kernel device;
+name/VID-PID matching never merges units or relabels receiver PID as keyboard
+WPID. Scoped scalar reads reach inventory with provenance. rgb_zone_1 survives
+report redaction; audio volume/mute scopes get anonymous endpoint IDs. Optional
+missing providers remain isolated faults. Missing reliable identity leaves
+cache rows separate in advanced diagnostics, deliberately.
+
+Verification: full suite 528 tests passed (26.070 s); final feature-count,
+short-page and readable-zone refinements passed 79 focused tests (0.499 s).
+The final CLI timing/privacy checks passed 19 tests (0.026 s).
+compileall, qmllint/QML navigation, S9/G515 fake Apply/readback, simulation smoke
+and live read-only navigation passed. The last live navigation covered only the
+locally available Ace68 with 0 live controls, not S9/G515. Reviewed native-effect
+and unconfirmed-status captures RU/EN at 640/1280. Wheel/sdist and packaging
+checks passed; source/CI recursive manifests include the new diagnostics scripts.
+No physical writes, recordings, resets, firmware/pairing changes or system edits.
+
+Physical S9 timeout cause and G515 LED animation/persistence remain pending
+remote traces/observation. The G515 is at the user's friend's machine. Commands,
+protocol evidence and remaining limits: [hardware-read-diagnostics.md](hardware-read-diagnostics.md).

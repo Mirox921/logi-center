@@ -11,7 +11,7 @@ ColumnLayout {
     required property var controller
     required property var windowRef
     signal chooseArtwork()
-    readonly property bool ready: !!controller.eweadnState.model_id
+    readonly property bool ready: !!controller.eweadnState.model_id && !controller.eweadnState.partial
     readonly property var selected: controller.eweadnFields["eweadn:button_bindings:"+controller.selectedButton] || ({value:[],writable:false})
     property string actionGroup: "mouse"
     property int colorStage: 0

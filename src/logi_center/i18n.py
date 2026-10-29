@@ -899,3 +899,5 @@ def canonical_text(text):
     for source in ['Профиль ','Уровень ','Клавиша F']:
         if text.startswith(source):return EN.get(source,source)+text[len(source):]
     return text
+
+EN.update({'Рябь':'Ripple','Насыщенность':'Saturation','Период эффекта':'Effect period'})

@@ -115,6 +115,13 @@ def plan_for(args):
     elif component=='solaar' and len(args)>=5:
         plan.expected=args[-1]
         # Explicitly supported live read only; RGB effects and timers are not readable.
+        if args[3]=='rgb_control':
+            plan.expected=args[-1].lower() in ('true','on','1','3')
+            def control(runner):
+                from logi_center.adapters.logitech.g515_adapter import parse_value
+                value,_=parse_value('rgb_control',runner(args[:4]))
+                return Observation(value,'device')
+            plan.reader=control
         if args[3]=='brightness_control':
             plan.expected=int(args[-1])
             def brightness(runner):

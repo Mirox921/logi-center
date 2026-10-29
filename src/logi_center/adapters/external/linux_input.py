@@ -1,6 +1,6 @@
 """Read-only Linux input and power-supply discovery."""
 from pathlib import Path
-import struct
+import struct,re
 from logi_center.core.devices.devices import Device, DeviceManager
 from logi_center.core.capabilities.model import Capability
 from logi_center.core.discovery.identity import identity, usb_identity
@@ -47,7 +47,13 @@ class InputAdapter:
             elif not vid:connection='internal'
             else:connection='unknown'
             cap=Capability('standard_input',self.name,True,True,False,False,'keyboard' if keyboard else 'mouse','kernel',limitation='Kernel input detection does not imply RGB or remapping support.',evidence=['software_detected','read_observed'])
-            records.append(Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection=connection,capabilities=[cap]))
+            device=Device(self.name+':'+identity(ident),name,'keyboard' if keyboard else 'mouse',self.name,physical=physical,vid=vid,pid=pid,connection=connection,capabilities=[cap])
+            # HID/input uniq identifies the paired peripheral, not receiver PID.
+            try:unique=(node/'uniq').read_text().strip()
+            except OSError:unique=''
+            if vid=='046d' and re.fullmatch('[0-9a-fA-F]{8,32}',unique) and len(set(unique))>1:
+                device.private_identity['solaar_serial']=unique.casefold()
+            records.append(device)
         return DeviceManager.merge(records)
 
 
