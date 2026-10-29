@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Cairo-only artwork contact sheets, 1x/2x on dark/light backgrounds."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse
 import hashlib
 import json
@@ -9,9 +15,9 @@ import cairo
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-from illustrations.models import ARTWORK_KEYS
-from illustrations.palette import TOKENS, rgb
-from illustrations.units import WIDTH, HEIGHT
+from scripts.artwork.illustrations.models import ARTWORK_KEYS
+from scripts.artwork.illustrations.palette import TOKENS, rgb
+from scripts.artwork.illustrations.units import WIDTH, HEIGHT
 
 
 def contact_sheet(source, output, density, background, foreground, suffix, keys=ARTWORK_KEYS):
@@ -69,7 +75,7 @@ def miniature_sheet(source,output):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source', type=Path, default=ROOT / 'qml_ui/assets/devices/generated')
+    parser.add_argument('--source', type=Path, default=ROOT / 'assets/devices/generated')
     parser.add_argument('--keys',nargs='+',choices=ARTWORK_KEYS)
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/screenshots/redesign/icons')
     args = parser.parse_args()

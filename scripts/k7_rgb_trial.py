@@ -5,6 +5,12 @@ K7 receiver, then restores the exact original 15-byte RGB record. It does not
 modify DPI, buttons, profiles or firmware. The person observing the mouse and
 dock must note which physical light changes; HID readback is not optical proof.
 """
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse
 import json
 import sys
@@ -13,8 +19,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from drafts import atomic_json  # noqa: E402
-from mchose_adapter import Transport, candidates, identity  # noqa: E402
+from logi_center.core.services.drafts import atomic_json  # noqa: E402
+from logi_center.adapters.mchose.mchose_adapter import Transport, candidates, identity  # noqa: E402
 
 
 def rgb_record(device):

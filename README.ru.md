@@ -1,4 +1,4 @@
-<p align="center"><img src="qml_ui/assets/brand/logi-mark.svg" width="80" alt="Logi Center"></p>
+<p align="center"><img src="assets/icons/logi-mark.svg" width="80" alt="Logi Center"></p>
 <h1 align="center">LOGI / CENTER</h1>
 <p align="center"><strong>Центр управления периферией Linux на Qt6/QML.</strong><br>
 Мыши, клавиатуры и аудио — один интерфейс поверх существующих Linux-backend.</p>
@@ -113,6 +113,10 @@ HeadsetControl — по необходимости. Не запускайте в
 прав HID. [Инструкция запуска](START_HERE.ru.md) · [Сборка Arch](packaging/arch/README.md).
 
 ## Разработка и порядок в репозитории
+
+Код находится в `src/logi_center`, общие ресурсы — в `assets`, тесты разделены на
+`unit`, `integration` и mock-проверки `hardware`. См.
+[архитектуру и сборку пакетов](docs/development/architecture.md).
 
 ```sh
 python scripts/check.py

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Capture the real QML Dashboard with an isolated, explicitly simulated art set."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse
 import json
 import os
@@ -14,7 +20,8 @@ sys.path.insert(0, str(ROOT))
 def fixture_snapshot(simulation=False, simulation_adapter=None, **unused):
     if not simulation:
         raise RuntimeError('Artwork screenshots require --simulate')
-    from devices import Capability, Device, DeviceManager
+    from logi_center.core.capabilities.model import Capability
+    from logi_center.core.devices.devices import Device, DeviceManager
     def battery(value, charging=False):
         return [Capability('battery_status', 'simulation', True, True, value=value, source='simulation'),
                 Capability('charging', 'simulation', True, True, value=charging, source='simulation')]
@@ -46,7 +53,7 @@ def fixture_snapshot(simulation=False, simulation_adapter=None, **unused):
     rows[3].input_subtype = 'touchpad'
     rows[4].audio_subtype = 'headset'
     rows[5].audio_subtype = 'display_hdmi'
-    from device_presentation import SIMULATION_NAMES
+    from logi_center.core.devices.device_presentation import SIMULATION_NAMES
     SIMULATION_NAMES.update({
         'review-mouse': 'MCHOSE K7 Ultra · SIM', 'review-ace': 'MCHOSE Ace68-II · SIM',
         'review-internal-keyboard': 'Встроенная клавиатура', 'review-touchpad': 'Встроенная сенсорная панель',
@@ -66,8 +73,8 @@ def main():
     args = parser.parse_args()
     if args.worker:
         from unittest.mock import patch
-        from qml_ui.main import run
-        with patch('device_service.collect_device_snapshot', fixture_snapshot):
+        from logi_center.qml_ui.main import run
+        with patch('logi_center.core.discovery.device_service.collect_device_snapshot', fixture_snapshot):
             return run(['illustration-dashboard', '--simulate', '--smoke'])
     base = ROOT / 'docs/screenshots/redesign/illustrations' / args.stage
     for language in ('ru', 'en'):

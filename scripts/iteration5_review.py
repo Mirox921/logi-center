@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Developer-only brand/contrast review sheets; no device I/O."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import argparse,sys
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
@@ -50,7 +56,7 @@ def accent(source,output):
 
 def art_crops(source,output):
     import cairo
-    from illustrations.checks import Pixels
+    from scripts.artwork.illustrations.checks import Pixels
     keys=('mouse','mouse_gaming','mouse_wireless','mouse_compact','touchpad','pointer_generic')
     output.mkdir(parents=True,exist_ok=True)
     for key in keys:
@@ -69,7 +75,7 @@ def art_crops(source,output):
 
 def comparison(before,after,output):
     import cairo
-    from illustrations.checks import Pixels
+    from scripts.artwork.illustrations.checks import Pixels
     keys=('mouse','mouse_gaming','mouse_wireless','mouse_compact','touchpad','pointer_generic')
     output.mkdir(parents=True,exist_ok=True)
     for name,bg,fg in (('dark',(0,0,0),(.9,.9,.9)),('light',(1,1,1),(.1,.1,.1))):

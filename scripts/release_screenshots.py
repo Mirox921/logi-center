@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Capture live English QML windows on workspace 9, without setting writes."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import argparse,json,os,subprocess,sys,time
 from unittest.mock import patch
@@ -67,7 +73,7 @@ def main():
     previous=json.loads(subprocess.check_output(['hyprctl','-j','activeworkspace'],text=True))['id']
     os.environ.update(QT_QPA_PLATFORM='wayland',QT_QPA_PLATFORMTHEME='generic',
         LOGI_CENTER_QML_READONLY_SMOKE='1',LOGI_RELEASE_SCREENSHOTS=str(Path(options.output).resolve()))
-    from backend import run as original_run
+    from logi_center.adapters.external.backend import run as original_run
     def read_only(args,*params,**kwargs):
         if args[:1]==['logi-sdk'] and (len(args)<3 or args[2] not in ('read','status','battery','discover')):
             raise AssertionError('Hardware write in release capture')
@@ -80,8 +86,8 @@ def main():
     # Hyprland 0.55+ Lua dispatcher, per the current official hyprctl docs.
     subprocess.run(['hyprctl','dispatch','hl.dsp.focus({ workspace = "9" })'],check=True,stdout=subprocess.DEVNULL)
     try:
-        with patch('backend.run',side_effect=read_only),patch('scripts.qml_readonly_smoke.exercise',exercise):
-            from qml_ui.main import run
+        with patch('logi_center.adapters.external.backend.run',side_effect=read_only),patch('scripts.qml_readonly_smoke.exercise',exercise):
+            from logi_center.qml_ui.main import run
             return run(['release-screenshots','--smoke'])
     finally:
         subprocess.run(['hyprctl','dispatch','hl.dsp.focus({ workspace = '+json.dumps(str(previous))+' })'],check=False,stdout=subprocess.DEVNULL)

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="qml_ui/assets/brand/logi-mark.svg" width="80" alt="Logi Center">
+  <img src="assets/icons/logi-mark.svg" width="80" alt="Logi Center">
 </p>
 <h1 align="center">LOGI / CENTER</h1>
 <p align="center"><strong>A Qt6/QML control center for Linux peripherals.</strong><br>
@@ -123,6 +123,10 @@ for headset features. Do not run the entire GUI as root to bypass HID access.
 [Launch guide](START_HERE.ru.md) · [Local Arch build](packaging/arch/README.md).
 
 ## Development and repository policy
+
+Source code uses `src/logi_center`, shared assets live in `assets`, and tests are
+split into `unit`, `integration` and mocked `hardware` contracts. See the
+[repository architecture and package workflow](docs/development/architecture.md).
 
 ```sh
 python scripts/check.py            # unit tests and compilation

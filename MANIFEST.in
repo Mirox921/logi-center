@@ -1,0 +1,12 @@
+include setup.py LICENSE README.md README.ru.md ROADMAP.md app.py install.py AGENTS.md START_HERE.ru.md
+recursive-include assets *
+recursive-include src *.py *.qml qmldir
+recursive-include scripts *.py *.qml
+recursive-include tests *.py *.png
+recursive-include packaging *
+recursive-include docs *.md
+recursive-include docs/screenshots/releases *.png *.json
+prune docs/screenshots/redesign
+prune .agents
+prune .codex
+global-exclude __pycache__ *.py[cod] *.log

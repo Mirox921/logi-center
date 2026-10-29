@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Run the default QML UI smoke under offscreen Qt when PySide6 is installed."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import os
 from pathlib import Path
 import shutil
@@ -7,7 +13,7 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parents[1]
-qml_dir = root / 'qml_ui' / 'qml'
+qml_dir = root / 'src/logi_center/qml_ui/qml'
 qmllint = shutil.which('qmllint') or ('/usr/lib/qt6/bin/qmllint' if Path('/usr/lib/qt6/bin/qmllint').is_file() else None)
 if qmllint:
     qml_files = sorted(str(path) for path in qml_dir.glob('*.qml'))

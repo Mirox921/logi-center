@@ -19,33 +19,35 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends libcairo2-dev pkg-config libegl1 libopengl0 libgl1 libxkbcommon0
-      - run: python -m pip install PyYAML PySide6 pycairo
+      - run: python -m pip install PyYAML PySide6 pycairo build
       - run: python -m unittest -v
       - run: python -m compileall -q .
       - run: python scripts/check_release.py
-      - run: test -f qml_ui/assets/devices/exact/g502_transparent_wired.svg && test -f qml_ui/assets/devices/exact/g502_wireless.svg && test -f qml_ui/assets/devices/exact/g502_hero_side_wired_fixed.svg && test -f qml_ui/assets/devices/exact/g502_hero_side_wireless.svg
-      - run: test -f macro_library.py && test -f logitech_status.py && test -f qml_ui/qml/G502ButtonPanel.qml && test -f qml_ui/qml/GenericMouseButtons.qml && test -f qml_ui/qml/MacroWindow.qml && test -f qml_ui/assets/devices/exact/g502-hero-side.svg
-      - run: test -f qml_ui/assets/devices/exact/g502-top-wired-qt.svg && test -f qml_ui/assets/devices/exact/g502-top-wireless-qt.svg
+      - run: python -m build --wheel --outdir /tmp/logi-wheel
+      - run: python scripts/check_package.py /tmp/logi-wheel/*.whl
+      - run: test -f assets/mice/g502_transparent_wired.svg && test -f assets/mice/g502_wireless.svg && test -f assets/mice/g502_hero_side_wired_fixed.svg && test -f assets/mice/g502_hero_side_wireless.svg
+      - run: test -f src/logi_center/core/services/macro_library.py && test -f src/logi_center/adapters/logitech/logitech_status.py && test -f src/logi_center/qml_ui/qml/G502ButtonPanel.qml && test -f src/logi_center/qml_ui/qml/GenericMouseButtons.qml && test -f src/logi_center/qml_ui/qml/MacroWindow.qml && test -f assets/mice/g502-hero-side.svg
+      - run: test -f assets/mice/g502-top-wired-qt.svg && test -f assets/mice/g502-top-wireless-qt.svg
       - run: QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=generic python scripts/check_g502_svg.py
       - run: python scripts/qml_smoke.py
-      - run: python -m unittest -q test_qml_launcher test_qml_backups
-      - run: test -f eweadn_protocol.py && test -f qml_ui/qml/EweadnPanel.qml && test -f qml_ui/assets/devices/exact/eweadn-s9.svg
+      - run: python -m unittest -q tests.integration.test_qml_launcher tests.integration.test_qml_backups
+      - run: test -f src/logi_center/protocols/eweadn_protocol.py && test -f src/logi_center/qml_ui/qml/EweadnPanel.qml && test -f assets/mice/eweadn-s9.svg
       - run: python scripts/eweadn_smoke.py --output /tmp/logi-eweadn-ci
-      - run: test -f g515_adapter.py && test -f g515_layout.py && test -f qml_ui/qml/G515Panel.qml
+      - run: test -f src/logi_center/adapters/logitech/g515_adapter.py && test -f src/logi_center/adapters/logitech/g515_layout.py && test -f src/logi_center/qml_ui/qml/G515Panel.qml
       - run: python scripts/g515_editor_smoke.py --output /tmp/logi-g515-ci
-      - run: test -f ace68_bindings.py && test -f ace68_advanced.py && test -f qml_ui/qml/Ace68Panel.qml && test -f qml_ui/qml/Ace68Keyboard.qml && test -f qml_ui/qml/Ace68Assignments.qml && test -f qml_ui/qml/Ace68Advanced.qml
+      - run: test -f src/logi_center/adapters/mchose/ace68_bindings.py && test -f src/logi_center/adapters/mchose/ace68_advanced.py && test -f src/logi_center/qml_ui/qml/Ace68Panel.qml && test -f src/logi_center/qml_ui/qml/Ace68Keyboard.qml && test -f src/logi_center/qml_ui/qml/Ace68Assignments.qml && test -f src/logi_center/qml_ui/qml/Ace68Advanced.qml
       - run: python scripts/qml_functional_smoke.py --ace --output /tmp/logi-ace-ci
-      - run: test -f qml_ui/qml/K7DockPanel.qml && test -f qml_ui/assets/diagrams/k7-dock.svg
-      - run: test -f k7_settings.py && test -f qml_ui/qml/K7DpiPanel.qml && test -f qml_ui/qml/K7ButtonPanel.qml && test -f qml_ui/qml/K7PerformancePanel.qml && test -f qml_ui/qml/NumberInput.qml && test -f qml_ui/assets/diagrams/k7-buttons.svg
+      - run: test -f src/logi_center/qml_ui/qml/K7DockPanel.qml && test -f assets/mice/diagrams/k7-dock.svg
+      - run: test -f src/logi_center/adapters/mchose/k7_settings.py && test -f src/logi_center/qml_ui/qml/K7DpiPanel.qml && test -f src/logi_center/qml_ui/qml/K7ButtonPanel.qml && test -f src/logi_center/qml_ui/qml/K7PerformancePanel.qml && test -f src/logi_center/qml_ui/qml/NumberInput.qml && test -f assets/mice/diagrams/k7-buttons.svg
       - run: python scripts/text_render_check.py --output /tmp/logi-text-ci
       - run: python scripts/qml_backup_smoke.py
       - run: python scripts/qml_functional_smoke.py --output /tmp/logi-migration-ci
       - run: python scripts/qml_functional_smoke.py --stabilization --output /tmp/logi-editor-ci
       - run: QT_SCALE_FACTOR=2 QT_IMAGEIO_MAXALLOC=32 LOGI_CENTER_MIGRATION_CAPTURE_PAGES=dashboard,buttons,buttons-side,buttons-wireless,buttons-side-wireless,k7-buttons python scripts/qml_functional_smoke.py --stabilization --output /tmp/logi-g502-hidpi-ci
-      - run: QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=generic python scripts/g502_artwork_preview.py qml_ui/assets/devices/exact/g502-hero.svg /tmp/logi-g502-svg-ci.png
+      - run: QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=generic python scripts/g502_artwork_preview.py assets/mice/g502-hero.svg /tmp/logi-g502-svg-ci.png
       - run: python scripts/telemetry_review.py
       - run: python scripts/ui_iteration_smoke.py --stage cards --output /tmp/logi-cards-ci
       - run: QT_QPA_PLATFORM=offscreen QT_QPA_PLATFORMTHEME=generic python scripts/header_review.py --logo
-      - run: python -m illustrations.render_all --only mouse --output /tmp/logi-render-check
-      - run: python -m illustrations.checks
+      - run: python -m scripts.artwork.illustrations.render_all --only mouse --output /tmp/logi-render-check
+      - run: python -m scripts.artwork.illustrations.checks
       - run: python scripts/icon_gallery.py

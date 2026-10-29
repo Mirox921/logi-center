@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Offline Qt SVG compatibility copies; supplied artwork is never overwritten."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
@@ -54,4 +60,4 @@ def generate(folder):
 
 
 if __name__ == '__main__':
-    generate(Path(__file__).resolve().parents[1]/'qml_ui/assets/devices/exact')
+    generate(Path(__file__).resolve().parents[1]/'assets/mice')

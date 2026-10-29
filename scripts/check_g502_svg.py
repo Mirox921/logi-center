@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Compare Qt SVG output with offline librsvg reference renders; no hardware I/O."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import sys
 from PySide6.QtCore import QRectF
@@ -15,7 +21,7 @@ def pixels(image):
 
 
 def check(kind,output):
-    assets=ROOT/'qml_ui/assets/devices/exact'
+    assets=ROOT/'assets/mice'
     renderer=QSvgRenderer(str(assets/f'g502-top-{kind}-qt.svg'))
     assert renderer.isValid()
     image=QImage(410,760,QImage.Format.Format_ARGB32);image.fill(0)

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Capture the QML design system at responsive sizes and compare amber/lime."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import os
 import shutil
@@ -48,8 +54,8 @@ def copy_screenshots(source, destination):
 def make_lime_variant(base):
     variant = base / 'lime-ui'
     (variant / 'qml').mkdir(parents=True)
-    shutil.copytree(ROOT / 'qml_ui' / 'qml', variant / 'qml', dirs_exist_ok=True)
-    shutil.copytree(ROOT / 'qml_ui' / 'assets', variant / 'assets', dirs_exist_ok=True)
+    shutil.copytree(ROOT / 'src/logi_center/qml_ui/qml', variant / 'qml', dirs_exist_ok=True)
+    shutil.copytree(ROOT / 'assets', variant / 'assets', dirs_exist_ok=True)
     # Developer-only palette comparison: the released product has only amber.
     for folder in (variant / 'qml', variant / 'assets'):
         for path in folder.rglob('*'):

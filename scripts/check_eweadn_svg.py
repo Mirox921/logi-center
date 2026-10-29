@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """Qt vs librsvg check for the supplied S9 vector; offline, no device access."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import os,sys,subprocess,tempfile
 os.environ['QT_QPA_PLATFORM']='offscreen';os.environ['QT_QPA_PLATFORMTHEME']='generic'
 from PySide6.QtGui import QGuiApplication,QImage,QPainter
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtCore import QRectF
-root=Path(__file__).resolve().parents[1];folder=root/'qml_ui/assets/devices/exact'
+root=Path(__file__).resolve().parents[1];folder=root/'assets/mice'
 app=QGuiApplication([])
 with tempfile.TemporaryDirectory() as tmp:
     source=Path(tmp)/'reference.png'

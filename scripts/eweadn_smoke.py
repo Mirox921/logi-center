@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """S9 Dashboard/editor/macro/scale checks over in-memory HID pages only."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import os,sys,time,json
 
@@ -8,23 +14,23 @@ def exercise(app,root,bridge,finish):
     from PySide6.QtCore import QTimer,QObject,Qt,QPointF
     from PySide6.QtTest import QTest
     from unittest.mock import patch
-    from test_eweadn import Wire,ITEM,TARGET
-    from eweadn_adapter import hardware,capabilities
-    from devices import Device,DeviceManager
+    from tests.unit.test_eweadn import Wire,ITEM,TARGET
+    from logi_center.adapters.eweadn.eweadn_adapter import hardware,capabilities
+    from logi_center.core.devices.devices import Device,DeviceManager
     wire=Wire();writes=[]
-    name_patch=patch.dict('device_presentation.SIMULATION_NAMES',{TARGET:'EWEADN S9 Ultra · SIM'});name_patch.start()
+    name_patch=patch.dict('logi_center.core.devices.device_presentation.SIMULATION_NAMES',{TARGET:'EWEADN S9 Ultra · SIM'});name_patch.start()
     device=Device('fixture-s9','EWEADN S9 Ultra','mouse','eweadn',TARGET,physical=ITEM['physical'],vid='372e',pid='1026',connection='wireless',simulated=True)
     device.capabilities=capabilities(TARGET,wire.state())
     manager=DeviceManager();manager.devices=[device]
     def runner(args,**kwargs):
         assert args[:2]==['logi-sdk','eweadn'],args
-        with patch('eweadn_adapter.candidates',return_value=[ITEM]),patch('eweadn_adapter.time.sleep'),patch('drafts.atomic_json'):
+        with patch('logi_center.adapters.eweadn.eweadn_adapter.candidates',return_value=[ITEM]),patch('logi_center.adapters.eweadn.eweadn_adapter.time.sleep'),patch('logi_center.core.services.drafts.atomic_json'):
             if args[2]=='set':writes.append(args)
             return json.dumps(hardware(args[2],args[3],args[4] if len(args)>4 else None,json.loads(args[5]) if len(args)>5 else None,transport=lambda _:wire))
     bridge.editor.runner=runner
     bridge.refresh=lambda:bridge._accept_snapshot({'manager':manager},None)
     bridge.refresh();bridge.setCategory('all');bridge.setSearch('');assert bridge.devices.count==1
-    forbidden=patch('backend.run',side_effect=AssertionError('Unexpected real backend I/O in S9 smoke'));forbidden.start()
+    forbidden=patch('logi_center.adapters.external.backend.run',side_effect=AssertionError('Unexpected real backend I/O in S9 smoke'));forbidden.start()
     folder=Path(os.environ['LOGI_CENTER_QML_SCREENSHOT_DIR']);folder.mkdir(parents=True,exist_ok=True)
     end=time.monotonic()+45
     def visual(item,name):

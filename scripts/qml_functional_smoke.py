@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Functional QML migration exercise; writes go only to in-memory transports."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import copy,json,os,sys,time
 
@@ -8,15 +14,16 @@ def exercise(app,root,bridge,finish):
     from PySide6.QtCore import QTimer,Qt,QPoint,QPointF,QObject
     from PySide6.QtTest import QTest
     from unittest.mock import patch
-    from devices import Device,Capability,DeviceManager
-    from operations import Plan,Observation
-    from execution import Fault,FaultCode
-    from ace68_adapter import setting_plan
-    from ace68_protocol import KEY_INDICES,KEY_FIELDS,MODES,state as read_ace_state
-    from test_ace68_advanced import AdvancedWire
-    from test_ace68 import ITEM
-    from ace68_adapter import hardware,selector
-    from qml_ui.bridge.audio_simulation import AudioSimulation
+    from logi_center.core.devices.devices import Device, DeviceManager
+    from logi_center.core.capabilities.model import Capability
+    from logi_center.core.services.operations import Plan,Observation
+    from logi_center.core.services.execution import Fault,FaultCode
+    from logi_center.adapters.mchose.ace68_adapter import setting_plan
+    from logi_center.protocols.ace68_protocol import KEY_INDICES,KEY_FIELDS,MODES,state as read_ace_state
+    from tests.unit.test_ace68_advanced import AdvancedWire
+    from tests.unit.test_ace68 import ITEM
+    from logi_center.adapters.mchose.ace68_adapter import hardware,selector
+    from logi_center.qml_ui.bridge.audio_simulation import AudioSimulation
     audio=AudioSimulation();writes=[]
     stabilization=os.environ.get('LOGI_CENTER_EDITOR_STABILIZATION')=='1'
     button_count=11 if stabilization else 6
@@ -50,8 +57,8 @@ def exercise(app,root,bridge,finish):
     k7=Device('sim:migration-k7','RealTek MCHOSE K7 Ultra','mouse','mchose','sim-k7',physical='/simulation/k7',
               vid='3837',pid='1001',connection='wireless',simulated=True) if stabilization else None
     if k7:
-        from mchose_adapter import dock_capability,dock_values,k7_capabilities,setting_plan as mouse_setting_plan
-        from test_k7_settings import NativeTransport
+        from logi_center.adapters.mchose.mchose_adapter import dock_capability,dock_values,k7_capabilities,setting_plan as mouse_setting_plan
+        from tests.unit.test_k7_settings import NativeTransport
         native=NativeTransport()
         native.raw[0]=0
         dock_record=bytes([1,1,0,100,0,3,1,0,0,255,0,0,255,0,0])
@@ -73,12 +80,12 @@ def exercise(app,root,bridge,finish):
         nonlocal dock_record
         if args[0]=='pactl':return audio.run(args)
         if args[:2]==['logi-sdk','mchose'] and k7:
-            from mchose_adapter import dock_values,prepare_dock_record
+            from logi_center.adapters.mchose.mchose_adapter import dock_values,prepare_dock_record
             if args[2]=='set':
                 changes=json.loads(args[-1])['changes']
                 if args[4]=='dock_lighting':dock_record=prepare_dock_record(dock_record,changes)
                 else:
-                    from k7_settings import prepare
+                    from logi_center.adapters.mchose.k7_settings import prepare
                     frames,unused=prepare(native.raw,args[4],changes,native.ident['mode'])
                     for report,command,payload in frames:native.exchange(report,command,payload,reply=False)
                 writes.append(('mchose',args[4],changes));return ''
@@ -88,7 +95,7 @@ def exercise(app,root,bridge,finish):
         if args[:2]==['logi-sdk','mchose-ace68']:
             field=args[4] if len(args)>4 else None;value=json.loads(args[5]) if len(args)>5 else None
             if args[2]=='set':writes.append(('ace',field.split('/')[-1],value))
-            with patch('ace68_adapter.candidates',return_value=[ITEM]),patch('drafts.atomic_json'):
+            with patch('logi_center.adapters.mchose.ace68_adapter.candidates',return_value=[ITEM]),patch('logi_center.core.services.drafts.atomic_json'):
                 observed=hardware(args[2],selector(ITEM),field,value,transport=lambda node:ace_wire)
             state.update(observed)
             for cap in keyboard.capabilities:
@@ -125,7 +132,7 @@ def exercise(app,root,bridge,finish):
     bridge.setLanguage('ru')
     folder=Path(os.environ.get('LOGI_CENTER_QML_SCREENSHOT_DIR','/tmp/logi-qml-functional'));folder.mkdir(parents=True,exist_ok=True)
     deadline=time.monotonic()+45
-    forbidden=patch('backend.run',side_effect=AssertionError('REAL HARDWARE I/O IN FUNCTIONAL SMOKE'))
+    forbidden=patch('logi_center.adapters.external.backend.run',side_effect=AssertionError('REAL HARDWARE I/O IN FUNCTIONAL SMOKE'))
     real=forbidden.start()
     timings={};start=time.monotonic()
     def checked(callback):
@@ -486,7 +493,7 @@ def exercise(app,root,bridge,finish):
                 assert not editor.recording,'Stop button must end recording'
                 tokens=[row['token'] for row in editor.macroEvents]
                 assert all(t in tokens for t in ('+KEY_A','-KEY_A','+KEY_SPACE','-KEY_SPACE','+KEY_LEFT','+KEY_F5','+KEY_SEMICOLON','+BTN_LEFT','-BTN_LEFT','+BTN_RIGHT','-BTN_RIGHT')),tokens
-                from mouse_models import validate_macro
+                from logi_center.core.devices.mouse_models import validate_macro
                 validate_macro(tokens)
                 window=panel.property('macroWindow')
                 assert window.isVisible()

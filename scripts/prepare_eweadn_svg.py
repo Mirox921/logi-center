@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Reproducible Qt-compatible SVG derivative; original user vector is preserved."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import xml.etree.ElementTree as E
 SVG='{http://www.w3.org/2000/svg}'
@@ -27,5 +33,5 @@ def compatible(raw):
 
 
 if __name__=='__main__':
-    folder=Path(__file__).resolve().parents[1]/'qml_ui/assets/devices/exact'
+    folder=Path(__file__).resolve().parents[1]/'assets/mice'
     (folder/'eweadn-s9.svg').write_bytes(compatible((folder/'eweadn-s9-original.svg').read_bytes()))

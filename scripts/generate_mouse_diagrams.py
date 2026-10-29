@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
 """Offline editor schematics, using GTK's canonical geometry and anchor frame."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import re,sys
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import cairo
-from mouse_art import render,WIDTH,HEIGHT
+from scripts.artwork.mouse_art import render,WIDTH,HEIGHT
 
 def main():
-    directory=Path(__file__).resolve().parents[1]/'qml_ui/assets/diagrams'
+    directory=Path(__file__).resolve().parents[1]/'assets/mice/diagrams'
     directory.mkdir(exist_ok=True)
     for filename,name in [('g502.svg','G502'),('generic.svg','Generic')]:
         target=directory/filename

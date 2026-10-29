@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Isolated G515 DeviceEditor interaction/render check. No device discovery/I/O."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import argparse,os,sys,tempfile,time
 from concurrent.futures import ThreadPoolExecutor
@@ -18,26 +24,26 @@ def main():
     from PySide6.QtQuickControls2 import QQuickStyle
     from PySide6.QtTest import QTest
     from unittest.mock import Mock
-    from devices import Device,DeviceManager
-    from drafts import DraftStore
-    from control_service import g515_controls
-    from g515_layout import keys
-    from qml_ui.bridge.editor import EditorController
-    from i18n import tr,set_language
+    from logi_center.core.devices.devices import Device,DeviceManager
+    from logi_center.core.services.drafts import DraftStore
+    from logi_center.core.services.control_service import g515_controls
+    from logi_center.adapters.logitech.g515_layout import keys
+    from logi_center.qml_ui.bridge.editor import EditorController
+    from logi_center.i18n import tr,set_language
     errors=[]
     def log(kind,context,message):
         if any(s in message for s in ('ReferenceError','TypeError','Binding loop','Cannot assign','is not defined','Unable to assign')):errors.append(message)
         print(message,file=sys.stderr)
     qInstallMessageHandler(log)
     QQuickStyle.setStyle('Basic');app=QGuiApplication([])
-    for path in (ROOT/'qml_ui/assets/fonts').glob('*.ttf'):QFontDatabase.addApplicationFont(str(path))
+    for path in (ROOT/'assets/fonts').glob('*.ttf'):QFontDatabase.addApplicationFont(str(path))
     class Owner(QObject):
         languageChanged=Signal()
         def __init__(self):
             super().__init__();self._keyboard_online=False;self._preferences_pool=ThreadPoolExecutor(max_workers=1)
             self.refresh=Mock();self.pool=ThreadPoolExecutor(max_workers=1);self.calls=[]
             self.temp=tempfile.TemporaryDirectory()
-            self._editor=EditorController(self,self.pool,simulation=True,store=DraftStore(Path(self.temp.name)/'drafts.json'),runner=self.run_fake)
+            self._editor=EditorController(self,self.pool,simulation=True,store=DraftStore(Path(self.temp.name)/'logi_center.core.services.drafts.json'),runner=self.run_fake)
         @Slot(str,result=str)
         def translate(self,text):return tr(text)
         def tr(self,text):return tr(text)
@@ -57,7 +63,8 @@ def main():
         ('rgb_idle_timeout','1 Minute',['Disabled','15 Seconds','30 Seconds','1 Minute','2 Minutes','5 Minutes']),
         ('rgb_sleep_timeout','5 Minutes',['Disabled','2 Minutes','5 Minutes','10 Minutes','15 Minutes','30 Minutes'])]]
     ed._g515=g515_controls(settings,saved,device.id);ed._build()
-    engine=QQmlApplicationEngine();engine.addImportPath(str(ROOT/'qml_ui/qml'))
+    from logi_center.resources import configure_engine
+    engine=QQmlApplicationEngine();configure_engine(engine);engine.addImportPath(str(ROOT/'src/logi_center/qml_ui/qml'))
     engine.setInitialProperties({'bridge':owner})
     engine.loadData(b'''import QtQuick
 import QtQuick.Controls
@@ -67,7 +74,7 @@ ApplicationWindow {
  width: 1280; height: 900; visible: true; color: Theme.background
  function tr(text) { const lang=bridge.languageToken; return bridge.translate(text) }
  DeviceEditor { anchors.fill: parent; anchors.margins: 16; bridge: win.bridge; windowRef: win }
-}''',QUrl.fromLocalFile(str(ROOT/'qml_ui/qml/G515Review.qml')))
+}''',QUrl.fromLocalFile(str(ROOT/'src/logi_center/qml_ui/qml/G515Review.qml')))
     assert engine.rootObjects(),'QML editor failed to load'
     window=engine.rootObjects()[0];folder=Path(args.output);folder.mkdir(parents=True,exist_ok=True)
     def visual(item,name):

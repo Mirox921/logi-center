@@ -16,3 +16,4 @@ logi-center-*.tar.gz
 /docs/screenshots/*
 !/docs/screenshots/README.md
 !/docs/screenshots/releases/
+*.egg-info/

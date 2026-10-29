@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Reproduce Dashboard toolbar/card QA with isolated DeviceManager fixtures."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse
 import os
 from pathlib import Path
@@ -147,7 +153,8 @@ def exercise(app,root,bridge,finished):
         card.forceActiveFocus()
         viewport=visual(root.contentItem(),'inventoryScroll')
         viewport.setProperty('contentY',250)
-        from devices import Device,Capability
+        from logi_center.core.devices.devices import Device
+        from logi_center.core.capabilities.model import Capability
         def delta(value,charging):
             observed=Device('battery-delta','Battery','mouse','kernel-battery',physical=device.physical,capabilities=[
                 Capability('battery_status','simulation',True,True,value=value,source='simulation'),
@@ -168,7 +175,7 @@ def exercise(app,root,bridge,finished):
 
     def unknown_charge(device,delta):
         assert root.grabWindow().save(str(folder/'battery-unknown-charging.png'))
-        from execution import Fault,FaultCode
+        from logi_center.core.services.execution import Fault,FaultCode
         device.faults=[Fault(FaultCode.PERMISSION,'simulation','simulated')]
         delta(80,False)
         row=bridge.devices.byId(device.id)
@@ -277,8 +284,8 @@ def main():
     def snapshot(*a,**k):
         ui_iteration_smoke.DISCOVERY_CALLS+=1
         return fixture_snapshot(*a,**k)
-    from qml_ui.main import run
-    with patch('backend.run',side_effect=AssertionError('Real CLI forbidden in UI smoke')),patch('device_service.collect_device_snapshot',side_effect=snapshot):
+    from logi_center.qml_ui.main import run
+    with patch('logi_center.adapters.external.backend.run',side_effect=AssertionError('Real CLI forbidden in UI smoke')),patch('logi_center.core.discovery.device_service.collect_device_snapshot',side_effect=snapshot):
         return run(['ui-iteration-smoke','--simulate','--smoke'])
 
 

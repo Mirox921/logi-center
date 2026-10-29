@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Verify bundled UI font families and Russian/Latin glyph coverage."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import os
 from pathlib import Path
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
@@ -11,7 +17,7 @@ root = Path(__file__).resolve().parents[1]
 app = QGuiApplication([])
 families = {}
 for filename in ('NotoSans-Regular.ttf', 'NotoSans-Bold.ttf', 'JetBrainsMonoNerdFont-Regular.ttf'):
-    font_id = QFontDatabase.addApplicationFont(str(root / 'qml_ui' / 'assets' / 'fonts' / filename))
+    font_id = QFontDatabase.addApplicationFont(str(root / 'assets/fonts' / filename))
     if font_id < 0:
         raise SystemExit(f'FAIL: could not load {filename}')
     for family in QFontDatabase.applicationFontFamilies(font_id):

@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Render the uninstalled G502 SVG candidate in Qt Quick, without device I/O."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import json
 import os
 from pathlib import Path
@@ -11,7 +17,7 @@ from PySide6.QtGui import QGuiApplication
 from PySide6.QtQuick import QQuickView, QQuickItem
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from mouse_models import G502, editor_callouts
+from logi_center.core.devices.mouse_models import G502, editor_callouts
 
 
 def render(source, output):

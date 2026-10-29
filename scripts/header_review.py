@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Reproduce isolated header screenshots and actual SVG small-size review."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse
 import os
 from pathlib import Path
@@ -15,7 +21,7 @@ def logo_sheet(destination):
     from PySide6.QtGui import QGuiApplication, QImage, QPainter, QColor, QFont
     from PySide6.QtSvg import QSvgRenderer
     app = QGuiApplication.instance() or QGuiApplication([])
-    svg = QSvgRenderer(str(ROOT / 'qml_ui/assets/brand/logi-mark.svg'))
+    svg = QSvgRenderer(str(ROOT / 'assets/icons/logi-mark.svg'))
     if not svg.isValid():
         raise RuntimeError('Brand SVG is invalid')
     image = QImage(600, 240, QImage.Format.Format_ARGB32_Premultiplied)

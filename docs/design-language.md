@@ -25,7 +25,7 @@ The chosen accent is signal amber `#f3aa32`. It reads as a measurement cursor an
 - Noto Serif Display remains bundled as a legacy face but is not selected by the current QML theme. Runtime checks register Noto Sans regular/bold and the mono family, verify Cyrillic А–я and Ё/ё plus Latin A–Z/a–z, and print the actual selected family. `python scripts/check_fonts.py` repeats the coverage test.
 - Use size contrast to establish hierarchy: large display name/measurement first, compact mono captions second. Avoid applying one face and size to every label.
 
-Font sources and license notices are in [`qml_ui/assets/fonts/SOURCES.md`](../qml_ui/assets/fonts/SOURCES.md). Font binaries are not modified.
+Font sources and license notices are in [`assets/fonts/SOURCES.md`](../assets/fonts/SOURCES.md). Font binaries are not modified.
 
 ## Signature components
 

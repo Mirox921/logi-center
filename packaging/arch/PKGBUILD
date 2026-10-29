@@ -35,62 +35,63 @@ check() {
   python -m compileall -q .
   # Required presentation files are copied recursively by package().
   for component in AppHeader SettingsPage AboutPage BackupsPage DisclosureItem DashboardToolbar DeviceImage StyledText DeviceEditor ControlEditor MouseButtons KeyboardEditor AudioPage AudioEndpoint CutInput CutCombo CutSlider; do
-    test -f "qml_ui/qml/$component.qml"
+    test -f "src/logi_center/qml_ui/qml/$component.qml"
   done
   test ! -f qml_ui/gtk_backups.py
-  test -f qml_ui/bridge/backups.py
-  test -f qml_ui/bridge/backup_simulation.py
-  test -f qml_ui/bridge/preferences.py
-  test -f qml_ui/text_debug.py
-  test -f macro_library.py
-  test -f logitech_status.py
-  test -f qml_ui/assets/devices/exact/g502_transparent_wired.svg
-  test -f qml_ui/assets/devices/exact/g502_wireless.svg
-  test -f qml_ui/assets/devices/exact/g502_hero_side_wired_fixed.svg
-  test -f qml_ui/assets/devices/exact/g502_hero_side_wireless.svg
-  test -f qml_ui/assets/devices/exact/g502-top-wired-qt.svg
-  test -f qml_ui/assets/devices/exact/g502-top-wireless-qt.svg
-  test -f qml_ui/assets/devices/exact/g502-hero-side.svg
-  test -f qml_ui/assets/devices/exact/g502-hero-legacy.svg
-  test -f control_service.py
-  test -f keyboard_layouts.py
-  test -f g515_layout.py
-  test -f g515_adapter.py
-  test -f qml_ui/bridge/editor.py
-  test -f qml_ui/bridge/audio.py
-  test -f qml_ui/bridge/diagnostics.py
-  test -f battery_service.py
-  test -f battery_presentation.py
-  test -f qml_ui/assets/devices/generated/geometry.json
-  test -f qml_ui/assets/devices/exact/models.json
-  test -f qml_ui/assets/devices/exact/g502-hero.svg
-  test -f qml_ui/qml/K7DockPanel.qml
-  test -f k7_settings.py
-  test -f eweadn_protocol.py
-  test -f qml_ui/assets/devices/exact/eweadn-s9.svg
-  test -f qml_ui/assets/devices/exact/eweadn-s9-original.svg
-  test -f ace68_bindings.py
-  test -f ace68_advanced.py
+  test -f src/logi_center/qml_ui/bridge/backups.py
+  test -f src/logi_center/qml_ui/bridge/backup_simulation.py
+  test -f src/logi_center/qml_ui/bridge/preferences.py
+  test -f src/logi_center/qml_ui/text_debug.py
+  test -f src/logi_center/core/services/macro_library.py
+  test -f src/logi_center/adapters/logitech/logitech_status.py
+  test -f assets/mice/g502_transparent_wired.svg
+  test -f assets/mice/g502_wireless.svg
+  test -f assets/mice/g502_hero_side_wired_fixed.svg
+  test -f assets/mice/g502_hero_side_wireless.svg
+  test -f assets/mice/g502-top-wired-qt.svg
+  test -f assets/mice/g502-top-wireless-qt.svg
+  test -f assets/mice/g502-hero-side.svg
+  test -f assets/mice/g502-hero-legacy.svg
+  test -f src/logi_center/core/services/control_service.py
+  test -f src/logi_center/core/devices/keyboard_layouts.py
+  test -f src/logi_center/adapters/logitech/g515_layout.py
+  test -f src/logi_center/adapters/logitech/g515_adapter.py
+  test -f src/logi_center/qml_ui/bridge/editor.py
+  test -f src/logi_center/qml_ui/bridge/audio.py
+  test -f src/logi_center/qml_ui/bridge/diagnostics.py
+  test -f src/logi_center/core/services/battery_service.py
+  test -f src/logi_center/core/services/battery_presentation.py
+  test -f assets/devices/generated/geometry.json
+  test -f assets/mice/models.json
+  test -f assets/mice/g502-hero.svg
+  test -f src/logi_center/qml_ui/qml/K7DockPanel.qml
+  test -f src/logi_center/adapters/mchose/k7_settings.py
+  test -f src/logi_center/protocols/eweadn_protocol.py
+  test -f assets/mice/eweadn-s9.svg
+  test -f assets/mice/eweadn-s9-original.svg
+  test -f src/logi_center/adapters/mchose/ace68_bindings.py
+  test -f src/logi_center/adapters/mchose/ace68_advanced.py
   for component in G502ButtonPanel GenericMouseButtons MacroWindow K7DpiPanel K7ButtonPanel K7PerformancePanel NumberInput EweadnPanel G515Panel Ace68Panel Ace68Keyboard Ace68Assignments Ace68Advanced; do
-    test -f "qml_ui/qml/$component.qml"
+    test -f "src/logi_center/qml_ui/qml/$component.qml"
   done
   for key in display-hdmi display-dp pointer-generic; do
-    test -f "qml_ui/assets/devices/generated/$key@1x.png"
-    test -f "qml_ui/assets/devices/generated/$key@2x.png"
+    test -f "assets/devices/generated/$key@1x.png"
+    test -f "assets/devices/generated/$key@2x.png"
   done
-  test -f qml_ui/assets/brand/SOURCES.md
+  test -f assets/icons/SOURCES.md
   for asset in g502.svg generic.svg k7-dock.svg k7-buttons.svg SOURCES.md; do
-    test -f "qml_ui/assets/diagrams/$asset"
+    test -f "assets/mice/diagrams/$asset"
   done
 }
 
 package() {
   cd "$srcdir/logi-center-$pkgver"
   install -dm755 "$pkgdir/usr/lib/logi-center" "$pkgdir/usr/bin"
-  for module in *.py; do
-    case "$module" in test_*|install.py|mouse_art.py) continue;; esac
-    install -m644 "$module" "$pkgdir/usr/lib/logi-center/"
-  done
+  cp -r src/logi_center "$pkgdir/usr/lib/logi-center/"
+  cp -r assets "$pkgdir/usr/lib/logi-center/logi_center/"
+  install -m644 app.py "$pkgdir/usr/lib/logi-center/app.py"
+  find "$pkgdir/usr/lib/logi-center" -type f -name '*.pyc' -delete
+  find "$pkgdir/usr/lib/logi-center" -type d -name '__pycache__' -empty -delete
   printf '#!/bin/sh\nexec /usr/bin/python /usr/lib/logi-center/app.py "$@"\n' > "$pkgdir/usr/bin/logi-center"
   chmod 755 "$pkgdir/usr/bin/logi-center"
   install -Dm644 packaging/logi-center.desktop "$pkgdir/usr/share/applications/logi-center.desktop"
@@ -102,12 +103,4 @@ package() {
   install -Dm644 packaging/udev/70-logi-center-mchose.rules "$pkgdir/usr/share/doc/$pkgname/udev/70-logi-center-mchose.rules"
   cp -r docs "$pkgdir/usr/share/doc/$pkgname/"
   install -Dm644 packaging/arch/README.md "$pkgdir/usr/share/doc/$pkgname/packaging/arch/README.md"
-  if [[ -d qml_ui ]]; then
-    # Includes prebuilt 512x320 / 1024x640 PNG art and license manifests.
-    # The offline illustrations/ developer package is deliberately not copied.
-    cp -r qml_ui "$pkgdir/usr/lib/logi-center/"
-    # check() imports QML bridge modules; do not ship interpreter-specific caches.
-    find "$pkgdir/usr/lib/logi-center/qml_ui" -type f -name '*.pyc' -delete
-    find "$pkgdir/usr/lib/logi-center/qml_ui" -type d -name '__pycache__' -empty -delete
-  fi
 }

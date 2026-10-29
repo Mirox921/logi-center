@@ -3,6 +3,12 @@
 Run while placing/removing the mouse on its dock or pressing its DPI button.
 Only documented GET_FEATURE requests are sent; no setting command is issued.
 """
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse
 import json
 import sys
@@ -10,7 +16,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from mchose_adapter import Transport, candidates, decode  # noqa: E402
+from logi_center.adapters.mchose.mchose_adapter import Transport, candidates, decode  # noqa: E402
 
 
 def snapshot(device):

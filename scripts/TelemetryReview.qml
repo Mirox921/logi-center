@@ -1,6 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
-import "../qml_ui/qml"
+import "../src/logi_center/qml_ui/qml"
 import Theme 1.0
 Window {
     width: 920; height: 580; visible: true; color: Theme.background

@@ -4,13 +4,19 @@
 Requires separate user approval of this physical experiment. A confirmation
 argument is an accidental-launch guard, not a replacement for that approval.
 """
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import argparse
 import sys
 
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
-from mchose_adapter import candidates,selector,hardware
-from k7_settings import unchanged
+from logi_center.adapters.mchose.mchose_adapter import candidates,selector,hardware
+from logi_center.adapters.mchose.k7_settings import unchanged
 
 
 def trial(field,read,write):

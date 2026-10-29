@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Exercise QML backup selection/results with the real services and memory I/O."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import os
 import sys
@@ -13,7 +19,7 @@ sys.path.insert(0, str(ROOT))
 def exercise(app, root, bridge, finished):
     from PySide6.QtCore import QTimer, Qt
     from PySide6.QtTest import QTest
-    import capability_backup as service
+    import logi_center.core.services.capability_backup as service
     controller = bridge.backups
     mock = controller.transport
     folder = Path(os.environ.get('LOGI_CENTER_BACKUP_SCREENSHOTS', '/tmp/logi-qml-backup-review'))
@@ -132,11 +138,11 @@ def exercise(app, root, bridge, finished):
 
 def main():
     from unittest.mock import patch
-    from qml_ui.main import run
+    from logi_center.qml_ui.main import run
     os.environ['QT_QPA_PLATFORM'] = 'wayland' if '--wayland' in sys.argv else 'offscreen'
     os.environ['QT_QPA_PLATFORMTHEME'] = 'generic'
     os.environ['LOGI_CENTER_QML_BACKUP_SMOKE'] = '1'
-    with patch('backend.run', side_effect=AssertionError('Real CLI called from backup simulation')):
+    with patch('logi_center.adapters.external.backend.run', side_effect=AssertionError('Real CLI called from backup simulation')):
         return run(['qml-backup-smoke', '--simulate', '--smoke'])
 
 

@@ -1,5 +1,13 @@
 # Working on Logi Center
 
+Repository layout: production code is under `src/logi_center`; canonical assets
+are in `assets`. See docs/development/architecture.md for module ownership,
+source/installed launch paths and tests/unit, tests/integration, tests/hardware.
+Bare module names in historical notes below refer to their corresponding
+package modules; do not recreate flat runtime copies. `app.py` is a launch shim.
+Offline artwork tools now live in scripts/artwork/illustrations and run as
+`python -m scripts.artwork.illustrations.checks`; they are never shipped at runtime.
+
 Python 3 / Qt6 / QML Linux desktop application. `app.py` launches QML; `backend.py` contains legacy CLI/read adapters. New operation/backup/discovery/audio modules separate hardware work from widgets. `i18n.py` contains Russian → English translations. `install.py` copies runtime modules into the user's data directory. Tests run without hardware using injectable runners/transports.
 
 - Read `docs/implementation-progress.md` when continuing; inspect only affected code and diffs.

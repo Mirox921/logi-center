@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Native/live editor navigation, guarded against setting writes and recording."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 from pathlib import Path
 import os,sys,subprocess,time
 
@@ -7,7 +13,7 @@ import os,sys,subprocess,time
 def exercise(app,root,bridge,finish):
     from PySide6.QtCore import QTimer
     from unittest.mock import patch
-    from backend import run as original_run
+    from logi_center.adapters.external.backend import run as original_run
     folder=Path(os.environ.get('LOGI_CENTER_QML_SCREENSHOT_DIR','/tmp/logi-qml-readonly'));folder.mkdir(parents=True,exist_ok=True)
     def read_only(args,**kwargs):
         if args[:1]==['logi-sdk'] and (len(args)<3 or args[2] not in ('read','status','battery')):raise AssertionError('A setting write reached read-only smoke')
@@ -16,7 +22,7 @@ def exercise(app,root,bridge,finish):
         if args[:1]==['pactl'] and len(args)>1 and args[1].startswith('set-'):raise AssertionError('An audio write reached read-only smoke')
         if args[:1] in (['parec'],['paplay']):raise AssertionError('Audio capture/playback reached read-only smoke')
         return original_run(args,**kwargs)
-    guard=patch('backend.run',side_effect=read_only);guard.start()
+    guard=patch('logi_center.adapters.external.backend.run',side_effect=read_only);guard.start()
     devices=[d for d in bridge._current_devices() if d.connected is True and d.backend!='solaar-local' and d.kind in ('mouse','keyboard','audio')]
     targets=[]
     for backend in ('ratbagctl','mchose','mchose-ace68','headsetcontrol'):

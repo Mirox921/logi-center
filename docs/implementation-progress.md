@@ -419,3 +419,36 @@ Fresh checksummed Arch source and makepkg --nodeps --nocheck build passed.
 Installed runtime/assets in staging byte-match the source; GTK GUI files and
 dependencies are absent. Packaged default launcher simulation smoke passed.
 No system package installation was performed.
+
+
+## 2026-10-29 — src package and repository architecture
+
+Moved production code to `src/logi_center`, grouped existing adapters by vendor,
+and separated codecs, discovery/identity, Capability, Device/DeviceManager and
+shared services. Extracted the existing input/power, libratbag, PulseAudio,
+HeadsetControl and saved Solaar adapters from the inventory module without
+changing protocol behavior. Updated all imports/mock targets and moved tests
+into unit/integration/hardware (the latter uses fake transports only).
+
+Canonical SVGs, PNGs, fonts, model metadata and notices moved into `assets`;
+101 existing assets were byte-compared against HEAD and are unchanged. Central
+resource resolution covers checkout, user-local, wheel and Arch layouts. QML
+receives absolute asset URLs; button mappings/geometry are preserved. Offline
+Cairo tooling lives under scripts/artwork and is excluded from runtime wheels.
+
+Added pyproject/console entry point, wheel/sdist resource hook, source manifest,
+package regression checks and CI coverage. Root `app.py` remains compatible.
+Worker subprocesses resolve the installed package without cwd/PYTHONPATH.
+Installer upgrades remove only known obsolete bundled files; private data stays
+untouched. Backup service AST comparison confirms imports are the only changes
+in backups.py/capability_backup.py. GTK remains externally archived.
+
+Verification: 504 tests passed (26.503 s), compileall, qmllint/QML navigation,
+functional stabilization and simulation smoke passed with real I/O blocked.
+Reviewed the relocated G502 editor rendering; functional captures cover RU/EN
+and 640/1280 widths. Built wheel from sdist; wheel CLI, resources, QML simulation
+and scoped worker passed outside the checkout. Fresh checksummed Arch source
+and makepkg --nodeps --nocheck passed; full Python tests ran separately. No
+system installation, physical writes, recording, push or new release.
+
+Architecture and commands: [development/architecture.md](development/architecture.md).

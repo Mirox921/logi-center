@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Rendered tag containment and exact battery segment QA; no device service."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import os,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT))
@@ -8,11 +14,12 @@ from PySide6.QtCore import QTimer,QUrl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
-from device_presentation import battery_segments
+from logi_center.core.devices.device_presentation import battery_segments
 app=QGuiApplication([])
 from PySide6.QtGui import QFontDatabase
-for file in ('NotoSans-Regular.ttf','NotoSans-Bold.ttf','JetBrainsMonoNerdFont-Regular.ttf'):QFontDatabase.addApplicationFont(str(ROOT/'qml_ui/assets/fonts'/file))
-engine=QQmlApplicationEngine();engine.addImportPath(str(ROOT/'qml_ui/qml'))
+for file in ('NotoSans-Regular.ttf','NotoSans-Bold.ttf','JetBrainsMonoNerdFont-Regular.ttf'):QFontDatabase.addApplicationFont(str(ROOT/'assets/fonts'/file))
+from logi_center.resources import configure_engine
+engine=QQmlApplicationEngine();configure_engine(engine);engine.addImportPath(str(ROOT/'src/logi_center/qml_ui/qml'))
 engine.load(QUrl.fromLocalFile(str(ROOT/'scripts/TelemetryReview.qml')))
 if not engine.rootObjects():raise SystemExit(2)
 root=engine.rootObjects()[0]

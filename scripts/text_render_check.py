@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """Hardware-free text comparison; PNGs retain physical pixels, crops use nearest neighbour."""
+# Allow direct execution without installing developer tools.
+if __package__ in (None, ""):
+    import sys as _sys
+    from pathlib import Path as _Path
+    _sys.path.insert(0, str(_Path(__file__).resolve().parents[1]))
+import scripts  # source-package bootstrap
 import argparse, os, sys, json
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
@@ -14,29 +20,11 @@ from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtQuick import QQuickWindow
 app=QGuiApplication([])
 for f in ('NotoSans-Regular.ttf','NotoSans-Bold.ttf','JetBrainsMonoNerdFont-Regular.ttf'):
-    QFontDatabase.addApplicationFont(str(ROOT/'qml_ui/assets/fonts'/f))
-engine=QQmlApplicationEngine();engine.addImportPath(str(ROOT/'qml_ui/qml'))
+    QFontDatabase.addApplicationFont(str(ROOT/'assets/fonts'/f))
+from logi_center.resources import configure_engine
+engine=QQmlApplicationEngine();configure_engine(engine);engine.addImportPath(str(ROOT/'src/logi_center/qml_ui/qml'))
 # Each column is independently rendered, not an enlarged screenshot of another mode.
-qml='''import QtQuick
-import Theme 1.0
-import "../qml_ui/qml"
-Window { width: 1000; height: 660; visible: true; color: Theme.background
-Row { x: 16; y: 16; spacing: 20
-Repeater { model: 3
-Column { required property int index; spacing: 12; width: 310
-Text { text: ["Qt / No hint", "Qt / Vertical hint", "Native / Vertical hint"][parent.index]; color: Theme.text; font.pixelSize: 14 }
-Repeater { model: ["USB", "Нет данных", "libratbag →", "15 настроек", "Игровая мышь", "46%", "Logitech G502 HERO", "Мыши / Клавиатуры", "4 внешних · 2 встроенных", "No data", "15 settings", "Gaming mouse", "Mice / Keyboards", "4 external · 2 built-in"]
-Text { required property string modelData; text: modelData; color: Theme.muted; font.family: Theme.dataFont; font.pixelSize: 13; height: 26
-renderType: parent.index === 2 ? Text.NativeRendering : Text.QtRendering
-font.hintingPreference: parent.index === 0 ? Font.PreferNoHinting : Font.PreferVerticalHinting
-}
-}
-}
-}
-}
-ConnectionTag { x: 20; y: 580; label: "USB" }
-SegmentedBattery { x: 150; y: 580; width: 320; percent: -1; label: "Нет данных / No data" }
-}'''
+qml='import QtQuick\nimport Theme 1.0\nimport "../src/logi_center/qml_ui/qml"\nWindow { width: 1000; height: 660; visible: true; color: Theme.background\nRow { x: 16; y: 16; spacing: 20\nRepeater { model: 3\nColumn { required property int index; spacing: 12; width: 310\nText { text: ["Qt / No hint", "Qt / Vertical hint", "Native / Vertical hint"][parent.index]; color: Theme.text; font.pixelSize: 14 }\nRepeater { model: ["USB", "Нет данных", "libratbag →", "15 настроек", "Игровая мышь", "46%", "Logitech G502 HERO", "Мыши / Клавиатуры", "4 внешних · 2 встроенных", "No data", "15 settings", "Gaming mouse", "Mice / Keyboards", "4 external · 2 built-in"]\nText { required property string modelData; text: modelData; color: Theme.muted; font.family: Theme.dataFont; font.pixelSize: 13; height: 26\nrenderType: parent.index === 2 ? Text.NativeRendering : Text.QtRendering\nfont.hintingPreference: parent.index === 0 ? Font.PreferNoHinting : Font.PreferVerticalHinting\n}\n}\n}\n}\n}\nConnectionTag { x: 20; y: 580; label: "USB" }\nSegmentedBattery { x: 150; y: 580; width: 320; percent: -1; label: "Нет данных / No data" }\n}'
 qml=qml.replace('parent.index',f'((parent.index+{a.first_style})%3)')
 engine.loadData(qml.encode(),QUrl.fromLocalFile(str(ROOT/'scripts/TextReview.qml')))
 if not engine.rootObjects():raise SystemExit(2)
