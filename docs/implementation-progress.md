@@ -576,3 +576,25 @@ smoke passed. That live smoke covered local Ace68 only, not remote G515/S9.
 No QML layout changes or screenshot polishing. Existing recursive packaging
 and CI include the changed modules/script and new integration test file.
 Remaining physical checks/commands: hardware-read-diagnostics.md.
+
+
+## 2026-11-01 — import S9 Ultra hardware compatibility fixes
+
+Ported the S9-only changes from the supplied 2026-10-31 source archive.
+Accept masked flat-block response addresses and sleeping-receiver ACKs, drain
+stale replies before page reads, and stop interpreting sensor byte 9 as a
+profile index. Keep the pre-command byte comparison, initial profile/fingerprint
+guard and final full readback. Polling limits and UI choices use native-code
+count semantics; readback permits firmware-owned opposite polling nibbles.
+Recognize the live left-click encoding while retaining slot-0-only factory
+default handling. No G515 changes, permissions changes or hardware writes.
+
+Remote hardware observations are supplied evidence, not locally repeated tests.
+Native macro upload, firmware updates and reset remain unvalidated. Existing
+recursive installer and CI already cover the changed modules; no runtime
+manifest additions are required.
+
+Validation: 555 tests passed; compileall and git diff --check passed. S9
+offscreen fake Apply/readback and QML navigation passed. Live read-only
+peripheral smoke passed for the available Ace68 (0 live controls); no local
+S9 hardware validation was possible.

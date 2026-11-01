@@ -36,9 +36,10 @@ class S9ReadDiagnostics(unittest.TestCase):
             def send(self,main,offset,data=b'',encap=0):
                 self.requests.append((main,offset,encap))
             def get(self):
+                if not self.requests:return bytes([3,0,2,0,0])  # idle frame
                 main,offset,index=self.requests[-1]
                 payload=bytes(pages[offset-index][index*10:(index+1)*10]).ljust(10,b'\0')
-                return bytes([3,0x50,0,11,index,0])+payload
+                return bytes([3,0x50,0,11,index,offset&63])+payload
         receiver=Receiver()
         with patch('logi_center.adapters.eweadn.eweadn_adapter.time.sleep'):
             state=read_state(receiver,'wireless')
@@ -52,6 +53,7 @@ class S9ReadDiagnostics(unittest.TestCase):
                 def __init__(self):super().__init__('unused');self.sent=[];self.payload=bytes(range(size))
                 def send(self,main,offset,data=b'',encap=0):self.sent.append((main,offset,encap))
                 def get(self):
+                    if not self.sent:return bytes([3,0,2,0,0])  # idle frame
                     main,offset,chunk=self.sent[-1];data=self.payload[chunk*10:(chunk+1)*10]
                     return bytes([3,0x50,0,len(data),chunk,offset])+data
             wire=Short()

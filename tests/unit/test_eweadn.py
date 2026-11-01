@@ -15,7 +15,7 @@ TARGET=selector(ITEM)
 class Wire:
     def __init__(self):
         self.pages={128:bytearray(struct.pack('<H',0x0110)+(9895604650000).to_bytes(6,'big')),
-            129:bytearray([76,0x30,4,0x20,0x30,0x75,16]),64:bytearray([0x20,0x05,0x16,1,3,0x2a,0,0,1,0]),
+            129:bytearray([76,0x30,7,0x20,0x30,0x75,16]),64:bytearray([0x20,0x05,0x16,1,3,0x2a,0,0,1,0]),
             65:bytearray(57),0:bytearray([1,1,0,0,1,2,0,0,1,3,0,0,1,4,0,0,1,5,0,0])}
         for i,value in enumerate((800,1600,2400,3200,6400,26000,800,1600)):
             struct.pack_into('<H',self.pages[65],1+i*2,value//50-1)
@@ -51,6 +51,33 @@ class Codec(unittest.TestCase):
             with self.assertRaises(ValueError):response(raw,*wrong)
         with self.assertRaises(ValueError):response(bytes([3,0x50,2,0,0,0])+bytes(58),0)
 
+    def test_live_receiver_frame_shapes(self):
+        # 2026-10-30 physical S9 Ultra reads: 16-byte frames declaring 0x0b,
+        # byte4 = flat block address masked to six bits, and 0x50-prefixed
+        # status replies while the wireless mouse sleeps.
+        live=bytes([3,0x50,0,0x0b,0x00,0x00,0x03,0x01,0x09,0,0,0,0,0x10,0x01,0x01])
+        self.assertEqual(response(live,128,0),bytes.fromhex('03010900000000100101'))
+        status=bytes([3,0x50,0,0x0b,0x00,0x01,0x45,0x21,0x07,0x02,0x30,0x75,0x04,0xa5,0x5a,0x00])
+        self.assertEqual(response(status,129,0),bytes.fromhex('45210702307504a55a00'))
+        chunk=bytes([3,0x50,0,0x0b,0x03,0x04,0xff,0,0,0xff,0xff,0xff,0x46,0,0xff,0xff])
+        self.assertEqual(response(chunk,68,3),bytes.fromhex('ff0000ffffff4600ffff'))
+        with self.assertRaises(ValueError):response(chunk,128,3)
+        with self.assertRaises(ValueError):response(chunk,68,2)
+        nak=bytes([3,0x50,0x02,0x00,0x00])
+        with self.assertRaises(ValueError):response(nak,128,0)
+
+    def test_polling_limit_counts_available_native_rates(self):
+        state=Wire().state();self.assertEqual(state['max_report'],7)
+        commands,_=prepare(state,'sensor_config',{'polling_rate':2000})
+        self.assertEqual(commands,[(53,1,bytes([6]))])
+        state['max_report']=3
+        with self.assertRaises(ValueError):prepare(state,'sensor_config',{'polling_rate':125})
+        commands,_=prepare(state,'sensor_config',{'polling_rate':250})
+        self.assertEqual(commands,[(53,1,bytes([2]))])
+        state['max_report']=0
+        for value in (1000,500):
+            with self.assertRaises(ValueError):prepare(state,'sensor_config',{'polling_rate':value})
+
     def test_split_read_collects_real_payloads_not_zero_padding(self):
         from logi_center.adapters.eweadn.eweadn_adapter import Transport
         chunks=[];sent=[]
@@ -58,7 +85,10 @@ class Codec(unittest.TestCase):
             def send(self,main,sub,data=b'',encap=0):
                 sent.append((main,sub,encap));payload=bytes(range(encap*10,min(57,(encap+1)*10)))
                 chunks.append(bytes([3,0x50,0,len(payload),encap,sub])+payload+bytes(64-6-len(payload)))
-            def get(self):return chunks.pop(0)
+            def get(self):
+                # A real receiver answers every get: idle frame when the
+                # one-shot reply queue is empty (the drain reads it).
+                return chunks.pop(0) if chunks else bytes([3,0,2,0,0])
         with patch('logi_center.adapters.eweadn.eweadn_adapter.time.sleep'):
             self.assertEqual(ReadWire('unused').read_page(65),bytes(range(57)))
         self.assertEqual(sent,[(79,65+i,i) for i in range(6)])
@@ -69,7 +99,13 @@ class Codec(unittest.TestCase):
         self.assertEqual(state['dpi_config']['x5'],26000)
         wire.pages[128][2:]=b'\x01'*6
         with self.assertRaises(ValueError):wire.state()
-        wire=Wire();wire.pages[64][9]=1
+        # Live firmware (2026-10-30 physical reads) reports sensor page byte
+        # 9 as 0x0f while the status page says profile 1: byte 9 is not the
+        # profile index, so a mismatch must not block decoding. A real
+        # integrity violation (impossible stage layout) still raises.
+        wire=Wire();wire.pages[64][9]=15
+        self.assertEqual(wire.state()['model_id'],'s9ultra')
+        wire=Wire();wire.pages[64][2]=0x00
         with self.assertRaises(ValueError):wire.state()
 
     def test_flags_read_modify_write_preserves_unknown_and_glass_bits(self):
@@ -113,6 +149,14 @@ class Codec(unittest.TestCase):
         with self.assertRaises(ValueError):prepare(state,'button_bindings',{'0':[1,2,0,0]})
         commands,_=prepare(state,'button_bindings',{'2':[2,6,0,0]})
         self.assertEqual(commands,[(48,8,bytes([2,6,0,0]))])
+        # Live firmware left click [1,1,1,0] also satisfies the guard.
+        state=Wire().state();state['pages']['0'][0:4]=bytes([1,1,1,0])
+        commands,_=prepare(state,'button_bindings',{'2':[2,6,0,0]})
+        self.assertEqual(commands,[(48,8,bytes([2,6,0,0]))])
+        with self.assertRaises(ValueError):prepare(state,'button_bindings',{'0':[1,2,0,0]})
+        # An empty side slot is not a replacement left click.
+        state['pages']['0'][16:20]=[0,0,0,0]
+        with self.assertRaises(ValueError):prepare(state,'button_bindings',{'0':[1,2,0,0]})
         state['writable_buttons']=[0,1,2]
         with self.assertRaises(ValueError):prepare(state,'button_bindings',{'3':[1,5,0,0]})
         with self.assertRaises(ValueError):prepare(state,'button_bindings',{'2':[6,1,1,0]})
@@ -355,6 +399,40 @@ class Editor(unittest.TestCase):
         self.assertEqual(self.wire.state()['dpi_config']['x5'],26000)
         self.ed.edit('eweadn:dpi_config:count',6)
         self.assertEqual(self.ed.eweadnFields['eweadn:dpi_config:x5']['value'],1200)
+
+
+
+
+class HardwarePollingNibble(unittest.TestCase):
+    def invoke(self,wire,changes):
+        state=wire.state();payload={'changes':changes,'profile':state['profiles'],'fingerprint':fingerprint(state)}
+        with patch('logi_center.adapters.eweadn.eweadn_adapter.candidates',return_value=[ITEM]),patch('logi_center.adapters.eweadn.eweadn_adapter.time.sleep'),patch('logi_center.core.services.drafts.atomic_json'):
+            return hardware('set',TARGET,'sensor_config',payload,transport=lambda _:wire)
+    def test_firmware_owned_opposite_polling_nibble_is_not_a_foreign_change(self):
+        # Live receiver (2026-10-30): writing wireless code 5 answers byte 1
+        # as 0x55 (mirrored code), code 0 as 0x00; the opposite nibble is
+        # firmware-owned and must not fail the foreign-change guard.
+        wire=Wire();wire.pages[64][1]=0x55
+        wire.send_original=wire.send
+        def send(main,sub,data=b'',**kwargs):
+            wire.send_original(main,sub,data,**kwargs)
+            if (main,sub)==(53,1):
+                code=data[0]&7
+                wire.pages[64][1]=(code<<4)|code
+        wire.send=send
+        state=wire.state()
+        self.assertEqual(state['sensor_config']['polling_rate'],4000)
+        actual=self.invoke(wire,{'polling_rate':1000})
+        self.assertEqual(actual['sensor_config']['polling_rate'],1000)
+        self.assertEqual(actual['pages']['64'][1],0x00)
+        self.assertEqual(len([c for c in wire.commands if c[0]==53]),1)
+    def test_wrong_written_nibble_still_fails(self):
+        wire=Wire()
+        def corrupt(main,sub,data=b'',**kwargs):
+            if (main,sub)!=(53,1):wire.send(main,sub,data,**kwargs)
+            else:wire.pages[64][1]=(wire.pages[64][1]&~7)|((data[0]+1)&7)  # ignored value
+        wire.send=corrupt
+        with self.assertRaises(Fault):self.invoke(wire,{'polling_rate':2000})
 
 
 if __name__=='__main__':unittest.main()

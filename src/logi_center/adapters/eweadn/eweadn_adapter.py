@@ -71,6 +71,17 @@ class Transport:
         # The allocated buffer's zero-filled tail is not device data.
         if type(result) is not int or not 1<=result<=len(buf):raise ResponseError('feature_length')
         return bytes(buf[:result])
+    def drain_stale(self):
+        # The receiver answers every request with exactly one frame. A reply
+        # that arrived after a timed-out request would otherwise be delivered
+        # as the first response to the next page and could pass the address
+        # check (pages 64/128 and 65/129 share the masked low bits). Consume
+        # one pending data-shaped frame before the first request of a page.
+        try:pending=self.get()
+        except (OSError,ResponseError):return
+        raw=pending[1:] if pending[:1]==bytes([REPORT_ID]) else pending
+        if len(raw)>=6 and raw[0]==0x50 and raw[1]==0 and 1<=raw[2]<=10:
+            self.record('stale_discarded',declared=raw[2])
     def read_page(self,page):
         # No background reader threads, lost replies, unbounded wake loops or
         # configuration retries. A stalled ioctl dies with the SDK deadline.
@@ -78,6 +89,7 @@ class Transport:
         if needed is None:raise ValueError('Page is not allowlisted')
         data=b''
         self.record('page_start',page=page,required=needed)
+        self.drain_stale()
         for index in range((needed+9)//10):
             chunk=None
             for attempt in range(3):
@@ -183,8 +195,11 @@ def hardware(action,target,field=None,value=None,transport=Transport):
         atomic_json(root/(f'pre-write-{time.time_ns()}-'+target+'.json'),{'version':1,'state':state})
         key_progress=bytearray(state['pages']['0'])
         for main,sub,data in commands:
+            # Byte 9 is not the profile index on live firmware; compare the
+            # fresh sensor page against the exact snapshot the plan was
+            # built from, so any profile/config switch stops the sequence.
             sensor=device.read_page(64)
-            if len(sensor)<10 or sensor[9]!=state['profiles']:
+            if len(sensor)<10 or sensor[9]!=state['pages']['64'][9]:
                 raise Fault(FaultCode.CONNECTION,'eweadn','Profile changed during operation; partial changes may remain')
             device.send(main,sub,data)  # setters are never retried automatically
             time.sleep(.12)
@@ -195,7 +210,18 @@ def hardware(action,target,field=None,value=None,transport=Transport):
                     raise Fault(FaultCode.CONNECTION,'eweadn','Button write was not confirmed; remaining button writes stopped')
         if field=='factory_reset':return {'sent':True}  # no invented default/readback guarantee
         actual=read_state(device,connection)
-        if actual['model_id']!=state['model_id'] or actual['profiles']!=state['profiles'] or actual['pages']!=expected:
+        expected_pages={k:bytes(v) for k,v in expected.items()}
+        actual_pages={k:bytes(v) for k,v in actual['pages'].items()}
+        if any(main==53 and sub==1 for main,sub,_ in commands):
+            # Live S9 Ultra (2026-10-30): after a wireless polling write of
+            # code 5 the receiver answers byte 1 as 0x55, of code 0 as 0x00 —
+            # the firmware mirrors the code into the opposite nibble and owns
+            # it. Verify only the nibble this connection writes.
+            mask=0x0f<<(4 if state['connection']=='usb' else 0)
+            e=bytearray(expected_pages['64']);a=bytearray(actual_pages['64'])
+            e[1]&=mask;a[1]&=mask
+            expected_pages['64']=bytes(e);actual_pages['64']=bytes(a)
+        if actual['model_id']!=state['model_id'] or actual['profiles']!=state['profiles'] or actual_pages!=expected_pages:
             raise Fault(FaultCode.CONNECTION,'eweadn','Readback differs or unrelated fields changed; private snapshot retained')
         return actual
 

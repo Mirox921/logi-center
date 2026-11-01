@@ -535,7 +535,8 @@ def eweadn_controls(device,cap):
         elif key in ('motion_sync','angle_snap','ripple'):title=NAMES[key];kind='bool'
         elif key=='polling_rate':
             title='Частота опроса, Гц';kind='choice';group='performance'
-            code=values.get('max_report');choices=sorted(v for v in RATES if type(code) is int and 0<=code<7 and v<=RATES[code])
+            code=values.get('max_report')
+            choices=sorted(RATES[:code]) if type(code) is int and 0<code<=len(RATES) else []
             writable=writable and bool(choices) and value in choices
         elif key=='performance_mode':
             title='Режим работы сенсора';kind='choice';choices=[0,1,2,3]

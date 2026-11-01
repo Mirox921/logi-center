@@ -40,6 +40,10 @@ def response(raw,page,encap=0):
         if raw[0]!=REPORT_ID:raise ResponseError('report_id',REPORT_ID,raw[0])
         raw=raw[1:]
     elif raw[:1]==bytes([REPORT_ID]):raw=raw[1:]
+    if len(raw)>=2 and raw[0]==0x50 and raw[1]!=0:
+        # Live receiver ACK frame with a nonzero status (observed 0x02 while
+        # the wireless mouse is asleep): a real reply, not a short header.
+        raise ResponseError('ack',0,raw[1])
     if len(raw)<6:raise ResponseError('short_header')
     if raw[0]!=0x50:raise ResponseError('command_type',0x50,raw[0])
     if raw[1]!=0:raise ResponseError('ack',0,raw[1])
@@ -51,12 +55,11 @@ def response(raw,page,encap=0):
     if not 1<=size<=min(10,len(raw)-5):
         raise ResponseError('payload_length',min(10,len(raw)-5),raw[2])
     if raw[3]!=encap:raise ResponseError('encapsulation',encap,raw[3])
-    # The receiver's short 0x0b variant returns a reserved zero here.
-    # The official codec matches ACK + encapsulation, not a page echo.
-    # Restrict this exception to the observed frame shape; keep rejecting
-    # arbitrary nonzero stale offsets and wrong chunks.
-    legacy_zero=raw[2]==11 and len(raw)==15 and raw[4]==0
-    if raw[4]!=page and not legacy_zero:raise ResponseError('offset',page,raw[4])
+    # Live S9 Ultra firmware (2026-10-30 reads) answers with the flat block
+    # address masked to six bits: byte4 == (page+chunk) & 0x3F, e.g. 128->0,
+    # 129->1, 65 chunk 3->4. Accept that observed shape plus the documented
+    # full page echo; any other stale offset or wrong chunk stays rejected.
+    if raw[4] not in (page&63,page&255):raise ResponseError('offset',page&63,raw[4])
     return raw[5:5+size]
 
 
@@ -84,7 +87,11 @@ def decode(pages,connection='wireless'):
     sensor=bytes(pages[64]);dpi=bytes(pages[65]);buttons=bytes(pages[0])
     if len(sensor)<10 or len(dpi)<41 or len(buttons)<12:raise ValueError('Short EWEADN configuration page')
     active=(sensor[2]>>4);count=sensor[2]&15
-    if not 1<=count<=8 or not 1<=active<=count or status['profiles']!=sensor[9]:raise ValueError('Profile or stage changed during read')
+    # Live S9 Ultra firmware reports sensor page byte 9 as 0x0f while the
+    # status page says profile 1 of 2; byte 9 is not the profile index on
+    # real hardware. Draft/write consistency is guarded by the page
+    # fingerprint and the fresh sensor-page comparison before each command.
+    if not 1<=count<=8 or not 1<=active<=count:raise ValueError('Invalid DPI stage layout')
     if not 100<=status['max_dpi']<=65000:raise ValueError('Invalid device DPI limit')
     flags=sensor[5]
     mode=3 if flags&4 else (flags>>6)&3
@@ -139,7 +146,12 @@ def prepare(state,field,changes):
             elif key=='polling_rate':
                 if value not in RATES:raise ValueError('Unsupported polling rate')
                 code=RATES.index(value)
-                if state['max_report'] not in range(7) or value>RATES[state['max_report']]:raise ValueError('Polling rate exceeds device limit')
+                # Live S9 Ultra reports max_report=7 while running code 5
+                # (4000 Hz): the field counts available native rates, so a
+                # code is writable when it is below that count. Zero (1 kHz
+                # receiver/wired Pro) blocks every change.
+                limit=state['max_report']
+                if type(limit) is not int or not 0<=code<limit:raise ValueError('Polling rate exceeds device limit')
                 shift=4 if state['connection']=='usb' else 0;mask=7<<shift
                 raw[1]=(raw[1]&~mask)|(code<<shift)
                 commands.append((53,1,bytes([raw[1]])))
@@ -155,11 +167,17 @@ def prepare(state,field,changes):
         for key,value in changes.items():
             if int(key) not in state['writable_buttons']:raise ValueError('This physical button has no verified writable slot')
             validate_action(value)
-        if not any(value==[1,1,0,0] or key=='0' and value==[0,0,0,0] for key,value in target.items()):
+        def left_click(key,value):
+            # Live firmware encodes the physical left click as [1,1,1,0];
+            # the fixture form [1,1,0,0] and a slot-0 reset to the factory
+            # default all keep a working left click.
+            return isinstance(value,list) and len(value)==4 and (
+                value[0]==1 and value[1]==1 or key=='0' and value==[0,0,0,0])
+        if not any(left_click(key,value) for key,value in target.items()):
             raise ValueError('Keep at least one left-click button')
         # Establish the replacement left-click first. If that write is ignored,
         # per-command readback stops before the original left click is removed.
-        ordered=sorted(changes.items(),key=lambda item:0 if item[1]==[1,1,0,0] or item[0]=='0' and item[1]==[0,0,0,0] else 1)
+        ordered=sorted(changes.items(),key=lambda item:0 if left_click(item[0],item[1]) else 1)
         for key,value in ordered:
             offset=4*int(key);pages[0][offset:offset+4]=bytes(value);commands.append((48,offset,bytes(value)))
     else:
